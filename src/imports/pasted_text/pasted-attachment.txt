@@ -1,0 +1,894 @@
+Requirement Specification – Online Eyewear Ordering System
+Tên chức năng
+Online Eyewear Ordering System
+Hệ thống bán kính mắt trực tuyến
+
+1. Mục tiêu
+Hệ thống được xây dựng nhằm hỗ trợ khách hàng mua các sản phẩm kính mắt trực tuyến một cách thuận tiện, đồng thời hỗ trợ staff và admin xử lý đơn hàng, đơn kính theo prescription, và quản lý sản phẩm.
+Hệ thống cần hỗ trợ các nhu cầu chính sau:
+Mua gọng kính riêng 
+Mua tròng kính riêng 
+Mua kính râm riêng 
+Đặt kính thuốc theo prescription bằng cách: 
+ochọn gọng kính 
+ochọn gói tròng prescription phù hợp 
+onhập hoặc tải lên thông tin prescription 
+othêm cấu hình vào giỏ hàng 
+ocheckout để tạo order chính thức 
+Mục tiêu nghiệp vụ:
+Giảm sự phụ thuộc vào việc mua trực tiếp tại cửa hàng 
+Cho phép khách hàng dễ dàng xem, so sánh, và đặt hàng online 
+Hỗ trợ staff xử lý các đơn hàng thường, đơn pre-order, và đơn prescription 
+Hỗ trợ admin quản lý sản phẩm, tồn kho đơn giản, và dữ liệu nghiệp vụ cơ bản 
+
+2. Phạm vi
+2.1. In Scope
+Hệ thống bao gồm các nhóm chức năng sau:
+Quản lý tài khoản người dùng 
+Duyệt và tìm kiếm sản phẩm 
+Quản lý giỏ hàng 
+Checkout và thanh toán 
+Hỗ trợ 3 loại đơn hàng: 
+oReady Order 
+oPre-order 
+oPrescription Order 
+Theo dõi trạng thái đơn hàng 
+Xử lý đơn hàng nội bộ 
+Kiểm tra prescription sau khi order được tạo 
+Quản lý sản phẩm và biến thể sản phẩm 
+Quản lý gói tròng dùng cho đơn prescription 
+Quản lý tồn kho đơn giản 
+Ghi nhận nhập thêm hàng 
+Quản lý chính sách hiển thị trên hệ thống 
+Xem báo cáo cơ bản 
+2.2. Out of Scope
+Các nội dung sau không thuộc phạm vi hiện tại:
+Bảo hành 
+Đổi hàng 
+Trả hàng 
+Hoàn tiền 
+Khiếu nại hậu mãi 
+Quản lý kho chi tiết 
+Quản lý nhiều kho 
+Kiểm kê nâng cao 
+Batch/lô hàng phức tạp 
+Virtual try-on 
+Đo gương mặt tự động 
+Gợi ý sản phẩm bằng AI 
+Tích hợp đơn vị vận chuyển thực tế 
+Tích hợp payment production-level phức tạp 
+
+3. Actor
+Actor	Vai trò
+Customer	Duyệt sản phẩm, mua hàng, thanh toán, theo dõi đơn hàng, gửi prescription
+Staff	Xử lý đơn hàng, kiểm tra prescription, cập nhật trạng thái, ghi nhận nhập hàng
+Admin	Quản lý sản phẩm, biến thể, gói tròng prescription, tồn kho đơn giản, tài khoản staff, báo cáo
+
+4. Pre-condition
+4.1. Điều kiện chung
+Hệ thống đã được cấu hình dữ liệu nền: 
+odanh mục sản phẩm 
+osản phẩm 
+obiến thể sản phẩm 
+ogói tròng prescription 
+Hệ thống có phân quyền người dùng: 
+oCustomer 
+oStaff 
+oAdmin 
+4.2. Điều kiện theo nhóm nghiệp vụ
+Để đặt hàng, sản phẩm phải tồn tại và đang hoạt động 
+Để tạo Pre-order, biến thể sản phẩm phải được đánh dấu cho phép đặt trước 
+Để bắt đầu Prescription Configuration Flow, hệ thống phải có: 
+oít nhất một product type Frame 
+oít nhất một Lens Option for Prescription 
+Để staff xử lý đơn, staff phải đăng nhập hợp lệ 
+Để admin quản lý dữ liệu, admin phải đăng nhập hợp lệ 
+
+5. Chức năng 1 – Quản lý tài khoản người dùng
+1. Mục tiêu
+Cho phép khách hàng đăng ký, đăng nhập và sử dụng các chức năng cá nhân trong hệ thống.
+2. Phạm vi
+Đăng ký tài khoản 
+Đăng nhập 
+Quản lý thông tin cơ bản 
+Truy cập lịch sử đơn hàng 
+3. Actor
+Customer 
+Admin 
+4. Pre-condition
+Người dùng chưa có tài khoản khi đăng ký 
+Người dùng có tài khoản hợp lệ khi đăng nhập 
+5. Main Flow
+Người dùng nhập email, mật khẩu, họ tên, số điện thoại để đăng ký 
+Hệ thống kiểm tra dữ liệu 
+Hệ thống tạo tài khoản mới 
+Người dùng đăng nhập bằng email và mật khẩu 
+Hệ thống xác thực và cấp quyền theo role 
+6. Alternative Flow / Exception Flow
+Email đã tồn tại 
+Mật khẩu không hợp lệ 
+Tài khoản bị khóa 
+Sai email hoặc mật khẩu 
+7. Business Rules
+Email là duy nhất 
+Password phải được lưu dưới dạng hash 
+Người dùng chỉ truy cập được chức năng theo role của mình 
+8. Validation Rules
+Email đúng định dạng 
+Password không được để trống 
+Phone number đúng định dạng cơ bản 
+Full name không được để trống khi đăng ký 
+9. Data Input / Output
+Input
+Email 
+Password 
+Full name 
+Phone number 
+Output
+Tài khoản được tạo thành công 
+Token hoặc session đăng nhập 
+Thông tin role người dùng 
+10. Assumptions
+Hệ thống chỉ dùng đăng nhập bằng email/password trong phiên bản hiện tại 
+11. Open Questions
+Có cần chức năng quên mật khẩu trong scope hiện tại không? 
+12. Note cho dev / tester
+Test duplicate email 
+Test account inactive/locked 
+Test role-based access 
+
+6. Chức năng 2 – Quản lý danh mục và sản phẩm
+1. Mục tiêu
+Cho phép hệ thống quản lý và hiển thị các sản phẩm kính mắt theo đúng loại sản phẩm và biến thể.
+2. Phạm vi
+Hệ thống hỗ trợ các loại sản phẩm sau:
+Product Type	Mô tả
+Frame	Gọng kính bán riêng
+Lens	Tròng kính bán riêng
+Sunglasses	Kính râm bán riêng
+Ngoài ra hệ thống còn có:
+Lens Option for Prescription: gói tròng dùng riêng cho prescription configuration / prescription order 
+3. Actor
+Customer 
+Admin 
+4. Pre-condition
+Admin đã tạo category, product, variant 
+Sản phẩm được bật trạng thái hoạt động 
+5. Main Flow
+Admin tạo danh mục sản phẩm 
+Admin tạo sản phẩm 
+Admin gán loại sản phẩm 
+Admin tạo biến thể cho từng sản phẩm 
+Admin thêm ảnh sản phẩm 
+Customer duyệt danh mục sản phẩm 
+Customer xem chi tiết sản phẩm 
+6. Alternative Flow / Exception Flow
+Không có sản phẩm trong danh mục 
+Sản phẩm đã bị deactivated 
+Variant không hợp lệ hoặc không hoạt động 
+7. Business Rules
+Business Rules	Mô tả
+BR-P1	Mỗi sản phẩm phải thuộc một loại sản phẩm rõ ràng
+BR-P2	Một sản phẩm có thể có nhiều biến thể
+BR-P3	Mỗi biến thể phải có SKU duy nhất
+BR-P4	Ảnh sản phẩm phải gắn với một sản phẩm cụ thể
+8. Validation Rules
+Product name không được để trống 
+Product type phải thuộc tập giá trị hợp lệ 
+SKU là duy nhất 
+Price phải lớn hơn hoặc bằng 0 
+9. Data Input / Output
+Input
+Category name 
+Product name 
+Product type 
+Description 
+Base price 
+Variant info: 
+oSKU 
+oColor 
+oSize 
+oFrame type 
+oVariant price 
+Product images 
+Output
+Danh sách sản phẩm 
+Chi tiết sản phẩm 
+Danh sách biến thể 
+Trạng thái hoạt động của sản phẩm 
+10. Assumptions
+Tròng kính bán riêng được biểu diễn như product type Lens 
+Kính râm được biểu diễn như product type Sunglasses 
+11. Open Questions
+Có cần tách category “Optical” và “Sunglasses” riêng hay chỉ cần filter bằng product type? 
+12. Note cho dev / tester
+Test filter theo ProductType 
+Test hiển thị đúng ảnh chính 
+Test variant price override base price 
+
+7. Chức năng 3 – Duyệt, tìm kiếm và lọc sản phẩm
+1. Mục tiêu
+Giúp khách hàng nhanh chóng tìm được sản phẩm phù hợp.
+2. Phạm vi
+Duyệt catalog 
+Tìm kiếm theo tên 
+Lọc theo: 
+ocategory 
+oprice 
+ocolor 
+osize 
+oframe type 
+oproduct type 
+3. Actor
+Customer 
+4. Pre-condition
+Hệ thống có dữ liệu sản phẩm đang hoạt động 
+5. Main Flow
+Customer mở trang catalog 
+Hệ thống hiển thị danh sách sản phẩm 
+Customer nhập từ khóa tìm kiếm hoặc chọn bộ lọc 
+Hệ thống trả về danh sách phù hợp 
+Customer chọn sản phẩm để xem chi tiết 
+6. Alternative Flow / Exception Flow
+Không có sản phẩm phù hợp 
+Bộ lọc không trả ra kết quả 
+7. Business Rules
+Chỉ hiển thị sản phẩm active 
+Chỉ hiển thị biến thể active 
+Giá hiển thị là giá có hiệu lực của biến thể hoặc giá cơ bản tùy logic FE/BE 
+8. Validation Rules
+Từ khóa tìm kiếm được trim trước khi xử lý 
+Bộ lọc giá phải có min/max hợp lệ nếu sử dụng range 
+9. Data Input / Output
+Input
+Search keyword 
+Category 
+Price range 
+Color 
+Size 
+Frame type 
+Product type 
+Output
+Danh sách sản phẩm phù hợp 
+Thông tin cơ bản: 
+oname 
+oprice 
+oproduct type 
+oimage 
+ostock/pre-order availability 
+10. Assumptions
+Hệ thống chỉ cần search cơ bản 
+11. Open Questions
+Có cần sort theo price, newest, most popular trong scope hiện tại không? 
+12. Note cho dev / tester
+Test nhiều filter kết hợp 
+Test keyword rỗng 
+Test trạng thái hết hàng / pre-order trên listing 
+
+8. Chức năng 4 – Giỏ hàng
+1. Mục tiêu
+Cho phép khách hàng gom nhiều sản phẩm vào giỏ trước khi checkout.
+2. Phạm vi
+Thêm sản phẩm vào giỏ 
+Cập nhật số lượng 
+Xóa sản phẩm khỏi giỏ 
+Xem tổng tiền 
+3. Actor
+Customer 
+4. Pre-condition
+Customer đã đăng nhập 
+Sản phẩm và biến thể còn hoạt động 
+5. Main Flow
+Customer chọn một variant hoặc một prescription-configured item 
+Customer nhập số lượng 
+Hệ thống thêm item vào cart 
+Customer xem cart 
+Customer cập nhật số lượng hoặc xóa item 
+Hệ thống cập nhật tổng tiền 
+6. Alternative Flow / Exception Flow
+Variant không tồn tại 
+Quantity không hợp lệ 
+Thêm lại cùng một variant đã có trong cart 
+7. Business Rules
+Một cart gắn với một user 
+Mỗi variant chỉ xuất hiện một lần trong cart 
+Prescription-configured item phải được lưu với cấu trúc dữ liệu riêng, không dùng shape cũ sai type system 
+Nếu thêm cùng variant, có thể gộp số lượng theo logic backend với ready/pre-order items 
+8. Validation Rules
+Quantity > 0 
+Variant phải tồn tại và active 
+9. Data Input / Output
+Input
+VariantId 
+Quantity 
+Hoặc item prescription đã được cấu hình hoàn chỉnh 
+Output
+Danh sách cart items 
+Tổng tiền cart 
+10. Assumptions
+Mỗi user chỉ có một cart active 
+11. Open Questions
+Có cần cho guest cart trong scope hiện tại không? 
+12. Note cho dev / tester
+Test add/update/remove 
+Test unique variant trong cart 
+Test prescription item add-to-cart đúng shape dữ liệu 
+
+9. Chức năng 5 – Ready Order
+1. Mục tiêu
+Cho phép khách hàng mua ngay sản phẩm đang có sẵn.
+2. Phạm vi
+Áp dụng cho:
+Gọng kính 
+Tròng kính bán riêng 
+Kính râm 
+Bất kỳ biến thể nào đang còn hàng 
+3. Actor
+Customer 
+Staff 
+4. Pre-condition
+Customer đã có item trong cart hoặc chọn sản phẩm để checkout 
+Variant còn hàng 
+Order type là Ready 
+5. Main Flow
+Customer chọn sản phẩm còn hàng 
+Customer nhập thông tin người nhận 
+Customer chọn phương thức thanh toán 
+Hệ thống tạo Ready Order 
+Hệ thống tạo order items 
+Staff xác nhận đơn 
+Staff cập nhật trạng thái giao hàng 
+Đơn hoàn tất 
+6. Alternative Flow / Exception Flow
+Sản phẩm không còn hàng 
+Thanh toán thất bại 
+Customer hủy trước khi xử lý 
+7. Business Rules
+Business Rules	Mô tả
+BR-R1	Ready order chỉ áp dụng cho variant còn hàng
+BR-R2	Order type phải là Ready
+BR-R3	Tổng tiền bằng tổng các item trong đơn
+8. Validation Rules
+Receiver name không được để trống 
+Receiver phone không được để trống 
+Shipping address không được để trống 
+Payment method phải hợp lệ 
+9. Data Input / Output
+Input
+Cart items hoặc selected variant 
+Receiver name 
+Receiver phone 
+Shipping address 
+Payment method 
+Output
+Order record 
+Order items 
+Payment record 
+Order status khởi tạo 
+10. Assumptions
+Hệ thống cho phép thanh toán COD, VNPay, Momo theo enum hiện tại 
+11. Open Questions
+Có cần cho thanh toán một phần không? 
+12. Note cho dev / tester
+Test stock check trước khi tạo order 
+Test payment success/failure 
+Test order status transition 
+
+10. Chức năng 6 – Pre-order
+1. Mục tiêu
+Cho phép khách hàng đặt trước các sản phẩm tạm hết hàng nhưng được phép đặt trước.
+2. Phạm vi
+Áp dụng cho:
+Gọng kính 
+Tròng kính bán riêng 
+Kính râm 
+Các variant được staff/admin bật IsPreOrderAllowed 
+3. Actor
+Customer 
+Staff 
+Admin 
+4. Pre-condition
+Variant đang: 
+ohết hàng hoặc không đủ hàng để bán ngay 
+ođược bật IsPreOrderAllowed = true 
+Hệ thống có dữ liệu ExpectedRestockDate nếu cần hiển thị 
+5. Main Flow
+1.Customer xem sản phẩm 
+2.Hệ thống hiển thị trạng thái pre-order cho variant phù hợp 
+3.Customer chọn sản phẩm 
+4.Customer nhập thông tin giao hàng và thanh toán 
+5.Hệ thống tạo đơn với OrderType = PreOrder 
+6.Hệ thống cập nhật trạng thái đơn sang chờ hàng 
+7.Staff/Admin nhập thêm hàng bằng stock receipt 
+8.Hệ thống cập nhật tồn kho 
+9.Staff tiếp tục xử lý đơn 
+10.Đơn chuyển qua các trạng thái giao hàng và hoàn tất 
+6. Alternative Flow / Exception Flow
+Variant không cho phép pre-order 
+Dữ liệu restock chưa có 
+Hàng chưa về nên đơn vẫn giữ trạng thái chờ 
+Customer hủy đơn trước khi staff xử lý tiếp 
+7. Business Rules
+Business Rules	Mô tả
+BR-PO1	Pre-order chỉ áp dụng khi IsPreOrderAllowed = true
+BR-PO2	Order type phải là PreOrder
+BR-PO3	Order có thể ở trạng thái AwaitingStock cho tới khi hàng được nhập thêm
+BR-PO4	Khi hàng được nhập thêm, staff mới được xử lý tiếp đơn
+8. Validation Rules
+Variant hợp lệ 
+Variant active 
+Payment method hợp lệ 
+Shipping info đầy đủ 
+9. Data Input / Output
+Input
+VariantId 
+Quantity 
+Receiver information 
+Payment method 
+Output
+Pre-order record 
+Order status AwaitingStock 
+Stock receipt updates khi hàng về 
+10. Assumptions
+Phiên bản hiện tại không xử lý đặt cọc riêng cho pre-order 
+Không hỗ trợ phân bổ hàng tự động theo FIFO nâng cao 
+11. Open Questions
+Có cần cho khách xem ExpectedRestockDate ngoài UI product detail không? 
+Có cần cho phép hủy pre-order sau khi đã thanh toán không? 
+12. Note cho dev / tester
+Test điều kiện IsPreOrderAllowed 
+Test chuyển trạng thái Pending -> AwaitingStock -> Processing 
+Test cập nhật tồn kho khi nhập thêm hàng 
+Test pre-order cho nhiều product type 
+
+11. Chức năng 7 – Prescription Order
+1. Mục tiêu
+Cho phép khách hàng cấu hình một sản phẩm kính thuốc bằng cách:
+chọn gọng kính 
+chọn loại tròng / gói tròng prescription 
+nhập hoặc tải lên thông tin prescription 
+xem lại cấu hình 
+thêm vào giỏ hàng 
+Sau đó khách hàng sẽ tiếp tục checkout để tạo order chính thức. Staff review prescription diễn ra sau khi order được tạo.
+2. Phạm vi
+Prescription flow trên FE bao gồm:
+load frame product từ route hoặc product detail 
+kiểm tra sản phẩm có phù hợp để làm kính thuốc hay không 
+chọn loại tròng 
+chọn gói tròng / cấu hình tròng 
+nhập prescription thủ công 
+upload prescription image 
+xem lại cấu hình 
+thêm item prescription vào cart 
+Prescription flow này không trực tiếp xử lý:
+nhập shipping info trong màn prescription 
+chọn payment method trong màn prescription 
+tạo order hoàn chỉnh ngay trong màn prescription 
+staff review trực tiếp trong màn prescription 
+Các bước trên sẽ được xử lý ở:
+Checkout Flow 
+Staff Review Flow 
+3. Actor
+Customer 
+Staff 
+Admin 
+4. Pre-condition
+Có ít nhất một product type Frame 
+Có ít nhất một Lens Option for Prescription đang hoạt động 
+Product được FE load thành công từ nguồn dữ liệu thật 
+Product phải là sản phẩm hỗ trợ prescription 
+Customer đăng nhập hợp lệ 
+Staff có thể review prescription sau khi order được tạo 
+5. Main Flow
+Main Flow – FE Configuration
+1.Customer chọn một gọng kính 
+2.Hệ thống load product thật từ source dữ liệu 
+3.Customer chọn lens type 
+4.Customer nhập prescription thủ công: 
+oright eye: SPH, CYL, AXIS 
+oleft eye: SPH, CYL, AXIS 
+oPD 
+5.Customer có thể nhập note 
+6.Customer có thể upload prescription image 
+7.Customer chọn lens package / lens options 
+8.Hệ thống tính giá theo cấu hình lensPricing 
+9.Hệ thống hiển thị màn review: 
+oframe 
+olens type 
+olens package 
+oprescription summary 
+ototal price 
+10.Customer thêm item prescription vào cart 
+Main Flow – After Add to Cart
+11.Customer chuyển sang checkout 
+12.Customer nhập shipping info và payment method tại checkout 
+13.Hệ thống tạo order chính thức với OrderType = Prescription 
+14.Hệ thống tạo PrescriptionSpec 
+15.Staff review prescription sau khi order được tạo 
+16.Nếu hợp lệ, staff cập nhật trạng thái và tiếp tục xử lý đơn 
+6. Alternative Flow / Exception Flow
+Product không phù hợp cho prescription 
+Không load được product thật 
+Thiếu prescription data bắt buộc 
+Có prescription image nhưng chưa nhập tay đầy đủ 
+Không load được lensPricing 
+Lens package không còn áp dụng 
+Staff yêu cầu bổ sung thông tin sau checkout 
+Staff từ chối prescription 
+7. Business Rules
+Business Rules	Mô tả
+BR-PR1	Prescription item phải có 1 frame
+BR-PR2	Prescription item phải có 1 lens option / lens package
+BR-PR3	Phải có prescription data hoặc prescription image
+BR-PR4	FE prescription flow kết thúc ở bước add to cart
+BR-PR5	Shipping info và payment method xử lý ở checkout
+BR-PR6	Staff review là bước sau khi order được tạo
+BR-PR7	Prescription flow không áp dụng cho sunglasses và standalone lenses
+BR-PR8	Giá tròng phải lấy từ lensPricing config, không hardcode trong component
+BR-PR9	Dữ liệu thêm vào cart phải khớp type system mới
+8. Validation Rules
+Frame phải là product type Frame 
+Product phải prescription-compatible 
+Lens option / lens package phải hợp lệ 
+Prescription data không được rỗng hoàn toàn nếu không có image 
+SPH/CYL/AXIS/PD phải đúng format hợp lệ 
+Product data phải load từ source dữ liệu thật 
+Giá phải tính từ lensPricing 
+Không dùng cấu trúc addItem() kiểu cũ không khớp type system 
+9. Data Input / Output
+Input
+productId 
+selected color / selected variant 
+lens type 
+lens material 
+coatings 
+rightEye: SPH, CYL, AXIS 
+leftEye: SPH, CYL, AXIS 
+PD 
+prescription image 
+note 
+Output
+Prescription item được thêm vào cart với cấu trúc đúng type system mới, ví dụ:
+product 
+quantity 
+orderType = prescription 
+selectedColor 
+prescriptionDetails 
+totalPrice 
+Sau checkout:
+hệ thống tạo Prescription Order 
+hệ thống tạo PrescriptionSpec 
+hệ thống tạo Payment 
+10. Assumptions
+FE prescription flow là multi-step flow 
+Prescription flow là configuration flow, không phải full order placement flow 
+LensTypes trong version hiện tại được xem là preset lens packages 
+Một lens option có thể đại diện cho: 
+osingle vision 
+obifocal 
+oprogressive 
+oblue-light package 
+oprogressive + blue-light package 
+11. Open Questions
+Có cho phép customer chỉ upload image mà không nhập tay không? 
+Blue-light nên được xem là lens type hay coating? 
+Sau checkout, nếu staff trả về NeedMoreInfo, customer sẽ bổ sung ở đâu? 
+FE sẽ lấy lensPricing từ config local hay API backend? 
+12. Note cho dev / tester
+Đây là phần quan trọng nhất cần đồng bộ giữa FE và requirement 
+Không được mô tả prescription flow như flow tạo order hoàn chỉnh ngay ở màn FE 
+Cần load product thật, không hardcode 
+Cần dùng lensPricing config, không hardcode giá 
+Cần test: 
+omulti-step flow 
+oupload prescription image 
+oadd to cart đúng shape mới 
+ocheckout tách riêng 
+ostaff review sau checkout 
+
+12. Chức năng 8 – Quản lý gói tròng prescription
+1. Mục tiêu
+Cho phép admin quản lý các gói tròng dùng trong prescription order.
+2. Phạm vi
+Tạo lens option 
+Chỉnh sửa lens option 
+Cập nhật giá 
+Bật/tắt sử dụng 
+3. Actor
+Admin 
+4. Pre-condition
+Admin đăng nhập hợp lệ 
+5. Main Flow
+Admin tạo gói tròng mới 
+Admin nhập tên, mô tả, giá 
+Hệ thống lưu lens option 
+Customer có thể chọn option này trong prescription flow 
+6. Alternative Flow / Exception Flow
+Tên bị trùng nếu nhóm áp dụng unique ở BE 
+Giá không hợp lệ 
+7. Business Rules
+Lens option chỉ dùng cho prescription order 
+Lens option không phải là bảng inventory riêng trong flow prescription hiện tại 
+Lens option inactive không được hiển thị cho customer 
+8. Validation Rules
+Lens name không được để trống 
+Price >= 0 
+9. Data Input / Output
+Input
+Lens name 
+Description 
+Price 
+IsActive 
+Output
+Danh sách lens options 
+Lens option chi tiết 
+10. Assumptions
+Gói tròng prescription và tròng bán riêng là hai khái niệm khác nhau 
+11. Open Questions
+Có cần đồng bộ giá giữa standalone lens products và prescription lens options không? 
+12. Note cho dev / tester
+Dữ liệu seed nên có sẵn vài lens package mẫu để demo 
+
+13. Chức năng 9 – Quản lý tồn kho đơn giản
+1. Mục tiêu
+Cho phép admin/staff quản lý số lượng tồn cơ bản và nhập thêm hàng.
+2. Phạm vi
+Xem tồn kho theo variant 
+Cập nhật số lượng 
+Ghi nhận nhập thêm hàng 
+Bật/tắt pre-order 
+Cập nhật ngày dự kiến nhập lại hàng 
+3. Actor
+Admin 
+Staff 
+4. Pre-condition
+Variant đã tồn tại 
+Có record inventory tương ứng 
+5. Main Flow
+Admin/Staff mở màn hình inventory 
+Chọn variant cần cập nhật 
+Cập nhật số lượng hoặc ghi stock receipt 
+Hệ thống lưu thay đổi 
+Hệ thống phản ánh trạng thái có hàng / pre-order trên product UI 
+6. Alternative Flow / Exception Flow
+Variant không tồn tại 
+Quantity âm 
+QuantityReceived không hợp lệ 
+7. Business Rules
+Business Rules	Mô tả
+BR-I1	Mỗi variant có một record inventory
+BR-I2	Quantity không được âm
+BR-I3	Stock receipt chỉ dùng cho nhập thêm hàng đơn giản
+BR-I4	Inventory không đại diện cho bài toán kho nâng cao
+8. Validation Rules
+Quantity >= 0 
+QuantityReceived > 0 
+ExpectedRestockDate hợp lệ nếu nhập 
+9. Data Input / Output
+Input
+VariantId 
+Quantity 
+IsPreOrderAllowed 
+ExpectedRestockDate 
+Stock receipt quantity 
+Note 
+Output
+Inventory updated 
+Stock receipt history 
+10. Assumptions
+Không có nhiều kho 
+Không có phân bổ theo warehouse 
+11. Open Questions
+Có cần ghi log thay đổi inventory ngoài stock receipt không? 
+12. Note cho dev / tester
+Test update quantity 
+Test nhập thêm hàng 
+Test pre-order toggle 
+Test variant không có inventory record 
+
+14. Chức năng 10 – Thanh toán
+1. Mục tiêu
+Cho phép lưu thông tin thanh toán cho đơn hàng.
+2. Phạm vi
+Lưu payment record 
+Lưu payment history 
+Hỗ trợ nhiều phương thức thanh toán cơ bản 
+3. Actor
+Customer 
+Staff 
+4. Pre-condition
+Có order hợp lệ trước khi tạo payment 
+5. Main Flow
+Customer chọn payment method tại checkout 
+Hệ thống tạo payment record 
+Hệ thống cập nhật payment status 
+Hệ thống lưu payment history khi trạng thái thay đổi 
+6. Alternative Flow / Exception Flow
+Payment failed 
+Payment pending kéo dài 
+Transaction code không được trả về 
+7. Business Rules
+Mỗi payment gắn với một order 
+Payment history lưu các lần thay đổi trạng thái thanh toán 
+8. Validation Rules
+Payment method phải thuộc enum hợp lệ 
+Amount >= 0 
+9. Data Input / Output
+Input
+OrderId 
+Amount 
+PaymentMethod 
+Output
+Payment record 
+Payment history 
+10. Assumptions
+Không làm payment reconciliation nâng cao 
+Không làm refund 
+11. Open Questions
+COD có được xem là completed ngay hay pending cho tới khi giao xong? 
+12. Note cho dev / tester
+Test payment success/failure 
+Test mapping payment status 
+Test order-payment consistency 
+
+15. Chức năng 11 – Theo dõi trạng thái đơn hàng
+1. Mục tiêu
+Cho phép customer, staff và admin theo dõi quá trình xử lý của đơn hàng.
+2. Phạm vi
+Theo dõi order status 
+Theo dõi shipping status 
+Lưu order status history 
+Theo dõi prescription status với prescription orders 
+3. Actor
+Customer 
+Staff 
+Admin 
+4. Pre-condition
+Order đã được tạo 
+5. Main Flow
+Hệ thống gán trạng thái ban đầu cho order 
+Staff cập nhật trạng thái theo tiến trình 
+Hệ thống lưu lịch sử trạng thái 
+Customer xem được trạng thái hiện tại của đơn 
+Với đơn prescription, staff cập nhật thêm prescription status 
+6. Alternative Flow / Exception Flow
+Trạng thái cập nhật không hợp lệ 
+Cập nhật bỏ qua thứ tự nghiệp vụ 
+7. Business Rules
+Business Rules	Mô tả
+BR-S1	Mỗi order có một trạng thái hiện tại
+BR-S2	Mỗi lần đổi trạng thái phải lưu history
+BR-S3	Shipping status là lớp thông tin bổ sung cho order status
+BR-S4	Prescription status được review sau khi order được tạo
+8. Validation Rules
+Order status phải thuộc enum hợp lệ 
+Shipping status phải thuộc enum hợp lệ 
+Prescription status phải thuộc enum hợp lệ 
+9. Data Input / Output
+Input
+OrderId 
+New status 
+Note 
+UpdatedBy 
+Output
+Order updated 
+OrderStatusHistory record created 
+10. Assumptions
+Hệ thống chưa enforce state machine chặt ở DB, chủ yếu kiểm soát ở BE 
+11. Open Questions
+Có cần giới hạn cứng các transition trạng thái ở BE không? 
+12. Note cho dev / tester
+Test history creation mỗi lần update 
+Test hiển thị đúng status label cho customer 
+Test prescription status change sau checkout 
+
+16. Chức năng 12 – Báo cáo cơ bản
+1. Mục tiêu
+Cho phép admin xem các thống kê vận hành cơ bản.
+2. Phạm vi
+Tổng số đơn hàng 
+Số đơn theo loại 
+Doanh thu theo thời gian 
+Số đơn prescription 
+Số đơn pre-order 
+3. Actor
+Admin 
+4. Pre-condition
+Hệ thống đã có dữ liệu order/payment 
+5. Main Flow
+Admin chọn khoảng thời gian 
+Hệ thống tổng hợp dữ liệu 
+Hệ thống hiển thị báo cáo 
+6. Alternative Flow / Exception Flow
+Không có dữ liệu trong khoảng thời gian chọn 
+Dữ liệu payment chưa đầy đủ 
+7. Business Rules
+Báo cáo doanh thu nên dựa trên payment thành công hoặc quy tắc nhóm thống nhất 
+Báo cáo số đơn theo loại dựa trên OrderType 
+8. Validation Rules
+Khoảng thời gian hợp lệ 
+Start date không lớn hơn end date 
+9. Data Input / Output
+Input
+Date range 
+Output
+Total orders 
+Orders by type 
+Revenue summary 
+Prescription order count 
+Pre-order count 
+10. Assumptions
+Báo cáo là báo cáo đơn giản 
+11. Open Questions
+Doanh thu tính theo order created hay payment completed? 
+12. Note cho dev / tester
+Cần chốt quy tắc tính revenue trước khi code 
+Test report với dữ liệu rỗng và dữ liệu nhiều loại order 
+
+17. Tổng hợp Business Rules
+Bảng tổng hợp Business Rules chính
+Code	Business Rules	Mô tả ngắn
+BR-P1	Product Type Rule	Mỗi product có product type rõ ràng
+BR-R1	Ready Order Rule	Ready order chỉ cho hàng còn sẵn
+BR-PO1	Pre-order Availability Rule	Chỉ pre-order khi IsPreOrderAllowed = true
+BR-PO3	Awaiting Stock Rule	Pre-order có thể ở trạng thái chờ hàng
+BR-PR1	Prescription Frame Rule	Prescription item phải có frame
+BR-PR2	Prescription Lens Option Rule	Prescription item phải có lens option
+BR-PR3	Prescription Input Rule	Phải có dữ liệu prescription hoặc ảnh prescription
+BR-PR4	FE Ends at Cart Rule	FE flow kết thúc ở bước add to cart
+BR-PR5	Checkout Separation Rule	Shipping/payment nằm ở checkout
+BR-PR6	Staff Review After Order Rule	Staff review diễn ra sau khi order được tạo
+BR-PR7	Prescription Applicability Rule	Không áp dụng prescription cho sunglasses và standalone lens
+BR-I1	Inventory Rule	Mỗi variant có inventory record
+BR-S2	Status History Rule	Mỗi lần đổi trạng thái phải lưu history
+
+18. Tổng hợp Assumptions
+Tròng kính bán riêng và gói tròng prescription là hai khái niệm khác nhau 
+LensTypes trong version hiện tại được xem là preset lens packages 
+Prescription hiện tại chỉ phục vụ kính thuốc cơ bản 
+Prescription configuration trên FE kết thúc ở bước thêm vào giỏ hàng 
+Checkout xử lý shipping/payment 
+Staff review diễn ra sau khi order được tạo 
+Không làm bài toán hậu mãi 
+Không làm quản lý kho nâng cao 
+Không tích hợp shipping/payment phức tạp ở mức production 
+
+19. Tổng hợp Open Questions
+Có cần hỗ trợ quên mật khẩu không? 
+Có cần sort nhiều kiểu trên product listing không? 
+Có cần hiển thị ExpectedRestockDate ở nhiều vị trí UI không? 
+Có cần cho hủy pre-order sau khi thanh toán không? 
+Có cần tách base lens type và coating/feature trong tương lai không? 
+Có cần đồng bộ giá giữa standalone lens products và prescription lens options không? 
+Blue-light nên là lens type hay coating? 
+Sau checkout, nếu staff trả về NeedMoreInfo, customer sẽ bổ sung ở đâu? 
+Revenue được tính theo order hay payment completed? 
+COD được xem là pending hay completed theo rule nào? 
+
+20. Note tổng quát cho dev / tester
+Note cho dev
+Version hiện tại nên coi LensTypes là preset packages 
+BE cần kiểm soát logic giữa: 
+oProductType 
+oOrderType 
+oPrescriptionStatus 
+oOrderStatus 
+Không nên over-engineer warehouse hoặc after-sales trong version này 
+Ready order, pre-order, và prescription order phải có service logic tách biệt 
+Prescription FE flow phải đồng bộ với type system mới và lensPricing config 
+Note cho tester
+Cần ưu tiên test các luồng chính:
+Đăng ký / đăng nhập 
+Xem catalog / filter 
+Add to cart / checkout 
+Ready order 
+Pre-order 
+Prescription configuration flow 
+Checkout flow for prescription item 
+Staff review prescription after order 
+Inventory update 
+Order status history 
+Payment status flow 
+
+21. Final Scope Statement
+Phiên bản hiện tại của hệ thống tập trung vào việc bán kính mắt trực tuyến với 4 nhóm nhu cầu chính: mua gọng kính riêng, mua tròng kính riêng, mua kính râm, và đặt kính thuốc theo prescription. Hệ thống hỗ trợ khách hàng cấu hình kính thuốc trên FE, thêm vào giỏ, checkout để tạo order, sau đó staff review prescription ở bước sau order. Hệ thống cũng hỗ trợ staff xử lý đơn và admin quản lý sản phẩm cùng tồn kho đơn giản. Các nghiệp vụ hậu mãi, kho nâng cao, và các tính năng AI/virtual try-on không nằm trong phạm vi hiện tại. 

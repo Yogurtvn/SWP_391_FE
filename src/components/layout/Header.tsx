@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useCart } from "@/store/cart/CartContext";
 import { useCartDrawer } from "@/store/cart/CartDrawerContext";
 import { useAuth } from "@/store/auth/AuthContext";
+import { getDashboardPathByRole } from "@/store/auth/authRedirect";
 import CartDrawer from "@/components/layout/CartDrawer";
 import Logo from "@/components/layout/Logo";
 import {
@@ -59,13 +60,7 @@ export default function Header() {
     return user.fullName || user.email.split("@")[0];
   };
 
-  // Get dashboard link based on role
-  const getDashboardLink = () => {
-    if (!user) return "/";
-    if (user.role === 'admin') return "/admin/dashboard";
-    if (user.role === 'staff') return "/staff/dashboard";
-    return "/customer/dashboard";
-  };
+  const dashboardPath = user ? getDashboardPathByRole(user.role) : null;
 
   return (
     <header className="sticky top-0 bg-white border-b border-border z-50">
@@ -124,10 +119,12 @@ export default function Header() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate(getDashboardLink())} className="cursor-pointer">
-                    <LayoutDashboard className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </DropdownMenuItem>
+                  {dashboardPath && (
+                    <DropdownMenuItem onClick={() => navigate(dashboardPath)} className="cursor-pointer">
+                      <LayoutDashboard className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate("/profile")} className="cursor-pointer">
                     <UserCircle className="w-4 h-4 mr-2" />
                     Hồ sơ cá nhân

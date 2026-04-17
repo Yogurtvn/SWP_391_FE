@@ -12,6 +12,7 @@ import OrderTrackingPage from "@/pages/customer/OrderTrackingPage";
 import ProfilePage from "@/pages/customer/ProfilePage";
 import StaffDashboard from "@/pages/staff/StaffDashboard";
 import LoginPage from "@/pages/customer/LoginPage";
+import RegisterPage from "@/pages/customer/RegisterPage";
 import NotFoundPage from "@/pages/shared/NotFoundPage";
 import PreOrderPage from "@/pages/customer/PreOrderPage";
 import MyPreOrdersPage from "@/pages/customer/MyPreOrdersPage";
@@ -34,6 +35,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, Component: HomePage },
       { path: "login", Component: LoginPage },
+      { path: "register", Component: RegisterPage },
       { path: "shop/:category?", Component: ProductListingPage },
       { path: "product/:id", Component: ProductDetailPage },
       { path: "prescription/:productId", Component: PrescriptionFlow },
@@ -84,7 +86,7 @@ export const router = createBrowserRouter([
       {
         path: "manager/dashboard",
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin']}>
             <ManagerDashboard />
           </ProtectedRoute>
         ),
@@ -92,7 +94,7 @@ export const router = createBrowserRouter([
       {
         path: "manager/inventory",
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin']}>
             <ManagerInventoryPage />
           </ProtectedRoute>
         ),
@@ -100,7 +102,7 @@ export const router = createBrowserRouter([
       {
         path: "manager/orders",
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin']}>
             <ManagerOrdersPage />
           </ProtectedRoute>
         ),
@@ -108,7 +110,7 @@ export const router = createBrowserRouter([
       {
         path: "manager/reviews",
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['admin']}>
             <ManagerReviewsPage />
           </ProtectedRoute>
         ),

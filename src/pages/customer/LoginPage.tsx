@@ -1,69 +1,32 @@
-import { useState } from "react";
-import { useNavigate, useLocation } from "react-router";
-import { Lock, Mail, Eye, EyeOff, AlertCircle, LogIn } from "lucide-react";
-import { useAuth } from "@/store/auth/AuthContext";
+import { AlertCircle, Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
+import { useLoginPage } from "@/hooks/auth/useLoginPage";
 
 export default function LoginPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { login } = useAuth();
-  
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const from = (location.state as any)?.from?.pathname || "/";
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-
-    try {
-      const success = await login(email, password);
-      
-      if (success) {
-        // Get user after successful login to check role
-        const authUser = JSON.parse(localStorage.getItem("auth_user") || "{}");
-        
-        // Redirect based on role
-        if (authUser.role === 'admin') {
-          navigate("/admin/dashboard", { replace: true });
-        } else if (authUser.role === 'staff') {
-          navigate("/staff/dashboard", { replace: true });
-        } else {
-          navigate(from, { replace: true });
-        }
-      } else {
-        setError("Email hoặc mật khẩu không đúng");
-      }
-    } catch (err) {
-      setError("Đã có lỗi xảy ra. Vui lòng thử lại.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    email,
+    setEmail,
+    password,
+    setPassword,
+    showPassword,
+    toggleShowPassword,
+    error,
+    loading,
+    googleLoading,
+    isGoogleReady,
+    isBusy,
+    googleButtonRef,
+    handleSubmit,
+    goToRegister,
+    goHome,
+  } = useLoginPage();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary px-4">
       <div className="max-w-md w-full">
-        {/* Logo & Title */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
-            <svg
-              className="w-10 h-10 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-              />
+            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -72,16 +35,12 @@ export default function LoginPage() {
               />
             </svg>
           </div>
-          <h1 className="mb-2">Đăng Nhập</h1>
-          <p className="text-muted-foreground">
-            Đăng nhập để tiếp tục sử dụng hệ thống
-          </p>
+          <h1 className="mb-2">Dang Nhap</h1>
+          <p className="text-muted-foreground">Dang nhap de tiep tuc su dung he thong</p>
         </div>
 
-        {/* Login Form */}
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Email */}
             <div>
               <label className="block text-sm mb-2">Email</label>
               <div className="relative">
@@ -89,7 +48,7 @@ export default function LoginPage() {
                 <input
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(event) => setEmail(event.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
                   placeholder="your@email.com"
                   required
@@ -97,34 +56,28 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-sm mb-2">Mật khẩu</label>
+              <label className="block text-sm mb-2">Mat khau</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                   className="w-full pl-10 pr-12 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
-                  placeholder="••••••••"
+                  placeholder="********"
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={toggleShowPassword}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
 
-            {/* Error Message */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-800">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -132,31 +85,66 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Submit Button */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={isBusy}
               className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Đang đăng nhập...</span>
+                  <span>Dang dang nhap...</span>
                 </>
               ) : (
                 <>
                   <LogIn className="w-5 h-5" />
-                  <span>Đăng Nhập</span>
+                  <span>Dang Nhap</span>
                 </>
               )}
             </button>
+
+            <div className="text-center text-sm text-muted-foreground">
+              <span>Chua co tai khoan? </span>
+              <button type="button" onClick={goToRegister} className="font-medium text-primary hover:underline">
+                Dang ky
+              </button>
+            </div>
           </form>
 
-          {/* Demo Accounts */}
+          <div className="mt-6">
+            <div className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              <div className="flex-1 h-px bg-border" />
+              <span>Hoac</span>
+              <div className="flex-1 h-px bg-border" />
+            </div>
+
+            <div className="mt-5 space-y-3">
+              <div className="flex justify-center">
+                <div ref={googleButtonRef} className="min-h-10" />
+              </div>
+
+              {!isGoogleReady && (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span>Dang tai Google login...</span>
+                </div>
+              )}
+
+              {googleLoading && (
+                <div className="flex items-center justify-center gap-2 text-sm text-primary">
+                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  <span>Dang xac thuc tai khoan Google...</span>
+                </div>
+              )}
+
+              <p className="text-xs text-center text-muted-foreground">
+                Google login su dung backend that va se tao tai khoan customer neu email chua ton tai.
+              </p>
+            </div>
+          </div>
+
           <div className="mt-8 pt-6 border-t border-border">
-            <p className="text-sm text-muted-foreground mb-3">
-              Tài khoản demo:
-            </p>
+            <p className="text-sm text-muted-foreground mb-3">Tai khoan demo cho giao dien:</p>
             <div className="space-y-2 text-sm">
               <div className="p-3 bg-secondary rounded-lg">
                 <p className="mb-1">
@@ -177,13 +165,9 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Back to Home */}
         <div className="text-center mt-6">
-          <button
-            onClick={() => navigate("/")}
-            className="text-sm text-muted-foreground hover:text-foreground"
-          >
-            ← Quay lại trang chủ
+          <button onClick={goHome} className="text-sm text-muted-foreground hover:text-foreground">
+            Quay lai trang chu
           </button>
         </div>
       </div>

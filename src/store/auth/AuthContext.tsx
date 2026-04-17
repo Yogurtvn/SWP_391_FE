@@ -1,109 +1,65 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-
-export type UserRole = 'customer' | 'staff' | 'admin';
-
-export interface User {
-  id: string;
-  email: string;
-  fullName: string;
-  phone: string;
-  role: UserRole;
-}
+import { useEffect, useRef, type ReactNode } from "react";
+import type { RegisterRequestPayload } from "@/services/authService";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  hydrateAuthThunk,
+  loginThunk,
+  loginWithGoogleThunk,
+  logoutThunk,
+  registerThunk,
+} from "@/store/auth/authSlice";
+import type { User, UserRole } from "@/store/auth/authTypes";
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<User>;
+  register: (payload: RegisterRequestPayload) => Promise<User>;
+  loginWithGoogle: (credential: string) => Promise<User>;
   logout: () => void;
   isAuthenticated: boolean;
+  isReady: boolean;
 }
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Mock users database
-const mockUsers: Array<User & { password: string }> = [
-  {
-    id: 'admin-001',
-    email: 'admin@eyewear.com',
-    password: 'admin123',
-    fullName: 'Nguyễn Văn Admin',
-    phone: '0901234567',
-    role: 'admin',
-  },
-  {
-    id: 'staff-001',
-    email: 'staff@eyewear.com',
-    password: 'staff123',
-    fullName: 'Trần Thị Staff',
-    phone: '0902234567',
-    role: 'staff',
-  },
-  {
-    id: 'customer-001',
-    email: 'customer@example.com',
-    password: 'customer123',
-    fullName: 'Lê Văn Khách',
-    phone: '0903234567',
-    role: 'customer',
-  },
-];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem("auth_user");
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const dispatch = useAppDispatch();
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("auth_user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("auth_user");
-    }
-  }, [user]);
-
-  const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const foundUser = mockUsers.find(
-      u => u.email === email && u.password === password
-    );
-
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      return true;
+    if (hasInitialized.current) {
+      return;
     }
 
-    return false;
-  };
+    hasInitialized.current = true;
+    void dispatch(hydrateAuthThunk());
+  }, [dispatch]);
 
-  const logout = () => {
-    setUser(null);
-  };
-
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        isAuthenticated: !!user,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  return <>{children}</>;
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
-  return context;
+export function useAuth(): AuthContextType {
+  const dispatch = useAppDispatch();
+  const { user, isReady } = useAppSelector((state) => state.auth);
+
+  return {
+    user,
+    isReady,
+    isAuthenticated: !!user,
+    login: async (email: string, password: string) => {
+      const result = await dispatch(loginThunk({ email, password })).unwrap();
+      return result.user;
+    },
+    register: async (payload: RegisterRequestPayload) => {
+      const result = await dispatch(registerThunk(payload)).unwrap();
+      return result.user;
+    },
+    loginWithGoogle: async (credential: string) => {
+      const result = await dispatch(loginWithGoogleThunk(credential)).unwrap();
+      return result.user;
+    },
+    logout: () => {
+      void dispatch(logoutThunk());
+    },
+  };
 }
+
+export type { User, UserRole };

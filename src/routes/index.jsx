@@ -27,6 +27,12 @@ import ManagerDashboard from "@/pages/manager/ManagerDashboard";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import SettingsPage from "@/pages/customer/SettingsPage";
 import OrdersPage from "@/pages/customer/OrdersPage";
+import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
+import AdminProductsPage from "@/pages/admin/AdminProductsPage";
+import AdminInventoryPage from "@/pages/admin/AdminInventoryPage";
+import AdminLensPackagesPage from "@/pages/admin/AdminLensPackagesPage";
+import AdminReportsPage from "@/pages/admin/AdminReportsPage";
+import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -110,12 +116,12 @@ const router = createBrowserRouter([
     children: [
       { path: "dashboard", Component: AdminDashboard },
       { path: "users", Component: AdminUsersPage },
-      { path: "orders", Component: ManagerOrdersPage },
-      { path: "products", Component: ManagerInventoryPage },
-      { path: "inventory", Component: ManagerInventoryPage },
-      { path: "lens-packages", Component: SettingsPage },
-      { path: "reports", Component: SettingsPage },
-      { path: "settings", Component: SettingsPage }
+      { path: "orders", Component: AdminOrdersPage },
+      { path: "products", Component: AdminProductsPage },
+      { path: "inventory", Component: AdminInventoryPage },
+      { path: "lens-packages", Component: AdminLensPackagesPage },
+      { path: "reports", Component: AdminReportsPage },
+      { path: "settings", Component: AdminSettingsPage }
     ]
   },
   // Staff Routes with DashboardLayout

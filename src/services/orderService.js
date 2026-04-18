@@ -1,4 +1,4 @@
-import { getCatalogProductById } from "@/services/catalogService";
+﻿import { getCatalogProductById } from "@/services/catalogService";
 import { ApiError, apiGet, apiPost } from "@/services/apiClient";
 
 const ORDERS_BASE_PATH = "/api/orders";
@@ -55,10 +55,10 @@ export function buildOrderSummary({ checkoutResult, cartItems, shippingInfo, pay
     paymentStatusLabel: getPaymentStatusLabel(checkoutResult?.payment?.paymentStatus ?? "pending"),
     itemCount,
     total: Number(checkoutResult?.totalAmount ?? fallbackTotal),
-    customerName: normalizeText(shippingInfo?.fullName) ?? "Khach hang Vision Direct",
-    phone: normalizeText(shippingInfo?.phone) ?? "Chua cap nhat",
-    email: normalizeText(shippingInfo?.email) ?? "Chua cap nhat",
-    shippingAddress: composeShippingAddress(shippingInfo) || "Dia chi giao hang se duoc cap nhat sau.",
+    customerName: normalizeText(shippingInfo?.fullName) ?? "Khách hang Vision Direct",
+    phone: normalizeText(shippingInfo?.phone) ?? "Chưa cập nhật",
+    email: normalizeText(shippingInfo?.email) ?? "Chưa cập nhật",
+    shippingAddress: composeShippingAddress(shippingInfo) || "Địa chỉ giao hàng sẽ được cập nhật sau.",
     createdAtLabel: formatDateTime(createdAt),
   };
 }
@@ -69,9 +69,9 @@ export function normalizeOrderDetail(order) {
         orderItemId: Number(item?.orderItemId ?? 0),
         variantId: Number(item?.variantId ?? 0),
         productId: Number(item?.productId ?? 0),
-        productName: item?.productName?.trim() || "San pham",
+        productName: item?.productName?.trim() || "Sản phẩm",
         sku: item?.sku?.trim() || "",
-        selectedColor: normalizeText(item?.selectedColor) ?? normalizeText(item?.variantColor) ?? "Mac dinh",
+        selectedColor: normalizeText(item?.selectedColor) ?? normalizeText(item?.variantColor) ?? "Mặc định",
         quantity: Number(item?.quantity ?? 0),
         unitPrice: Number(item?.unitPrice ?? 0),
         lineTotal: Number(item?.lineTotal ?? 0),
@@ -87,7 +87,7 @@ export function normalizeOrderDetail(order) {
         paymentStatus: order.payment.paymentStatus ?? "",
         paymentStatusLabel: getPaymentStatusLabel(order.payment.paymentStatus),
         paidAt: order.payment.paidAt ?? null,
-        paidAtLabel: order.payment.paidAt ? formatDateTime(order.payment.paidAt) : "Chua thanh toan",
+        paidAtLabel: order.payment.paidAt ? formatDateTime(order.payment.paidAt) : "Chưa thanh toán",
       }
     : null;
 
@@ -97,7 +97,7 @@ export function normalizeOrderDetail(order) {
         orderStatus: history?.orderStatus ?? "",
         orderStatusLabel: getOrderStatusLabel(history?.orderStatus),
         updatedByUserId: Number(history?.updatedByUserId ?? 0),
-        updatedByName: history?.updatedByName?.trim() || "He thong",
+        updatedByName: history?.updatedByName?.trim() || "Hệ thống",
         note: history?.note?.trim() || "",
         updatedAt: history?.updatedAt ?? null,
         updatedAtLabel: formatDateTime(history?.updatedAt),
@@ -111,9 +111,9 @@ export function normalizeOrderDetail(order) {
     orderStatus: order?.orderStatus ?? "",
     orderStatusLabel: getOrderStatusLabel(order?.orderStatus),
     totalAmount: Number(order?.totalAmount ?? 0),
-    receiverName: order?.receiverName?.trim() || "Khach hang Vision Direct",
-    receiverPhone: order?.receiverPhone?.trim() || "Chua cap nhat",
-    shippingAddress: order?.shippingAddress?.trim() || "Chua cap nhat",
+    receiverName: order?.receiverName?.trim() || "Khách hang Vision Direct",
+    receiverPhone: order?.receiverPhone?.trim() || "Chưa cập nhật",
+    shippingAddress: order?.shippingAddress?.trim() || "Chưa cập nhật",
     shippingCode: order?.shippingCode?.trim() || "",
     shippingStatus: order?.shippingStatus ?? null,
     shippingStatusLabel: getShippingStatusLabel(order?.shippingStatus),
@@ -191,13 +191,13 @@ export function getOrderErrorMessage(error, fallbackMessage) {
 export function getOrderTypeLabel(orderType) {
   switch (String(orderType ?? "").trim().toLowerCase()) {
     case "ready":
-      return "Don hang co san";
+      return "Đơn hàng có sẵn";
     case "preorder":
-      return "Don dat truoc";
+      return "Don đặt trước";
     case "prescription":
       return "Don kinh theo toa";
     default:
-      return "Don hang";
+      return "Đơn hàng";
   }
 }
 
@@ -210,32 +210,32 @@ export function getOrderStatusLabel(orderStatus) {
     case "awaitingstock":
       return "Cho bo sung hang";
     case "processing":
-      return "Dang xu ly";
+      return "Đang xử lý";
     case "shipped":
-      return "Dang giao hang";
+      return "Đang giao hàng";
     case "completed":
       return "Hoan tat";
     case "cancelled":
       return "Da huy";
     default:
-      return "Dang cap nhat";
+      return "Đang cập nhật";
   }
 }
 
 export function getShippingStatusLabel(shippingStatus) {
   switch (String(shippingStatus ?? "").trim().toLowerCase()) {
     case "pending":
-      return "Chuan bi giao";
+      return "Chưan bi giao";
     case "picking":
-      return "Dang lay hang";
+      return "Đang lay hang";
     case "delivering":
-      return "Dang giao";
+      return "Đang giao";
     case "delivered":
       return "Da giao";
     case "failed":
       return "Giao that bai";
     default:
-      return "Chua giao hang";
+      return "Chưa giao hàng";
   }
 }
 
@@ -253,7 +253,7 @@ export function getDisplayOrderStatus(orderStatus, shippingStatus) {
   if (normalizedShippingStatus === "delivered") {
     return {
       key: "delivered",
-      label: "Da giao hang",
+      label: "Da giao hàng",
     };
   }
 
@@ -264,7 +264,7 @@ export function getDisplayOrderStatus(orderStatus, shippingStatus) {
   ) {
     return {
       key: "shipping",
-      label: "Dang giao hang",
+      label: "Đang giao hàng",
     };
   }
 
@@ -276,33 +276,33 @@ export function getDisplayOrderStatus(orderStatus, shippingStatus) {
 
 export function getPaymentMethodLabel(paymentMethod) {
   switch (normalizePaymentMethod(paymentMethod)) {
-    case "momo":
-      return "Thanh toan MoMo";
+    case "payos":
+      return "Thanh toán PayOS";
     default:
-      return "Thanh toan khi nhan hang";
+      return "Thanh toán khi nhận hàng";
   }
 }
 
 export function getPaymentStatusLabel(paymentStatus) {
   switch (String(paymentStatus ?? "").trim().toLowerCase()) {
     case "completed":
-      return "Da thanh toan";
+      return "Đã thanh toán";
     case "failed":
-      return "Thanh toan that bai";
+      return "Thanh toán that bai";
     default:
-      return "Cho thanh toan";
+      return "Chờ thanh toán";
   }
 }
 
 export function formatDateTime(value) {
   if (!value) {
-    return "Chua cap nhat";
+    return "Chưa cập nhật";
   }
 
   const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Chua cap nhat";
+    return "Chưa cập nhật";
   }
 
   return new Intl.DateTimeFormat("vi-VN", {
@@ -339,7 +339,7 @@ function normalizeOrderSummary(summary, detail, preview) {
     statusLabel: displayStatus.label,
     totalAmount: Number(summary?.totalAmount ?? 0),
     itemCount,
-    receiverName: summary?.receiverName?.trim() || detail?.receiverName || "Khach hang Vision Direct",
+    receiverName: summary?.receiverName?.trim() || detail?.receiverName || "Khách hang Vision Direct",
     paymentMethod: summary?.paymentMethod ?? detail?.payment?.paymentMethod ?? null,
     paymentMethodLabel: getPaymentMethodLabel(summary?.paymentMethod ?? detail?.payment?.paymentMethod),
     paymentStatus: summary?.paymentStatus ?? detail?.payment?.paymentStatus ?? null,
@@ -348,7 +348,7 @@ function normalizeOrderSummary(summary, detail, preview) {
     createdAtLabel: formatDateTime(summary?.createdAt ?? detail?.createdAt),
     updatedAt: summary?.updatedAt ?? detail?.updatedAt ?? null,
     updatedAtLabel: formatDateTime(summary?.updatedAt ?? detail?.updatedAt),
-    firstItemName: firstItem?.productName || `${itemCount} san pham`,
+    firstItemName: firstItem?.productName || `${itemCount} sản phẩm`,
     firstItemQuantity: Number(firstItem?.quantity ?? itemCount),
     firstItemImage: preview?.image || ORDER_PLACEHOLDER_IMAGE,
     firstItemSubtitle:
@@ -409,10 +409,18 @@ function appendQueryValue(params, key, value) {
 }
 
 function normalizePaymentMethod(paymentMethod) {
-  return String(paymentMethod ?? "").trim().toLowerCase() === "momo" ? "momo" : "cod";
+  const normalizedPaymentMethod = String(paymentMethod ?? "").trim().toLowerCase();
+
+  if (normalizedPaymentMethod === "payos" || normalizedPaymentMethod === "momo") {
+    return "payos";
+  }
+
+  return "cod";
 }
 
 function normalizeText(value) {
   const normalizedValue = String(value ?? "").trim();
   return normalizedValue.length > 0 ? normalizedValue : null;
 }
+
+

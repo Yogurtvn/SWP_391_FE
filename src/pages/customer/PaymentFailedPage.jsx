@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router";
+﻿import { Link, useLocation } from "react-router";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -7,15 +7,54 @@ import {
   ShieldAlert,
   ShoppingBag,
 } from "lucide-react";
+import { usePayOsCallback } from "@/hooks/order/usePayOsCallback";
 
 export default function PaymentFailedPage() {
   const location = useLocation();
-  const orderSummary = location.state?.orderSummary ?? createFallbackOrderSummary();
+  const fallbackOrderSummary =
+    location.state?.orderSummary ??
+    (location.search ? createPayOsFallbackOrderSummary() : createFallbackOrderSummary());
+  const {
+    authRequired,
+    callback,
+    isExternalCallback,
+    lookup,
+    orderSummary,
+  } = usePayOsCallback(fallbackOrderSummary);
+  const resolvedOrderSummary = orderSummary ?? fallbackOrderSummary;
   const errorMessage =
     location.state?.errorMessage ??
-    "He thong chua the hoan tat buoc thanh toan. Ban co the thu lai ngay khi san sang.";
-  const orderCreated = Boolean(location.state?.orderCreated ?? orderSummary.orderCreated);
-  const canTrackOrder = Number(orderSummary.orderId ?? 0) > 0;
+    lookup.error ??
+    getDefaultFailureMessage(callback);
+  const orderCreated = Boolean(location.state?.orderCreated ?? resolvedOrderSummary.orderCreated);
+  const canTrackOrder = Number(resolvedOrderSummary.orderId ?? 0) > 0;
+
+  if (authRequired) {
+    return (
+      <CallbackStateCard
+        title="Cần đăng nhập để xem kết quả PayOS"
+        description="PayOS đã chuyển bạn về website, nhưng hệ thống cần xác thực lại tài khoản để tải trạng thái đơn hàng."
+        primaryAction={{
+          label: "Đăng nhập",
+          to: "/login",
+        }}
+        secondaryAction={{
+          label: "Về giỏ hàng",
+          to: "/cart",
+        }}
+      />
+    );
+  }
+
+  if (isExternalCallback && lookup.status === "loading") {
+    return (
+      <CallbackStateCard
+        title="Đang đồng bộ kết quả thanh toán"
+        description="Hệ thống đang kiểm tra trạng thái giao dịch PayOS và cập nhật lại đơn hàng."
+        loading
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-secondary/30 py-12">
@@ -26,10 +65,10 @@ export default function PaymentFailedPage() {
               <AlertTriangle className="h-10 w-10" />
             </div>
             <p className="mb-3 text-sm uppercase tracking-[0.24em] text-orange-700">
-              Thanh toan chua hoan tat
+              Thanh toán chưa hoàn tất
             </p>
             <h1 className="mb-3 text-3xl">
-              {orderCreated ? "Don hang da tao nhung chua thanh toan xong" : "Tao don hang that bai"}
+              {orderCreated ? "Đơn hàng đã tạo nhưng chưa thanh toán xong" : "Tạo đơn hàng thất bại"}
             </h1>
             <p className="mx-auto max-w-2xl text-muted-foreground leading-7">{errorMessage}</p>
           </div>
@@ -39,53 +78,53 @@ export default function PaymentFailedPage() {
               <div className="mb-8 grid gap-4 sm:grid-cols-2">
                 <InfoCard
                   icon={CreditCard}
-                  label="Phuong thuc da chon"
-                  value={orderSummary.paymentMethodLabel}
+                  label="Phương thức đã chọn"
+                  value={resolvedOrderSummary.paymentMethodLabel}
                 />
                 <InfoCard
                   icon={ShoppingBag}
-                  label="Gia tri don hang"
-                  value={formatCurrency(orderSummary.total)}
+                  label="Giá trị đơn hàng"
+                  value={formatCurrency(resolvedOrderSummary.total)}
                 />
                 <InfoCard
                   icon={ShieldAlert}
-                  label="Trang thai don"
-                  value={orderCreated ? `Da tao don #${orderSummary.orderId}` : "Chua tao duoc don"}
+                  label="Trạng thái đơn"
+                  value={orderCreated ? `Đã tạo đơn #${resolvedOrderSummary.orderId}` : "Chưa tạo được đơn"}
                 />
                 <InfoCard
                   icon={RefreshCcw}
-                  label="Buoc nen lam"
-                  value={orderCreated ? "Mo lai thanh toan hoac lien he shop" : "Kiem tra gio hang va thu lai"}
+                  label="Bước nên làm"
+                  value={orderCreated ? "Mở lại thanh toán hoặc liên hệ shop" : "Kiểm tra giỏ hàng và thử lại"}
                 />
               </div>
 
               <div className="mb-6 rounded-2xl border border-border p-6">
-                <h2 className="mb-4 text-lg">Luu y hien tai</h2>
+                <h2 className="mb-4 text-lg">Lưu ý hiện tại</h2>
                 <div className="space-y-3 text-sm text-muted-foreground">
-                  <p>{orderCreated ? "Don hang cua ban van ton tai trong he thong." : "Gio hang van giu nguyen de ban thu lai."}</p>
-                  <p>Thong bao chi tiet: {errorMessage}</p>
-                  <p>Neu can, ban co the quay lai checkout de nhap lai thong tin hoac chon phuong thuc khac.</p>
+                  <p>{orderCreated ? "Đơn hàng của bạn vẫn tồn tại trong hệ thống." : "Giỏ hàng vẫn giữ nguyên để bạn thử lại."}</p>
+                  <p>Thông báo chi tiết: {errorMessage}</p>
+                  <p>Nếu cần, bạn có thể quay lại checkout để nhập lại thông tin hoặc chọn phương thức khác.</p>
                 </div>
               </div>
 
               <div className="rounded-2xl bg-secondary/60 p-6">
-                <h2 className="mb-4 text-lg">Thong tin tam thoi</h2>
+                <h2 className="mb-4 text-lg">Thông tin tạm thời</h2>
                 <div className="space-y-2 text-sm text-foreground/90">
-                  <p>Khach hang: {orderSummary.customerName}</p>
-                  <p>So dien thoai: {orderSummary.phone}</p>
-                  <p>Dia chi: {orderSummary.shippingAddress}</p>
-                  <p>Tong gia tri: {formatCurrency(orderSummary.total)}</p>
+                  <p>Khách hàng: {resolvedOrderSummary.customerName}</p>
+                  <p>Số điện thoại: {resolvedOrderSummary.phone}</p>
+                  <p>Địa chỉ: {resolvedOrderSummary.shippingAddress}</p>
+                  <p>Tổng giá trị: {formatCurrency(resolvedOrderSummary.total)}</p>
                 </div>
               </div>
             </div>
 
             <div className="bg-white p-8">
               <div className="mb-6 rounded-2xl bg-secondary/60 p-6">
-                <p className="mb-2 text-sm text-muted-foreground">Ban co the lam gi tiep theo?</p>
+                <p className="mb-2 text-sm text-muted-foreground">Bạn có thể làm gì tiếp theo?</p>
                 <div className="space-y-3 text-sm text-foreground/90">
-                  <p>Kiem tra lai thong tin giao hang va phuong thuc thanh toan.</p>
-                  <p>Quay lai checkout de thu lai.</p>
-                  <p>Hoac mo gio hang de dieu chinh san pham.</p>
+                  <p>Kiểm tra lại thông tin giao hàng và phương thức thanh toán.</p>
+                  <p>Quay lại checkout để thử lại.</p>
+                  <p>Hoặc mở giỏ hàng để điều chỉnh sản phẩm.</p>
                 </div>
               </div>
 
@@ -94,21 +133,21 @@ export default function PaymentFailedPage() {
                   to="/checkout"
                   className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
                 >
-                  Thu lai thanh toan
+                  Thử lại thanh toán
                   <RefreshCcw className="h-4 w-4" />
                 </Link>
                 <Link
                   to="/cart"
                   className="flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
                 >
-                  Quay ve gio hang
+                  Quay về giỏ hàng
                 </Link>
                 {orderCreated && canTrackOrder ? (
                   <Link
-                    to={`/orders/${orderSummary.orderId}`}
+                    to={`/orders/${resolvedOrderSummary.orderId}`}
                     className="flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
                   >
-                    Xem don hang da tao
+                    Xem đơn hàng đã tạo
                   </Link>
                 ) : null}
                 <Link
@@ -116,10 +155,48 @@ export default function PaymentFailedPage() {
                   className="flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Tiep tuc mua sam
+                  Tiếp tục mua sắm
                 </Link>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CallbackStateCard({ title, description, primaryAction, secondaryAction, loading = false }) {
+  return (
+    <div className="min-h-screen bg-secondary/30 py-12">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
+          {loading ? (
+            <div className="mx-auto mb-5 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          ) : (
+            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+              <ShieldAlert className="h-10 w-10" />
+            </div>
+          )}
+          <h1 className="mb-3 text-3xl">{title}</h1>
+          <p className="mx-auto mb-8 max-w-2xl text-muted-foreground leading-7">{description}</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {primaryAction ? (
+              <Link
+                to={primaryAction.to}
+                className="rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
+              >
+                {primaryAction.label}
+              </Link>
+            ) : null}
+            {secondaryAction ? (
+              <Link
+                to={secondaryAction.to}
+                className="rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
+              >
+                {secondaryAction.label}
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>
@@ -143,12 +220,36 @@ function createFallbackOrderSummary() {
   return {
     orderId: 0,
     orderCreated: false,
-    paymentMethodLabel: "Thanh toan online",
+    paymentMethod: null,
+    paymentMethodLabel: "Thanh toán online",
+    paymentStatus: "failed",
     total: 0,
-    customerName: "Khach hang Vision Direct",
-    phone: "Chua cap nhat",
-    shippingAddress: "Dia chi giao hang se duoc cap nhat sau.",
+    customerName: "Khách hàng Vision Direct",
+    phone: "Chưa cập nhật",
+    shippingAddress: "Địa chỉ giao hàng sẽ được cập nhật sau.",
   };
+}
+
+function createPayOsFallbackOrderSummary() {
+  return {
+    orderId: 0,
+    orderCreated: false,
+    paymentMethod: "payos",
+    paymentMethodLabel: "Thanh toán PayOS",
+    paymentStatus: "failed",
+    total: 0,
+    customerName: "Khách hàng Vision Direct",
+    phone: "Chưa cập nhật",
+    shippingAddress: "Địa chỉ giao hàng sẽ được cập nhật sau.",
+  };
+}
+
+function getDefaultFailureMessage(callback) {
+  if (callback?.cancel || callback?.status === "CANCELLED") {
+    return "Thanh toán PayOS đã bị hủy. Bạn có thể thử lại bất cứ lúc nào.";
+  }
+
+  return "Hệ thống chưa thể hoàn tất bước thanh toán. Bạn có thể thử lại ngay khi sẵn sàng.";
 }
 
 function formatCurrency(value) {
@@ -157,3 +258,5 @@ function formatCurrency(value) {
     currency: "VND",
   }).format(Number(value ?? 0));
 }
+
+

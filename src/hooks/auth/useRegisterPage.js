@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { getAuthErrorMessage } from "@/services/authService";
 import { useAuth } from "@/store/auth/AuthContext";
@@ -33,7 +33,7 @@ export function useRegisterPage() {
     setError("");
 
     if (form.password !== form.confirmPassword) {
-      setError("Mat khau nhap lai khong khop.");
+      setError("Mật khẩu nhap lai khong khop.");
       return;
     }
 
@@ -49,7 +49,7 @@ export function useRegisterPage() {
 
       navigate(getLandingPathByRole(registeredUser.role), { replace: true });
     } catch (registerError) {
-      setError(getAuthErrorMessage(registerError, "Dang ky that bai. Vui long thu lai."));
+      setError(getAuthErrorMessage(registerError, "Đăng ký thất bại. Vui lòng thử lại."));
     } finally {
       setLoading(false);
     }
@@ -79,3 +79,5 @@ export function useRegisterPage() {
     },
   };
 }
+
+

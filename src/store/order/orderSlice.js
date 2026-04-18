@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+﻿import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { fetchMyCart } from "@/store/cart/cartSlice";
 import {
   checkoutCartOrder,
@@ -32,7 +32,7 @@ export const checkoutReadyOrder = createAsyncThunk(
     const { auth } = getState();
 
     if (!auth?.accessToken) {
-      return rejectWithValue("Vui long dang nhap de thanh toan.");
+      return rejectWithValue("Vui lòng đăng nhập để thanh toán.");
     }
 
     try {
@@ -46,7 +46,7 @@ export const checkoutReadyOrder = createAsyncThunk(
 
       return result;
     } catch (error) {
-      return rejectWithValue(getOrderErrorMessage(error, "Khong the tao don hang."));
+      return rejectWithValue(getOrderErrorMessage(error, "Không thể tạo đơn hàng."));
     }
   },
 );
@@ -57,13 +57,13 @@ export const fetchOrderList = createAsyncThunk(
     const { auth } = getState();
 
     if (!auth?.accessToken) {
-      return rejectWithValue("Vui long dang nhap de xem danh sach don hang.");
+      return rejectWithValue("Vui lòng đăng nhập để xem danh sách đơn hàng.");
     }
 
     try {
       return await getMyOrders(auth.accessToken, filters);
     } catch (error) {
-      return rejectWithValue(getOrderErrorMessage(error, "Khong the tai danh sach don hang."));
+      return rejectWithValue(getOrderErrorMessage(error, "Không thể tải danh sách đơn hàng."));
     }
   },
 );
@@ -74,18 +74,18 @@ export const fetchOrderDetail = createAsyncThunk(
     const { auth } = getState();
 
     if (!auth?.accessToken) {
-      return rejectWithValue("Vui long dang nhap de xem don hang.");
+      return rejectWithValue("Vui lòng đăng nhập để xem đơn hàng.");
     }
 
     if (!Number.isFinite(Number(orderId)) || Number(orderId) <= 0) {
-      return rejectWithValue("Ma don hang khong hop le.");
+      return rejectWithValue("Mã đơn hàng không hợp lệ.");
     }
 
     try {
       const result = await getOrderById(auth.accessToken, orderId);
       return normalizeOrderDetail(result);
     } catch (error) {
-      return rejectWithValue(getOrderErrorMessage(error, "Khong the tai chi tiet don hang."));
+      return rejectWithValue(getOrderErrorMessage(error, "Không thể tải chi tiết đơn hàng."));
     }
   },
 );
@@ -142,7 +142,7 @@ const orderSlice = createSlice({
         state.hasPreviousPage = false;
         state.hasNextPage = false;
         state.listStatus = "failed";
-        state.listError = action.payload ?? "Khong the tai danh sach don hang.";
+        state.listError = action.payload ?? "Không thể tải danh sách đơn hàng.";
       })
       .addCase(checkoutReadyOrder.pending, (state) => {
         state.checkoutStatus = "loading";
@@ -155,7 +155,7 @@ const orderSlice = createSlice({
       })
       .addCase(checkoutReadyOrder.rejected, (state, action) => {
         state.checkoutStatus = "failed";
-        state.checkoutError = action.payload ?? "Khong the tao don hang.";
+        state.checkoutError = action.payload ?? "Không thể tạo đơn hàng.";
       })
       .addCase(fetchOrderDetail.pending, (state) => {
         state.currentOrderStatus = "loading";
@@ -168,7 +168,7 @@ const orderSlice = createSlice({
       })
       .addCase(fetchOrderDetail.rejected, (state, action) => {
         state.currentOrderStatus = "failed";
-        state.currentOrderError = action.payload ?? "Khong the tai chi tiet don hang.";
+        state.currentOrderError = action.payload ?? "Không thể tải chi tiết đơn hàng.";
         state.currentOrder = null;
       });
   },
@@ -179,3 +179,4 @@ export const { clearCheckoutState, clearCurrentOrder, clearOrderList } = orderSl
 export const selectOrderState = (state) => state.order;
 
 export default orderSlice.reducer;
+

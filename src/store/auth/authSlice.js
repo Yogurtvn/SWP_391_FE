@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+﻿import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
   getAuthErrorMessage,
   getCurrentUser,
@@ -43,7 +43,7 @@ export const login = createAsyncThunk(
     try {
       return await loginUser(credentials);
     } catch (error) {
-      return rejectWithValue(getAuthErrorMessage(error, "Email hoac mat khau khong dung."));
+      return rejectWithValue(getAuthErrorMessage(error, "Email hoặc mat khau khong dung."));
     }
   },
 );
@@ -54,7 +54,7 @@ export const loginWithGoogle = createAsyncThunk(
     try {
       return await loginWithGoogleUser(credential);
     } catch (error) {
-      return rejectWithValue(getAuthErrorMessage(error, "Dang nhap Google that bai. Vui long thu lai."));
+      return rejectWithValue(getAuthErrorMessage(error, "Đăng nhập Google thất bại. Vui lòng thử lại."));
     }
   },
 );
@@ -65,7 +65,7 @@ export const register = createAsyncThunk(
     try {
       return await registerUser(payload);
     } catch (error) {
-      return rejectWithValue(getAuthErrorMessage(error, "Dang ky that bai. Vui long thu lai."));
+      return rejectWithValue(getAuthErrorMessage(error, "Đăng ký thất bại. Vui lòng thử lại."));
     }
   },
 );
@@ -131,7 +131,7 @@ const authSlice = createSlice({
       .addCase(login.rejected, (state, action) => {
         state.isReady = true;
         state.status = "failed";
-        state.error = action.payload ?? "Dang nhap that bai.";
+        state.error = action.payload ?? "Đăng nhập thất bại.";
       })
       .addCase(loginWithGoogle.pending, startLoading)
       .addCase(loginWithGoogle.fulfilled, (state, action) => {
@@ -140,7 +140,7 @@ const authSlice = createSlice({
       .addCase(loginWithGoogle.rejected, (state, action) => {
         state.isReady = true;
         state.status = "failed";
-        state.error = action.payload ?? "Dang nhap Google that bai.";
+        state.error = action.payload ?? "Đăng nhập Google thất bại.";
       })
       .addCase(register.pending, startLoading)
       .addCase(register.fulfilled, (state, action) => {
@@ -149,7 +149,7 @@ const authSlice = createSlice({
       .addCase(register.rejected, (state, action) => {
         state.isReady = true;
         state.status = "failed";
-        state.error = action.payload ?? "Dang ky that bai.";
+        state.error = action.payload ?? "Đăng ký thất bại.";
       })
       .addCase(logout.fulfilled, (state) => {
         clearSession(state);
@@ -185,3 +185,4 @@ function clearSession(state) {
   state.refreshToken = null;
   state.error = null;
 }
+

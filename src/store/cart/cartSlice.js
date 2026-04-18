@@ -1,6 +1,7 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+﻿import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
   clearMyCart as clearMyCartRequest,
+  createPrescriptionCartItem,
   createStandardCartItem,
   deleteCartItem as deleteCartItemRequest,
   getCartErrorMessage,
@@ -35,7 +36,7 @@ export const fetchMyCart = createAsyncThunk(
     try {
       return await loadCartSnapshot(auth.accessToken, cart.viewCache);
     } catch (error) {
-      return rejectWithValue(getCartErrorMessage(error, "Khong the tai gio hang."));
+      return rejectWithValue(getCartErrorMessage(error, "Không thể tải giỏ hàng."));
     }
   },
 );
@@ -46,7 +47,7 @@ export const addStandardCartItem = createAsyncThunk(
     const { auth, cart } = getState();
 
     if (!canUseCustomerCart(auth)) {
-      return rejectWithValue("Vui long dang nhap bang tai khoan khach hang de su dung gio hang.");
+      return rejectWithValue("Vui lòng đăng nhập bằng tài khoản khách hàng để sử dụng giỏ hàng.");
     }
 
     const nextViewCache = mergeCartViewCache(cart.viewCache, payload?.view);
@@ -60,7 +61,39 @@ export const addStandardCartItem = createAsyncThunk(
 
       return await loadCartSnapshot(auth.accessToken, nextViewCache);
     } catch (error) {
-      return rejectWithValue(getCartErrorMessage(error, "Khong the them san pham vao gio hang."));
+      return rejectWithValue(getCartErrorMessage(error, "Không thể thêm sản phẩm vào giỏ hàng."));
+    }
+  },
+);
+
+export const addPrescriptionCartItem = createAsyncThunk(
+  "cart/addPrescriptionCartItem",
+  async (payload, { getState, rejectWithValue }) => {
+    const { auth, cart } = getState();
+
+    if (!canUseCustomerCart(auth)) {
+      return rejectWithValue("Vui lòng đăng nhập bằng tài khoản khách hàng để sử dụng giỏ hàng.");
+    }
+
+    const nextViewCache = mergeCartViewCache(cart.viewCache, payload?.view);
+
+    try {
+      await createPrescriptionCartItem(auth.accessToken, {
+        variantId: payload.variantId,
+        quantity: payload.quantity ?? 1,
+        lensTypeId: payload.lensTypeId,
+        lensMaterial: payload.lensMaterial,
+        coatings: payload.coatings,
+        rightEye: payload.rightEye,
+        leftEye: payload.leftEye,
+        pd: payload.pd,
+        notes: payload.notes,
+        prescriptionImageUrl: payload.prescriptionImageUrl,
+      });
+
+      return await loadCartSnapshot(auth.accessToken, nextViewCache);
+    } catch (error) {
+      return rejectWithValue(getCartErrorMessage(error, "Không thể thêm sản phẩm theo toa vào giỏ hàng."));
     }
   },
 );
@@ -71,14 +104,14 @@ export const updateCartItemQuantity = createAsyncThunk(
     const { auth, cart } = getState();
 
     if (!canUseCustomerCart(auth)) {
-      return rejectWithValue("Vui long dang nhap bang tai khoan khach hang de su dung gio hang.");
+      return rejectWithValue("Vui lòng đăng nhập bằng tài khoản khách hàng để sử dụng giỏ hàng.");
     }
 
     try {
       await updateStandardCartItemRequest(auth.accessToken, cartItemId, { quantity });
       return await loadCartSnapshot(auth.accessToken, cart.viewCache);
     } catch (error) {
-      return rejectWithValue(getCartErrorMessage(error, "Khong the cap nhat so luong san pham."));
+      return rejectWithValue(getCartErrorMessage(error, "Không thể cập nhật số lượng sản phẩm."));
     }
   },
 );
@@ -89,14 +122,14 @@ export const deleteCartItem = createAsyncThunk(
     const { auth, cart } = getState();
 
     if (!canUseCustomerCart(auth)) {
-      return rejectWithValue("Vui long dang nhap bang tai khoan khach hang de su dung gio hang.");
+      return rejectWithValue("Vui lòng đăng nhập bằng tài khoản khách hàng để sử dụng giỏ hàng.");
     }
 
     try {
       await deleteCartItemRequest(auth.accessToken, cartItemId, itemType);
       return await loadCartSnapshot(auth.accessToken, cart.viewCache);
     } catch (error) {
-      return rejectWithValue(getCartErrorMessage(error, "Khong the xoa san pham khoi gio hang."));
+      return rejectWithValue(getCartErrorMessage(error, "Không thể xóa sản phẩm khỏi giỏ hàng."));
     }
   },
 );
@@ -114,7 +147,7 @@ export const clearMyCart = createAsyncThunk(
       await clearMyCartRequest(auth.accessToken);
       return createEmptyCartPayload(cart.viewCache);
     } catch (error) {
-      return rejectWithValue(getCartErrorMessage(error, "Khong the lam trong gio hang."));
+      return rejectWithValue(getCartErrorMessage(error, "Không thể làm trống giỏ hàng."));
     }
   },
 );
@@ -146,7 +179,7 @@ const cartSlice = createSlice({
       })
       .addCase(fetchMyCart.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.payload ?? "Khong the tai gio hang.";
+        state.error = action.payload ?? "Không thể tải giỏ hàng.";
         state.items = [];
         state.subTotal = 0;
         state.cartId = null;
@@ -154,6 +187,9 @@ const cartSlice = createSlice({
       .addCase(addStandardCartItem.pending, startMutation)
       .addCase(addStandardCartItem.fulfilled, finishMutation)
       .addCase(addStandardCartItem.rejected, failMutation)
+      .addCase(addPrescriptionCartItem.pending, startMutation)
+      .addCase(addPrescriptionCartItem.fulfilled, finishMutation)
+      .addCase(addPrescriptionCartItem.rejected, failMutation)
       .addCase(updateCartItemQuantity.pending, startMutation)
       .addCase(updateCartItemQuantity.fulfilled, finishMutation)
       .addCase(updateCartItemQuantity.rejected, failMutation)
@@ -221,5 +257,6 @@ function finishMutation(state, action) {
 
 function failMutation(state, action) {
   state.mutationStatus = "failed";
-  state.mutationError = action.payload ?? "Khong the cap nhat gio hang.";
+  state.mutationError = action.payload ?? "Không thể cập nhật giỏ hàng.";
 }
+

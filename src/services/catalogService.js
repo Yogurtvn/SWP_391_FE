@@ -1,4 +1,4 @@
-import { API_BASE_URL, apiGet } from "@/services/apiClient";
+﻿import { API_BASE_URL, apiGet } from "@/services/apiClient";
 
 const PRODUCTS_BASE_PATH = "/api/products";
 const CATEGORIES_BASE_PATH = "/api/categories";
@@ -87,12 +87,12 @@ export function getCatalogRouteConfig(categorySlug) {
     case "premium":
       return {
         title: "Thuong Hieu Cao Cap",
-        notice: "API hien tai chua co filter premium, dang hien thi toan bo san pham.",
+        notice: "API hiện tại chưa có filter premium, đang hiển thị toàn bộ sản phẩm.",
       };
     default:
       return {
         title: toTitleCase(normalizedSlug.replace(/-/g, " ")),
-        notice: "Danh muc nay chua co map filter rieng, dang hien thi toan bo san pham.",
+        notice: "Danh mục này chưa có map filter riêng, đang hiển thị toàn bộ sản phẩm.",
       };
   }
 }
@@ -114,7 +114,7 @@ function normalizeCatalogListItem(item) {
   return {
     id: String(item?.productId ?? ""),
     productId: item?.productId ?? 0,
-    name: item?.productName?.trim() || "San pham",
+    name: item?.productName?.trim() || "Sản phẩm",
     price,
     image,
     subtitle: getProductTypeLabel(productType),
@@ -154,8 +154,8 @@ function normalizeCatalogDetail(item) {
   return {
     id: String(item?.productId ?? ""),
     productId: item?.productId ?? 0,
-    name: item?.productName?.trim() || "San pham",
-    description: item?.description?.trim() || "San pham hien chua co mo ta.",
+    name: item?.productName?.trim() || "Sản phẩm",
+    description: item?.description?.trim() || "Sản phẩm hien chua co mo ta.",
     price: displayPrice,
     basePrice: normalizePrice(item?.basePrice),
     images: images.length > 0 ? images : [DEFAULT_IMAGE_URL],
@@ -220,7 +220,7 @@ function createCartProduct({
   return {
     id: String(id ?? ""),
     productId: id ?? 0,
-    name: name?.trim() || "San pham",
+    name: name?.trim() || "Sản phẩm",
     price: normalizePrice(price),
     image: image ?? DEFAULT_IMAGE_URL,
     images: Array.isArray(images) && images.length > 0 ? images : [image ?? DEFAULT_IMAGE_URL],
@@ -335,3 +335,4 @@ function toTitleCase(value) {
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(" ");
 }
+

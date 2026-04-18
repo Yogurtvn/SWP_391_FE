@@ -1,4 +1,4 @@
-import { AlertCircle, Eye, EyeOff, Lock, Mail, Phone, User, UserPlus } from "lucide-react";
+﻿import { AlertCircle, Eye, EyeOff, Lock, Mail, Phone, User, UserPlus } from "lucide-react";
 import { useRegisterPage } from "@/hooks/auth/useRegisterPage";
 
 export default function RegisterPage() {
@@ -10,14 +10,14 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
             <UserPlus className="w-10 h-10 text-white" />
           </div>
-          <h1 className="mb-2">Dang Ky</h1>
-          <p className="text-muted-foreground">Tao tai khoan customer de mua hang va theo doi don hang</p>
+          <h1 className="mb-2">Đang Ky</h1>
+          <p className="text-muted-foreground">Tạo tài khoản khách hàng để mua hàng và theo dõi đơn hàng</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8">
           <form onSubmit={actions.submitRegisterForm} className="space-y-5">
             <div>
-              <label className="block text-sm mb-2">Ho ten</label>
+              <label className="block text-sm mb-2">Họ tên</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
@@ -25,14 +25,14 @@ export default function RegisterPage() {
     value={form.fullName}
     onChange={(event) => setFormValue("fullName", event.target.value)}
     className="w-full pl-10 pr-4 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
-    placeholder="Nguyen Van A"
+    placeholder="Nguyễn Văn A"
     required
   />
               </div>
             </div>
 
             <div>
-              <label className="block text-sm mb-2">So dien thoai</label>
+              <label className="block text-sm mb-2">Số điện thoại</label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
@@ -61,7 +61,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm mb-2">Mat khau</label>
+              <label className="block text-sm mb-2">Mật khẩu</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
@@ -69,7 +69,7 @@ export default function RegisterPage() {
     value={form.password}
     onChange={(event) => setFormValue("password", event.target.value)}
     className="w-full pl-10 pr-12 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
-    placeholder="Nhap mat khau"
+    placeholder="Nhập mãt khau"
     required
   />
                 <button
@@ -116,17 +116,17 @@ export default function RegisterPage() {
   >
               {ui.loading ? <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Dang tao tai khoan...</span>
+                  <span>Đang tao tài khoản...</span>
                 </> : <>
                   <UserPlus className="w-5 h-5" />
-                  <span>Tao tai khoan</span>
+                  <span>Tạo tài khoản</span>
                 </>}
             </button>
 
             <div className="text-center text-sm text-muted-foreground">
-              <span>Da co tai khoan? </span>
+              <span>Da co tài khoản? </span>
               <button type="button" onClick={actions.goToLoginPage} className="font-medium text-primary hover:underline">
-                Dang nhap
+                Đăng nhập
               </button>
             </div>
           </form>
@@ -134,9 +134,11 @@ export default function RegisterPage() {
 
         <div className="text-center mt-6">
           <button onClick={actions.goToLoginPage} className="text-sm text-muted-foreground hover:text-foreground">
-            Quay lai trang dang nhap
+            Quay lại trang đăng nhập
           </button>
         </div>
       </div>
     </div>;
 }
+
+

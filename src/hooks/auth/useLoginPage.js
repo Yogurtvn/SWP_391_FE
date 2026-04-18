@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { getAuthErrorMessage } from "@/services/authService";
 import { useAuth } from "@/store/auth/AuthContext";
@@ -66,7 +66,7 @@ export function useLoginPage() {
           return;
         }
 
-        setError(getAuthErrorMessage(scriptError, "Khong the tai Google Identity Services."));
+        setError(getAuthErrorMessage(scriptError, "Không thể tải Google Identity Services."));
       }
     }
 
@@ -91,7 +91,7 @@ export function useLoginPage() {
 
       redirectToLandingPage(navigate, loggedInUser.role);
     } catch (loginError) {
-      setError(getAuthErrorMessage(loginError, "Da co loi xay ra. Vui long thu lai."));
+      setError(getAuthErrorMessage(loginError, "Đã có lỗi xảy ra. Vui lòng thử lại."));
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,7 @@ async function handleGoogleLogin(credential, helpers) {
     const loggedInUser = await helpers.loginWithGoogle(credential);
     redirectToLandingPage(helpers.navigate, loggedInUser.role);
   } catch (loginError) {
-    helpers.setError(getAuthErrorMessage(loginError, "Dang nhap Google that bai. Vui long thu lai."));
+    helpers.setError(getAuthErrorMessage(loginError, "Đăng nhập Google thất bại. Vui lòng thử lại."));
   } finally {
     helpers.setGoogleLoading(false);
   }
@@ -187,7 +187,7 @@ function loadGoogleIdentityScript() {
       existingScript.addEventListener("load", () => resolve(), { once: true });
       existingScript.addEventListener(
         "error",
-        () => reject(new Error("Khong the tai Google Identity Services.")),
+        () => reject(new Error("Không thể tải Google Identity Services.")),
         { once: true },
       );
       return;
@@ -199,8 +199,9 @@ function loadGoogleIdentityScript() {
     script.async = true;
     script.defer = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Khong the tai Google Identity Services."));
+    script.onerror = () => reject(new Error("Không thể tải Google Identity Services."));
 
     document.head.appendChild(script);
   });
 }
+

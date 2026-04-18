@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+﻿import { useEffect, useMemo } from "react";
 import { useParams } from "react-router";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectAuthState } from "@/store/auth/authSlice";
@@ -36,7 +36,7 @@ export function useOrderTracking() {
     ui: {
       isLoading: orderState.currentOrderStatus === "loading",
       error: !hasValidOrderId
-        ? "Ma don hang khong hop le."
+        ? "Mã đơn hàng không hợp lệ."
         : orderState.currentOrderError,
     },
     actions: {
@@ -48,3 +48,4 @@ export function useOrderTracking() {
     },
   };
 }
+

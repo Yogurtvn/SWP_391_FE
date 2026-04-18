@@ -44,6 +44,8 @@ const router = createBrowserRouter([
       { path: "checkout", Component: CheckoutPage },
       { path: "checkout/success", Component: OrderSuccessPage },
       { path: "checkout/failure", Component: PaymentFailedPage },
+      { path: "payment-success", Component: OrderSuccessPage },
+      { path: "payment-failed", Component: PaymentFailedPage },
       {
         path: "orders/:orderId",
         element: <ProtectedRoute>

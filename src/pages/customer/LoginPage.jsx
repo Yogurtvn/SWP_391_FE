@@ -1,4 +1,4 @@
-import { AlertCircle, Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
+﻿import { AlertCircle, Eye, EyeOff, Lock, LogIn, Mail } from "lucide-react";
 import { useLoginPage } from "@/hooks/auth/useLoginPage";
 
 export default function LoginPage() {
@@ -18,8 +18,8 @@ export default function LoginPage() {
   />
             </svg>
           </div>
-          <h1 className="mb-2">Dang Nhap</h1>
-          <p className="text-muted-foreground">Dang nhap de tiep tuc su dung he thong</p>
+          <h1 className="mb-2">Đang Nhap</h1>
+          <p className="text-muted-foreground">Đăng nhập để tiếp tục sử dụng hệ thống</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg p-8">
@@ -40,7 +40,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm mb-2">Mat khau</label>
+              <label className="block text-sm mb-2">Mật khẩu</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
@@ -73,17 +73,17 @@ export default function LoginPage() {
   >
               {ui.loading ? <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Dang dang nhap...</span>
+                  <span>Đang dang nhap...</span>
                 </> : <>
                   <LogIn className="w-5 h-5" />
-                  <span>Dang Nhap</span>
+                  <span>Đang Nhap</span>
                 </>}
             </button>
 
             <div className="text-center text-sm text-muted-foreground">
-              <span>Chua co tai khoan? </span>
+              <span>Chưa co tài khoản? </span>
               <button type="button" onClick={actions.goToRegisterPage} className="font-medium text-primary hover:underline">
-                Dang ky
+                Đăng ký
               </button>
             </div>
           </form>
@@ -102,22 +102,22 @@ export default function LoginPage() {
 
               {!ui.isGoogleReady && <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                   <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span>Dang tai Google login...</span>
+                  <span>Đang tải Google login...</span>
                 </div>}
 
               {ui.googleLoading && <div className="flex items-center justify-center gap-2 text-sm text-primary">
                   <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span>Dang xac thuc tai khoan Google...</span>
+                  <span>Đang xac thuc tài khoản Google...</span>
                 </div>}
 
               <p className="text-xs text-center text-muted-foreground">
-                Google login su dung backend that va se tao tai khoan customer neu email chua ton tai.
+                Google login su dung backend that va se tao tài khoản customer neu email chua ton tai.
               </p>
             </div>
           </div>
 
           <div className="mt-8 pt-6 border-t border-border">
-            <p className="text-sm text-muted-foreground mb-3">Tai khoan demo cho giao dien:</p>
+            <p className="text-sm text-muted-foreground mb-3">Tài khoản demo cho giao dien:</p>
             <div className="space-y-2 text-sm">
               <div className="p-3 bg-secondary rounded-lg">
                 <p className="mb-1">
@@ -140,9 +140,11 @@ export default function LoginPage() {
 
         <div className="text-center mt-6">
           <button onClick={actions.goToHomePage} className="text-sm text-muted-foreground hover:text-foreground">
-            Quay lai trang chu
+            Quay lại trang chủ
           </button>
         </div>
       </div>
     </div>;
 }
+
+

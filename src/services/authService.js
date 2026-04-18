@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "@/services/apiClient";
+﻿import { apiGet, apiPost } from "@/services/apiClient";
 
 const AUTH_BASE_PATH = "/api/auth";
 
@@ -7,7 +7,7 @@ const DEMO_USERS = [
     id: "admin-001",
     email: "admin@eyewear.com",
     password: "admin123",
-    fullName: "Nguyen Van Admin",
+    fullName: "Nguyễn Văn Admin",
     phone: "0901234567",
     role: "admin",
   },
@@ -23,7 +23,7 @@ const DEMO_USERS = [
     id: "customer-001",
     email: "customer@example.com",
     password: "customer123",
-    fullName: "Le Van Khach",
+    fullName: "Le Van Khách",
     phone: "0903234567",
     role: "customer",
   },
@@ -157,3 +157,4 @@ function normalizeRole(role) {
 
   return "customer";
 }
+

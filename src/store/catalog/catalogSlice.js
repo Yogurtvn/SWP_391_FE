@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+﻿import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
   getCatalogCategories,
   getCatalogErrorMessage,
@@ -26,7 +26,7 @@ export const fetchCatalogProducts = createAsyncThunk(
     try {
       return await getCatalogProducts(filters);
     } catch (error) {
-      return rejectWithValue(getCatalogErrorMessage(error, "Khong the tai danh sach san pham."));
+      return rejectWithValue(getCatalogErrorMessage(error, "Không thể tải danh sách sản phẩm."));
     }
   },
 );
@@ -37,7 +37,7 @@ export const fetchCatalogCategories = createAsyncThunk(
     try {
       return await getCatalogCategories();
     } catch (error) {
-      return rejectWithValue(getCatalogErrorMessage(error, "Khong the tai danh muc san pham."));
+      return rejectWithValue(getCatalogErrorMessage(error, "Không thể tải danh mục sản phẩm."));
     }
   },
 );
@@ -65,7 +65,7 @@ const catalogSlice = createSlice({
       })
       .addCase(fetchCatalogProducts.rejected, (state, action) => {
         state.listStatus = "failed";
-        state.error = action.payload ?? "Khong the tai danh sach san pham.";
+        state.error = action.payload ?? "Không thể tải danh sách sản phẩm.";
         state.items = [];
         state.totalItems = 0;
         state.totalPages = 0;
@@ -83,7 +83,7 @@ const catalogSlice = createSlice({
       })
       .addCase(fetchCatalogCategories.rejected, (state, action) => {
         state.categoriesStatus = "failed";
-        state.categoriesError = action.payload ?? "Khong the tai danh muc san pham.";
+        state.categoriesError = action.payload ?? "Không thể tải danh mục sản phẩm.";
         state.categories = [];
       });
   },
@@ -92,3 +92,4 @@ const catalogSlice = createSlice({
 export const selectCatalogState = (state) => state.catalog;
 
 export default catalogSlice.reducer;
+

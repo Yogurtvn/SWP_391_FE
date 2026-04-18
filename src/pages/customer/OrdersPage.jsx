@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+﻿import { Link } from "react-router";
 import { ChevronRight, Eye, Package, Search } from "lucide-react";
 import { useOrdersPage } from "@/hooks/order/useOrdersPage";
 
@@ -8,14 +8,14 @@ export default function OrdersPage() {
   if (!isAuthenticated) {
     return (
       <StateCard
-        title="Can dang nhap de xem don hang"
-        description="Danh sach don hang cua ban chi hien thi sau khi dang nhap."
+        title="Cần đăng nhập để xem đơn hàng"
+        description="Danh sách đơn hàng của bạn chỉ hiển thị sau khi đăng nhập."
         primaryAction={{
-          label: "Dang nhap",
+          label: "Đăng nhập",
           to: "/login",
         }}
         secondaryAction={{
-          label: "Quay lai cua hang",
+          label: "Quay lại cửa hàng",
           to: "/shop",
         }}
       />
@@ -26,8 +26,8 @@ export default function OrdersPage() {
     <div className="min-h-screen bg-white">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="mb-2 text-3xl">Don Hang Cua Toi</h1>
-          <p className="text-muted-foreground">Quan ly va theo doi tat ca don hang co san cua ban.</p>
+          <h1 className="mb-2 text-3xl">Đơn Hàng Của Tôi</h1>
+          <p className="text-muted-foreground">Quản lý và theo dõi tất cả đơn hàng của bạn.</p>
         </div>
 
         <div className="mb-6 flex flex-col gap-4 sm:flex-row">
@@ -35,7 +35,7 @@ export default function OrdersPage() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Tim ma don hang..."
+              placeholder="Tìm mã đơn hàng..."
               value={filters.searchQuery}
               onChange={(event) => actions.setSearchQuery(event.target.value)}
               className="w-full rounded-lg border border-border py-2 pl-10 pr-4 focus:border-primary focus:outline-none"
@@ -47,11 +47,11 @@ export default function OrdersPage() {
             onChange={(event) => actions.setFilterStatus(event.target.value)}
             className="rounded-lg border border-border px-4 py-2 focus:border-primary focus:outline-none"
           >
-            <option value="all">Tat ca trang thai</option>
-            <option value="processing">Dang xu ly</option>
-            <option value="shipping">Dang giao hang</option>
-            <option value="delivered">Da giao hang</option>
-            <option value="cancelled">Da huy</option>
+            <option value="all">Tất cả trạng thái</option>
+            <option value="processing">Đang xử lý</option>
+            <option value="shipping">Đang giao hàng</option>
+            <option value="delivered">Đã giao hàng</option>
+            <option value="cancelled">Đã hủy</option>
           </select>
         </div>
 
@@ -63,7 +63,7 @@ export default function OrdersPage() {
               onClick={actions.retry}
               className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
             >
-              Tai lai
+              Tải lại
             </button>
           </div>
         ) : ui.isLoading ? (
@@ -79,9 +79,9 @@ export default function OrdersPage() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-4 bg-secondary px-6 py-4">
                   <div className="flex flex-wrap items-center gap-8">
-                    <Column label="Ma don hang" value={`#${order.orderId}`} />
-                    <Column label="Ngay dat" value={formatDate(order.createdAt)} />
-                    <Column label="Tong tien" value={formatCurrency(order.totalAmount)} isAccent />
+                    <Column label="Mã đơn hàng" value={`#${order.orderId}`} />
+                    <Column label="Ngày đặt" value={formatDate(order.createdAt)} />
+                    <Column label="Tổng tiền" value={formatCurrency(order.totalAmount)} isAccent />
                   </div>
                   <span className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(order.statusKey)}`}>
                     {order.statusLabel}
@@ -97,9 +97,9 @@ export default function OrdersPage() {
                     />
                     <div className="flex-1">
                       <p className="font-medium">{order.firstItemName}</p>
-                      <p className="text-sm text-muted-foreground">So luong: {order.firstItemQuantity}</p>
+                      <p className="text-sm text-muted-foreground">Số lượng: {order.firstItemQuantity}</p>
                       {order.itemCount > 1 ? (
-                        <p className="text-sm text-muted-foreground">Tong cong {order.itemCount} san pham trong don</p>
+                        <p className="text-sm text-muted-foreground">Tổng cộng {order.itemCount} sản phẩm trong đơn</p>
                       ) : null}
                     </div>
                   </div>
@@ -110,13 +110,13 @@ export default function OrdersPage() {
                       className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 transition-colors hover:bg-secondary"
                     >
                       <Eye className="h-4 w-4" />
-                      <span className="text-sm">Chi tiet</span>
+                      <span className="text-sm">Chi tiết</span>
                     </Link>
                     <Link
                       to={`/invoice/${order.orderId}`}
                       className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-white transition-colors hover:bg-primary/90"
                     >
-                      <span className="text-sm">Xem hoa don</span>
+                      <span className="text-sm">Xem hóa đơn</span>
                       <ChevronRight className="h-4 w-4" />
                     </Link>
                   </div>
@@ -162,7 +162,7 @@ function LoadingState() {
   return (
     <div className="rounded-lg bg-secondary/60 p-12 text-center">
       <div className="mx-auto mb-4 h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-      <p className="text-muted-foreground">Dang tai danh sach don hang...</p>
+      <p className="text-muted-foreground">Đang tải danh sách đơn hàng...</p>
     </div>
   );
 }
@@ -173,15 +173,15 @@ function EmptyState({ searchQuery, filterStatus }) {
       <Package className="mx-auto mb-4 h-16 w-16 text-muted-foreground opacity-50" />
       <p className="mb-4 text-muted-foreground">
         {searchQuery || filterStatus !== "all"
-          ? "Khong tim thay don hang phu hop"
-          : "Ban chua co don hang nao"}
+          ? "Không tìm thấy đơn hàng phù hợp"
+          : "Bạn chưa có đơn hàng nào"}
       </p>
       {!searchQuery && filterStatus === "all" ? (
         <Link
           to="/shop"
           className="inline-block rounded-lg bg-primary px-6 py-2 text-white transition-colors hover:bg-primary/90"
         >
-          Kham Pha San Pham
+          Khám Phá Sản Phẩm
         </Link>
       ) : null}
     </div>
@@ -219,13 +219,13 @@ function formatCurrency(value) {
 
 function formatDate(value) {
   if (!value) {
-    return "Chua cap nhat";
+    return "Chưa cập nhật";
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Chua cap nhat";
+    return "Chưa cập nhật";
   }
 
   return new Intl.DateTimeFormat("vi-VN", {
@@ -234,3 +234,5 @@ function formatDate(value) {
     year: "numeric",
   }).format(date);
 }
+
+

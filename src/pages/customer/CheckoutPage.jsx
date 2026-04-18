@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   AlertCircle,
@@ -26,8 +26,9 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const {
     isCustomerSession,
-    readyItems,
+    checkoutItems,
     blockedItems,
+    checkoutOrderType,
     itemCount,
     subtotal,
     shippingFee,
@@ -43,7 +44,9 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [localError, setLocalError] = useState("");
 
-  const isLoadingCart = cartStatus === "loading" && readyItems.length === 0 && blockedItems.length === 0;
+  const checkoutTitle = getCheckoutTitle(checkoutOrderType);
+  const checkoutDescription = getCheckoutDescription(checkoutOrderType, itemCount);
+  const isLoadingCart = cartStatus === "loading" && checkoutItems.length === 0 && blockedItems.length === 0;
   const isSubmitting = checkoutStatus === "loading";
 
   async function handleSubmit(event) {
@@ -56,7 +59,7 @@ export default function CheckoutPage() {
         paymentMethod,
       });
 
-      if (paymentMethod === "momo") {
+      if (paymentMethod === "payos") {
         if (result?.payment?.payUrl) {
           window.location.assign(result.payment.payUrl);
           return;
@@ -67,7 +70,7 @@ export default function CheckoutPage() {
             orderSummary,
             orderCreated: true,
             errorMessage:
-              "Don hang da duoc tao, nhung he thong chua lay duoc lien ket thanh toan MoMo. Vui long thu lai sau hoac lien he cua hang.",
+              "Đơn hàng đã được tạo, nhưng hệ thống chưa lấy được liên kết thanh toán PayOS. Vui lòng thử lại sau hoặc liên hệ cửa hàng.",
           },
         });
         return;
@@ -81,7 +84,7 @@ export default function CheckoutPage() {
     } catch (error) {
       const errorMessage = resolveErrorMessage(
         error,
-        checkoutError || "Khong the tao don hang tu gio hang hien tai.",
+        checkoutError || "Không thể tạo đơn hàng từ giỏ hàng hiện tại.",
       );
 
       setLocalError(errorMessage);
@@ -100,14 +103,14 @@ export default function CheckoutPage() {
     return (
       <StateCard
         icon={Wallet}
-        title="Checkout can tai khoan khach hang"
-        description="Vui long dang nhap bang tai khoan customer de tao don hang va dong bo gio hang."
+        title="Checkout cần tài khoản khách hàng"
+        description="Vui lòng đăng nhập bằng tài khoản khách hàng để tạo đơn hàng và đồng bộ giỏ hàng."
         primaryAction={{
-          label: "Dang nhap",
+          label: "Đăng nhập",
           to: "/login",
         }}
         secondaryAction={{
-          label: "Quay lai gio hang",
+          label: "Quay lại giỏ hàng",
           to: "/cart",
         }}
       />
@@ -120,25 +123,25 @@ export default function CheckoutPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-center px-4">
           <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
             <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <p className="text-muted-foreground">Dang dong bo gio hang tu he thong...</p>
+            <p className="text-muted-foreground">Đang đồng bộ giỏ hàng từ hệ thống...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  if (readyItems.length === 0 && blockedItems.length === 0) {
+  if (checkoutItems.length === 0 && blockedItems.length === 0) {
     return (
       <StateCard
         icon={Package}
-        title="Khong co san pham de checkout"
-        description="Gio hang cua ban dang trong. Hay them mot vai san pham co san truoc khi thanh toan."
+        title="Không có sản phẩm để checkout"
+        description="Giỏ hàng của bạn đang trống. Hãy thêm sản phẩm vào giỏ trước khi thanh toán."
         primaryAction={{
-          label: "Kham pha san pham",
+          label: "Khám phá sản phẩm",
           to: "/shop",
         }}
         secondaryAction={{
-          label: "Xem gio hang",
+          label: "Xem giỏ hàng",
           to: "/cart",
         }}
       />
@@ -153,17 +156,16 @@ export default function CheckoutPage() {
             <div className="mb-6 flex items-start gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
               <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" />
               <div>
-                <h1 className="mb-2 text-2xl">Checkout nay chi xu ly don hang co san</h1>
+                <h1 className="mb-2 text-2xl">Checkout hiện chỉ xử lý giỏ hàng cùng một loại đơn</h1>
                 <p className="text-sm leading-6 text-amber-900">
-                  Trong gio hang cua ban dang co san pham dat truoc hoac san pham theo toa.
-                  Flow hien tai minh da map API cho don hang co san, nen ban can quay lai gio hang
-                  de tach nhom san pham nay ra truoc khi thanh toan.
+                  Backend checkout yêu cầu tất cả cart item trong cùng một lần thanh toán phải có chung `orderType`.
+                  Bạn hãy tách riêng đơn có sẵn, đơn đặt trước, hoặc đơn theo toa trước khi checkout.
                 </p>
               </div>
             </div>
 
             <div className="mb-8 rounded-2xl bg-secondary/60 p-6">
-              <p className="mb-3 text-sm text-muted-foreground">San pham dang chan checkout:</p>
+              <p className="mb-3 text-sm text-muted-foreground">Sản phẩm đang chặn checkout:</p>
               <div className="space-y-3">
                 {blockedItems.map((item) => (
                   <div
@@ -173,7 +175,7 @@ export default function CheckoutPage() {
                     <div>
                       <p>{item.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {item.orderType === "preOrder" ? "Dat truoc" : item.hasPrescription ? "Theo toa" : "Khac"}
+                        {item.orderType === "preOrder" ? "Đặt trước" : item.hasPrescription ? "Theo toa" : "Khác"}
                       </p>
                     </div>
                     <span className="text-sm text-muted-foreground">SL {item.quantity}</span>
@@ -188,13 +190,13 @@ export default function CheckoutPage() {
                 className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
               >
                 <ArrowLeft className="h-4 w-4" />
-                Quay lai gio hang
+                Quay lại giỏ hàng
               </Link>
               <Link
                 to="/shop"
                 className="inline-flex items-center gap-2 rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
               >
-                Tiep tuc mua sam
+                Tiếp tục mua sắm
               </Link>
             </div>
           </div>
@@ -209,12 +211,10 @@ export default function CheckoutPage() {
         <div className="mb-8">
           <Link to="/cart" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
-            Quay lai gio hang
+            Quay lại giỏ hàng
           </Link>
-          <h1 className="mb-2 text-3xl">Thanh toan don hang co san</h1>
-          <p className="text-muted-foreground">
-            Hoan tat thong tin giao hang va chon cach thanh toan cho {itemCount} san pham.
-          </p>
+          <h1 className="mb-2 text-3xl">{checkoutTitle}</h1>
+          <p className="text-muted-foreground">{checkoutDescription}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-[1.4fr_0.9fr]">
@@ -232,21 +232,21 @@ export default function CheckoutPage() {
                   <MapPin className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl">Thong tin giao hang</h2>
-                  <p className="text-sm text-muted-foreground">Nhap nguoi nhan va dia chi giao hang.</p>
+                  <h2 className="text-xl">Thông tin giao hàng</h2>
+                  <p className="text-sm text-muted-foreground">Nhập người nhận và địa chỉ giao hàng.</p>
                 </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <Field
-                  label="Ho va ten"
+                  label="Họ và tên"
                   required
                   value={shippingInfo.fullName}
                   onChange={(value) => setShippingInfo((current) => ({ ...current, fullName: value }))}
-                  placeholder="Nguyen Van A"
+                  placeholder="Nguyễn Văn A"
                 />
                 <Field
-                  label="So dien thoai"
+                  label="Số điện thoại"
                   required
                   value={shippingInfo.phone}
                   onChange={(value) => setShippingInfo((current) => ({ ...current, phone: value }))}
@@ -260,31 +260,31 @@ export default function CheckoutPage() {
                   placeholder="ban@email.com"
                 />
                 <Field
-                  label="Dia chi"
+                  label="Địa chỉ"
                   required
                   value={shippingInfo.address}
                   onChange={(value) => setShippingInfo((current) => ({ ...current, address: value }))}
-                  placeholder="So nha, ten duong"
+                  placeholder="Số nhà, tên đường"
                 />
                 <Field
-                  label="Phuong / Xa"
+                  label="Phường / Xã"
                   value={shippingInfo.ward}
                   onChange={(value) => setShippingInfo((current) => ({ ...current, ward: value }))}
-                  placeholder="Phuong 1"
+                  placeholder="Phường 1"
                 />
                 <Field
-                  label="Quan / Huyen"
+                  label="Quận / Huyện"
                   value={shippingInfo.district}
                   onChange={(value) => setShippingInfo((current) => ({ ...current, district: value }))}
-                  placeholder="Quan 1"
+                  placeholder="Quận 1"
                 />
                 <div className="md:col-span-2">
                   <Field
-                    label="Tinh / Thanh pho"
+                    label="Tỉnh / Thành phố"
                     required
                     value={shippingInfo.city}
                     onChange={(value) => setShippingInfo((current) => ({ ...current, city: value }))}
-                    placeholder="TP Ho Chi Minh"
+                    placeholder="TP. Hồ Chí Minh"
                   />
                 </div>
               </div>
@@ -296,32 +296,32 @@ export default function CheckoutPage() {
                   <Wallet className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl">Phuong thuc thanh toan</h2>
-                  <p className="text-sm text-muted-foreground">Flow nay da map COD va MoMo theo API hien co.</p>
+                  <h2 className="text-xl">Phương thức thanh toán</h2>
+                  <p className="text-sm text-muted-foreground">Flow này đã map COD và PayOS theo API hiện có.</p>
                 </div>
               </div>
 
               <div className="space-y-3">
                 <PaymentOption
                   icon={Truck}
-                  title="Thanh toan khi nhan hang"
-                  description="Don hang duoc tao ngay. Ban thanh toan luc nhan hang."
+                  title="Thanh toán khi nhận hàng"
+                  description="Đơn hàng được tạo ngay. Bạn thanh toán lúc nhận hàng."
                   checked={paymentMethod === "cod"}
                   onSelect={() => setPaymentMethod("cod")}
                 />
                 <PaymentOption
                   icon={CreditCard}
-                  title="Thanh toan bang MoMo"
-                  description="Sau khi tao don, he thong se chuyen ban sang cong thanh toan MoMo neu backend tra ve payUrl."
-                  checked={paymentMethod === "momo"}
-                  onSelect={() => setPaymentMethod("momo")}
+                  title="Thanh toán bằng PayOS"
+                  description="Sau khi tạo đơn, hệ thống sẽ chuyển bạn sang cổng thanh toán PayOS nếu backend trả về payUrl."
+                  checked={paymentMethod === "payos"}
+                  onSelect={() => setPaymentMethod("payos")}
                 />
               </div>
 
-              {paymentMethod === "momo" && (
+              {paymentMethod === "payos" && (
                 <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-900">
-                  Sau khi bam thanh toan, FE se goi `POST /api/orders/checkout`.
-                  Neu BE tra ve `payment.payUrl`, trinh duyet se duoc chuyen sang MoMo.
+                  Sau khi bấm thanh toán, FE sẽ gọi `POST /api/orders/checkout`.
+                  Nếu BE trả về `payment.payUrl`, trình duyệt sẽ được chuyển sang PayOS.
                 </div>
               )}
             </section>
@@ -334,13 +334,15 @@ export default function CheckoutPage() {
                   <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl">Tom tat don hang</h2>
-                  <p className="text-sm text-muted-foreground">Chi gom cac san pham co san trong gio.</p>
+                  <h2 className="text-xl">Tóm tắt đơn hàng</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Đang checkout nhóm sản phẩm `{getOrderTypeLabel(checkoutOrderType)}`.
+                  </p>
                 </div>
               </div>
 
               <div className="mb-6 space-y-4">
-                {readyItems.map((item) => (
+                {checkoutItems.map((item) => (
                   <div key={item.cartItemId} className="flex gap-3 rounded-2xl bg-secondary/60 p-3">
                     <img
                       src={item.image}
@@ -353,6 +355,7 @@ export default function CheckoutPage() {
                         {item.color}
                         {item.size ? ` / ${item.size}` : ""}
                       </p>
+                      <p className="mt-1 text-sm text-muted-foreground">{getCartItemTypeLabel(item)}</p>
                       <p className="mt-1 text-sm text-muted-foreground">SL {item.quantity}</p>
                       <p className="mt-2 text-sm text-primary">{formatCurrency(item.totalPrice)}</p>
                     </div>
@@ -362,15 +365,15 @@ export default function CheckoutPage() {
 
               <div className="space-y-3 border-t border-border pt-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Tam tinh</span>
+                  <span className="text-muted-foreground">Tạm tính</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Van chuyen</span>
-                  <span className="text-muted-foreground">Shop xac nhan sau</span>
+                  <span className="text-muted-foreground">Vận chuyển</span>
+                  <span className="text-muted-foreground">Shop xác nhận sau</span>
                 </div>
                 <div className="flex justify-between border-t border-border pt-3">
-                  <span className="text-lg">Tong cong</span>
+                  <span className="text-lg">Tổng cộng</span>
                   <span className="text-2xl text-primary">{formatCurrency(total)}</span>
                 </div>
               </div>
@@ -383,20 +386,20 @@ export default function CheckoutPage() {
                 {isSubmitting ? (
                   <>
                     <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    Dang xu ly don hang...
+                    Đang xử lý đơn hàng...
                   </>
-                ) : paymentMethod === "momo" ? (
-                  "Tiep tuc voi MoMo"
+                ) : paymentMethod === "payos" ? (
+                  "Tiếp tục với PayOS"
                 ) : (
-                  "Xac nhan dat hang"
+                  "Xác nhận đặt hàng"
                 )}
               </button>
 
               <div className="mt-4 flex items-start gap-3 rounded-2xl bg-secondary/60 p-4 text-sm text-muted-foreground">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
                 <p>
-                  Backend hien tai chua tinh phi giao hang trong order total.
-                  Flow nay dang dung checkout API that cua backend, nen tong tien tren trang nay se khop voi don hang tao ra.
+                  Backend hiện tại chưa tính phí giao hàng trong order total.
+                  Flow này đang dùng checkout API thật của backend, nên tổng tiền trên trang này sẽ khớp với đơn hàng tạo ra.
                 </p>
               </div>
             </div>
@@ -477,6 +480,51 @@ function StateCard({ icon: Icon, title, description, primaryAction, secondaryAct
   );
 }
 
+function getCheckoutTitle(orderType) {
+  switch (String(orderType ?? "").trim().toLowerCase()) {
+    case "prescription":
+      return "Thanh toán đơn kính theo toa";
+    case "preorder":
+      return "Thanh toán đơn đặt trước";
+    default:
+      return "Thanh toán đơn hàng có sẵn";
+  }
+}
+
+function getCheckoutDescription(orderType, itemCount) {
+  switch (String(orderType ?? "").trim().toLowerCase()) {
+    case "prescription":
+      return `Hoàn tất thông tin giao hàng và thanh toán cho ${itemCount} sản phẩm theo toa.`;
+    case "preorder":
+      return `Hoàn tất thông tin giao hàng cho ${itemCount} sản phẩm đặt trước.`;
+    default:
+      return `Hoàn tất thông tin giao hàng và chọn cách thanh toán cho ${itemCount} sản phẩm.`;
+  }
+}
+
+function getOrderTypeLabel(orderType) {
+  switch (String(orderType ?? "").trim().toLowerCase()) {
+    case "prescription":
+      return "theo toa";
+    case "preorder":
+      return "đặt trước";
+    default:
+      return "có sẵn";
+  }
+}
+
+function getCartItemTypeLabel(item) {
+  if (item?.hasPrescription) {
+    return `Theo toa${item?.prescriptionDetails?.lensType ? ` / ${item.prescriptionDetails.lensType}` : ""}`;
+  }
+
+  if (String(item?.orderType ?? "").trim().toLowerCase() === "preorder") {
+    return "Đặt trước";
+  }
+
+  return "Hàng có sẵn";
+}
+
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -495,3 +543,7 @@ function resolveErrorMessage(error, fallbackMessage) {
 
   return fallbackMessage;
 }
+
+
+
+

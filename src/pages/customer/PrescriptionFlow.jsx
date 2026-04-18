@@ -1,542 +1,708 @@
-import { useState } from "react";
-import { useParams, useNavigate } from "react-router";
-import StepProgress from "@/components/common/StepProgress";
-import { Check, HelpCircle, Edit2, AlertCircle, Eye, Shield, Sparkles } from "lucide-react";
-import { useCart } from "@/store/cart/CartContext";
-const steps = [
-  { number: 1, label: "Lo\u1EA1i tr\xF2ng" },
-  { number: 2, label: "\u0110\u01A1n k\xEDnh" },
-  { number: 3, label: "G\xF3i tr\xF2ng" },
-  { number: 4, label: "Xem l\u1EA1i" }
+﻿import { useEffect, useMemo, useState } from "react";
+import { AlertCircle, ArrowLeft, Check, Eye, ShoppingCart } from "lucide-react";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { useCart } from "@/hooks/cart/useCart";
+import { getCatalogErrorMessage, getCatalogProductById } from "@/services/catalogService";
+import { createCartItemView, resolvePreferredVariant } from "@/services/cartService";
+import { getLensTypeErrorMessage, getLensTypes } from "@/services/lensTypeService";
+import {
+  calculatePrescriptionPricing,
+  getPrescriptionApiErrorMessage,
+  getPrescriptionEligibility,
+} from "@/services/prescriptionService";
+
+const COATING_OPTIONS = [
+  "Chống ánh sáng xanh",
+  "Chống phản quang",
+  "Chống trầy xước",
+  "Chống tia UV",
 ];
-function PrescriptionFlow() {
+
+const INITIAL_FORM_STATE = {
+  rightSph: "",
+  rightCyl: "0",
+  rightAxis: "0",
+  leftSph: "",
+  leftCyl: "0",
+  leftAxis: "0",
+  pd: "",
+  lensMaterial: "",
+  notes: "",
+};
+
+const INITIAL_PRICING_STATE = {
+  status: "idle",
+  error: "",
+  framePrice: 0,
+  lensPrice: 0,
+  coatingPrice: 0,
+  totalPrice: 0,
+};
+
+export default function PrescriptionFlow() {
   const { productId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const { addItem } = useCart();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [lensType, setLensType] = useState("");
-  const [prescription, setPrescription] = useState({
-    odSph: "",
-    odCyl: "",
-    odAxis: "",
-    osSph: "",
-    osCyl: "",
-    osAxis: "",
-    pd: ""
-  });
-  const [errors, setErrors] = useState({});
-  const [lensPackage, setLensPackage] = useState("");
-  const validatePrescription = () => {
-    const newErrors = {};
-    if (!prescription.odSph) {
-      newErrors.odSph = "Required";
-    } else if (isNaN(parseFloat(prescription.odSph))) {
-      newErrors.odSph = "Must be a number";
-    }
-    if (!prescription.osSph) {
-      newErrors.osSph = "Required";
-    } else if (isNaN(parseFloat(prescription.osSph))) {
-      newErrors.osSph = "Must be a number";
-    }
-    if (prescription.odCyl && isNaN(parseFloat(prescription.odCyl))) {
-      newErrors.odCyl = "Must be a number";
-    }
-    if (prescription.osCyl && isNaN(parseFloat(prescription.osCyl))) {
-      newErrors.osCyl = "Must be a number";
-    }
-    if (prescription.odAxis && (isNaN(parseInt(prescription.odAxis)) || parseInt(prescription.odAxis) < 0 || parseInt(prescription.odAxis) > 180)) {
-      newErrors.odAxis = "Must be 0-180";
-    }
-    if (prescription.osAxis && (isNaN(parseInt(prescription.osAxis)) || parseInt(prescription.osAxis) < 0 || parseInt(prescription.osAxis) > 180)) {
-      newErrors.osAxis = "Must be 0-180";
-    }
-    if (!prescription.pd) {
-      newErrors.pd = "Required";
-    } else if (isNaN(parseFloat(prescription.pd))) {
-      newErrors.pd = "Must be a number";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-  const handleNext = () => {
-    if (currentStep === 1 && !lensType) {
-      return;
-    }
-    if (currentStep === 2 && !validatePrescription()) {
-      return;
-    }
-    if (currentStep === 3 && !lensPackage) {
-      return;
-    }
-    if (currentStep < 4) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      const lensTypeName = lensType === "single" ? "\u0110\u01A1n Tr\xF2ng" : lensType === "bluelight" ? "Ch\u1ED1ng \xC1nh S\xE1ng Xanh" : "\u0110a Tr\xF2ng";
-      const lensPackageName = lensPackage === "basic" ? "G\xF3i C\u01A1 B\u1EA3n" : lensPackage === "premium" ? "G\xF3i Cao C\u1EA5p" : "G\xF3i Si\xEAu M\u1ECFng";
-      const lensPrice = lensPackage === "premium" ? 79 : lensPackage === "ultra" ? 129 : 29;
-      addItem({
-        id: `prescription-${productId}-${Date.now()}`,
-        productId: productId || "1",
-        name: "G\u1ECDng Ch\u1EEF Nh\u1EADt C\u1ED5 \u0110i\u1EC3n",
-        image: "https://images.unsplash.com/photo-1626104853817-343b24b5613f?w=200",
-        color: "\u0110en",
-        quantity: 1,
-        framePrice: 79,
-        hasPrescription: true,
-        lensType: lensTypeName,
-        lensPackage: lensPackageName,
-        lensPrice,
-        prescription: {
-          rightEye: {
-            sph: prescription.odSph,
-            cyl: prescription.odCyl,
-            axis: prescription.odAxis
-          },
-          leftEye: {
-            sph: prescription.osSph,
-            cyl: prescription.osCyl,
-            axis: prescription.osAxis
-          },
-          pd: prescription.pd
+  const { addPrescriptionItem, isCustomerSession } = useCart();
+
+  const [product, setProduct] = useState(null);
+  const [lensTypes, setLensTypes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedLensTypeId, setSelectedLensTypeId] = useState("");
+  const [selectedCoatings, setSelectedCoatings] = useState([]);
+  const [formState, setFormState] = useState(INITIAL_FORM_STATE);
+  const [formError, setFormError] = useState("");
+  const [pricing, setPricing] = useState(INITIAL_PRICING_STATE);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadData() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const numericProductId = Number.parseInt(String(productId ?? ""), 10);
+
+        if (!Number.isFinite(numericProductId) || numericProductId <= 0) {
+          throw new Error("Không tìm thấy sản phẩm hợp lệ cho flow theo toa.");
         }
+
+        const [productDetail, availableLensTypes, eligibility] = await Promise.all([
+          getCatalogProductById(numericProductId),
+          getLensTypes(),
+          getPrescriptionEligibility(numericProductId),
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (!eligibility?.isEligible || !productDetail?.prescriptionCompatible) {
+          throw new Error(eligibility?.reason || "Sản phẩm này hiện không hỗ trợ đặt kính theo toa.");
+        }
+
+        const preferredVariant = resolvePreferredVariant(productDetail);
+        const nextColor = normalizeText(location.state?.selectedColor) ?? productDetail.colors?.[0] ?? preferredVariant?.color ?? "";
+        const nextSize = normalizeText(location.state?.selectedSize) ?? productDetail.sizes?.[0] ?? preferredVariant?.size ?? "";
+
+        setProduct(productDetail);
+        setLensTypes(availableLensTypes);
+        setSelectedColor(nextColor);
+        setSelectedSize(nextSize);
+        setSelectedLensTypeId(String(availableLensTypes[0]?.lensTypeId ?? ""));
+      } catch (loadError) {
+        if (!isMounted) {
+          return;
+        }
+
+        const message =
+          getPrescriptionApiErrorMessage(
+            loadError,
+            getCatalogErrorMessage(
+              loadError,
+              getLensTypeErrorMessage(loadError, "Không thể tải luồng đặt kính theo toa lúc này."),
+            ),
+          ) || "Không thể tải luồng đặt kính theo toa lúc này.";
+
+        setError(message);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [location.state?.selectedColor, location.state?.selectedSize, productId]);
+
+  const selectedVariant = useMemo(() => {
+    if (!product) {
+      return null;
+    }
+
+    const variants = Array.isArray(product.variants) ? product.variants : [];
+
+    const exactMatch = variants.find((variant) => {
+      const colorMatches = !selectedColor || variant.color === selectedColor;
+      const sizeMatches = !selectedSize || variant.size === selectedSize;
+      return colorMatches && sizeMatches;
+    });
+
+    return exactMatch ?? resolvePreferredVariant(product);
+  }, [product, selectedColor, selectedSize]);
+
+  const selectedLensType = useMemo(
+    () => lensTypes.find((item) => String(item.lensTypeId) === String(selectedLensTypeId)) ?? null,
+    [lensTypes, selectedLensTypeId],
+  );
+
+  const totalPrice = pricing.totalPrice || (Number(selectedVariant?.price ?? 0) + Number(selectedLensType?.price ?? 0));
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadPricing() {
+      if (!selectedVariant?.variantId || !selectedLensType?.lensTypeId) {
+        setPricing(INITIAL_PRICING_STATE);
+        return;
+      }
+
+      setPricing((current) => ({
+        ...current,
+        status: "loading",
+        error: "",
+      }));
+
+      try {
+        const response = await calculatePrescriptionPricing({
+          variantId: selectedVariant.variantId,
+          lensTypeId: selectedLensType.lensTypeId,
+          coatings: selectedCoatings,
+          quantity: 1,
+        });
+
+        if (isCancelled) {
+          return;
+        }
+
+        setPricing({
+          status: "succeeded",
+          error: "",
+          framePrice: Number(response?.framePrice ?? 0),
+          lensPrice: Number(response?.lensPrice ?? 0),
+          coatingPrice: Number(response?.coatingPrice ?? 0),
+          totalPrice: Number(response?.totalPrice ?? 0),
+        });
+      } catch (pricingError) {
+        if (isCancelled) {
+          return;
+        }
+
+        setPricing({
+          status: "failed",
+          error: getPrescriptionApiErrorMessage(pricingError, "Không thể tính giá prescription từ backend."),
+          framePrice: Number(selectedVariant?.price ?? 0),
+          lensPrice: Number(selectedLensType?.price ?? 0),
+          coatingPrice: 0,
+          totalPrice: Number(selectedVariant?.price ?? 0) + Number(selectedLensType?.price ?? 0),
+        });
+      }
+    }
+
+    void loadPricing();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedCoatings, selectedLensType?.lensTypeId, selectedLensType?.price, selectedVariant?.price, selectedVariant?.variantId]);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setFormError("");
+
+    if (!isCustomerSession) {
+      navigate("/login");
+      return;
+    }
+
+    if (!product?.prescriptionCompatible) {
+      setFormError("Sản phẩm này không còn hỗ trợ prescription.");
+      return;
+    }
+
+    if (!selectedVariant?.variantId) {
+      setFormError("Không tìm thấy biến thể hợp lệ cho sản phẩm này.");
+      return;
+    }
+
+    if (!selectedLensType?.lensTypeId) {
+      setFormError("Vui lòng chọn loại tròng kính.");
+      return;
+    }
+
+    const validationMessage = validatePrescriptionForm(formState);
+
+    if (validationMessage) {
+      setFormError(validationMessage);
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      await addPrescriptionItem({
+        variantId: selectedVariant.variantId,
+        quantity: 1,
+        lensTypeId: selectedLensType.lensTypeId,
+        lensMaterial: normalizeOptionalField(formState.lensMaterial),
+        coatings: selectedCoatings,
+        rightEye: {
+          sph: parseDecimal(formState.rightSph),
+          cyl: parseDecimal(formState.rightCyl),
+          axis: parseInteger(formState.rightAxis),
+        },
+        leftEye: {
+          sph: parseDecimal(formState.leftSph),
+          cyl: parseDecimal(formState.leftCyl),
+          axis: parseInteger(formState.leftAxis),
+        },
+        pd: parseDecimal(formState.pd),
+        notes: normalizeOptionalField(formState.notes),
+        view: createCartItemView(product, selectedVariant),
       });
+
       navigate("/cart");
+    } catch (submitError) {
+      setFormError(resolveErrorMessage(submitError, "Không thể thêm sản phẩm theo toa vào giỏ hàng."));
+    } finally {
+      setSubmitting(false);
     }
-  };
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-  const goToStep = (step) => {
-    setCurrentStep(step);
-  };
-  return <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-center mb-12">Tùy Chỉnh Tròng Kính</h1>
-      <StepProgress steps={steps} currentStep={currentStep} />
+  }
 
-      {currentStep === 1 && <div className="max-w-3xl mx-auto">
-          <h2 className="mb-3 text-center">Chọn Loại Tròng Kính</h2>
-          <p className="text-center text-muted-foreground mb-8">Chọn loại tròng kính phù hợp với nhu cầu thị lực của bạn</p>
-          <div className="grid md:grid-cols-3 gap-4">
-            {[
-    {
-      value: "single",
-      name: "\u0110\u01A1n Tr\xF2ng",
-      desc: "Cho c\u1EADn th\u1ECB ho\u1EB7c vi\u1EC5n th\u1ECB",
-      icon: Eye,
-      popular: false
-    },
-    {
-      value: "bluelight",
-      name: "Ch\u1ED1ng \xC1nh S\xE1ng Xanh",
-      desc: "B\u1EA3o v\u1EC7 m\u1EAFt khi d\xF9ng m\xE0n h\xECnh",
-      icon: Shield,
-      popular: true
-    },
-    {
-      value: "progressive",
-      name: "\u0110a Tr\xF2ng",
-      desc: "\u0110a ti\xEAu c\u1EF1 chuy\u1EC3n ti\u1EBFp m\u01B0\u1EE3t m\xE0",
-      icon: Sparkles,
-      popular: false
-    }
-  ].map((type) => <button
-    key={type.value}
-    onClick={() => setLensType(type.value)}
-    className={`relative p-6 rounded-xl border-2 text-left transition-all hover:shadow-lg ${lensType === type.value ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/50"}`}
-  >
-                {type.popular && <span className="absolute -top-2 -right-2 bg-accent text-white text-xs px-3 py-1 rounded-full">
-                    Phổ biến
-                  </span>}
-                <div className="flex flex-col items-center text-center">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${lensType === type.value ? "bg-primary text-white" : "bg-secondary text-primary"}`}>
-                    <type.icon className="w-6 h-6" />
-                  </div>
-                  <p className="mb-2">{type.name}</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{type.desc}</p>
-                  {lensType === type.value && <Check className="w-6 h-6 text-primary mt-4" />}
-                </div>
-              </button>)}
-          </div>
-        </div>}
+  function updateField(field, value) {
+    setFormState((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
 
-      {currentStep === 2 && <div className="max-w-4xl mx-auto">
-          <h2 className="mb-3 text-center">Nhập Đơn Kính Của Bạn</h2>
-          <p className="text-center text-muted-foreground mb-8">
-            Sao chép các giá trị từ đơn kính của bạn chính xác như trên đơn
-          </p>
+  function toggleCoating(coatingName) {
+    setSelectedCoatings((current) =>
+      current.includes(coatingName)
+        ? current.filter((item) => item !== coatingName)
+        : [...current, coatingName],
+    );
+  }
 
-          <div className="bg-secondary p-8 rounded-xl">
-            <div className="grid grid-cols-4 gap-4 mb-4">
-              <div />
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1 mb-2">
-                  <span className="text-sm">SPH</span>
-                  <div className="group relative">
-                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 p-3 bg-foreground text-background text-xs rounded-lg shadow-lg z-10">
-                      <p className="mb-1">Cầu (SPH)</p>
-                      <p>Chỉ định cận (-) hoặc viễn (+). Trường bắt buộc.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1 mb-2">
-                  <span className="text-sm">CYL</span>
-                  <div className="group relative">
-                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 p-3 bg-foreground text-background text-xs rounded-lg shadow-lg z-10">
-                      <p className="mb-1">Trụ (CYL)</p>
-                      <p>Đo loạn thị. Để trống nếu không có.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-1 mb-2">
-                  <span className="text-sm">AXIS</span>
-                  <div className="group relative">
-                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-64 p-3 bg-foreground text-background text-xs rounded-lg shadow-lg z-10">
-                      <p className="mb-1">Trục</p>
-                      <p>Hướng loạn thị (0-180). Chỉ cần nếu có CYL.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="rounded-[28px] border border-border bg-white p-8 shadow-sm">
+          <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <p className="text-center text-muted-foreground">Đang tải luồng đặt kính theo toa...</p>
+        </div>
+      </div>
+    );
+  }
 
-            <div className="grid grid-cols-4 gap-4 mb-4">
-              <div className="flex items-center">
-                <span className="text-sm">OD (Mắt phải)</span>
-              </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0.00"
-    value={prescription.odSph}
-    onChange={(e) => {
-      setPrescription({ ...prescription, odSph: e.target.value });
-      setErrors({ ...errors, odSph: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.odSph ? "border-destructive" : "border-border"}`}
-  />
-                {errors.odSph && <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.odSph}
-                  </p>}
-              </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0.00"
-    value={prescription.odCyl}
-    onChange={(e) => {
-      setPrescription({ ...prescription, odCyl: e.target.value });
-      setErrors({ ...errors, odCyl: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.odCyl ? "border-destructive" : "border-border"}`}
-  />
-                {errors.odCyl && <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.odCyl}
-                  </p>}
-              </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0"
-    value={prescription.odAxis}
-    onChange={(e) => {
-      setPrescription({ ...prescription, odAxis: e.target.value });
-      setErrors({ ...errors, odAxis: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.odAxis ? "border-destructive" : "border-border"}`}
-  />
-                {errors.odAxis && <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.odAxis}
-                  </p>}
-              </div>
-            </div>
+  if (error || !product) {
+    return (
+      <StateCard
+        title="Flow prescription chưa sẵn sàng"
+        description={error || "Không thể tải thông tin sản phẩm theo toa."}
+      />
+    );
+  }
 
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              <div className="flex items-center">
-                <span className="text-sm">OS (Mắt trái)</span>
-              </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0.00"
-    value={prescription.osSph}
-    onChange={(e) => {
-      setPrescription({ ...prescription, osSph: e.target.value });
-      setErrors({ ...errors, osSph: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.osSph ? "border-destructive" : "border-border"}`}
-  />
-                {errors.osSph && <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.osSph}
-                  </p>}
-              </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0.00"
-    value={prescription.osCyl}
-    onChange={(e) => {
-      setPrescription({ ...prescription, osCyl: e.target.value });
-      setErrors({ ...errors, osCyl: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.osCyl ? "border-destructive" : "border-border"}`}
-  />
-                {errors.osCyl && <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.osCyl}
-                  </p>}
-              </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0"
-    value={prescription.osAxis}
-    onChange={(e) => {
-      setPrescription({ ...prescription, osAxis: e.target.value });
-      setErrors({ ...errors, osAxis: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.osAxis ? "border-destructive" : "border-border"}`}
-  />
-                {errors.osAxis && <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.osAxis}
-                  </p>}
-              </div>
-            </div>
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <button
+        type="button"
+        onClick={() => navigate(`/product/${productId}`)}
+        className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Quay lại chi tiết sản phẩm
+      </button>
 
-            <div className="border-t border-border pt-6">
-              <div className="max-w-xs">
-                <div className="flex items-center gap-1 mb-2">
-                  <label className="text-sm">Khoảng Cách Đồng Tử (PD)</label>
-                  <div className="group relative">
-                    <HelpCircle className="w-4 h-4 text-muted-foreground cursor-help" />
-                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-64 p-3 bg-foreground text-background text-xs rounded-lg shadow-lg z-10">
-                      <p className="mb-1">Khoảng Cách Đồng Tử</p>
-                      <p>Khoảng cách giữa hai đồng tử tính bằng mm. Thường là 54-74mm ở người lớn.</p>
-                    </div>
-                  </div>
-                </div>
-                <input
-    type="text"
-    placeholder="63"
-    value={prescription.pd}
-    onChange={(e) => {
-      setPrescription({ ...prescription, pd: e.target.value });
-      setErrors({ ...errors, pd: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary ${errors.pd ? "border-destructive" : "border-border"}`}
-  />
-                {errors.pd && <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.pd}
-                  </p>}
-              </div>
+      <div className="mb-8 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="rounded-[28px] border border-border bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-start gap-4">
+            <img
+              src={product.image}
+              alt={product.name}
+              className="h-28 w-28 rounded-2xl object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
+                <Check className="h-3.5 w-3.5" />
+                Hỗ trợ đo kính theo toa
+              </p>
+              <h1 className="text-3xl">{product.name}</h1>
+              <p className="mt-2 text-muted-foreground leading-7">{product.description}</p>
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-900">
-              <strong>Cần hỗ trợ?</strong> Giá trị đơn kính có thể tìm thấy trên giấy đơn kính hoặc liên hệ bác sĩ nhãn khoa của bạn.
-            </p>
-          </div>
-        </div>}
+          <form onSubmit={handleSubmit} className="space-y-8">
+            <section>
+              <div className="mb-4">
+                <h2 className="text-xl">1. Chọn biến thể gọng kính</h2>
+                <p className="text-sm text-muted-foreground">Màu và kích thước này sẽ được đưa vào cart prescription.</p>
+              </div>
 
-      {currentStep === 3 && <div className="max-w-3xl mx-auto">
-          <h2 className="mb-3 text-center">Chọn Gói Tròng Kính</h2>
-          <p className="text-center text-muted-foreground mb-8">Chọn các tính năng phù hợp nhất với lối sống của bạn</p>
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-    {
-      value: "basic",
-      name: "C\u01A1 B\u1EA3n",
-      price: 29,
-      recommended: false,
-      features: ["Tr\xF2ng nh\u1EF1a CR-39", "Ch\u1ED1ng tr\u1EA7y x\u01B0\u1EDBc c\u01A1 b\u1EA3n", "Ch\u1ED1ng tia UV"]
-    },
-    {
-      value: "premium",
-      name: "Cao C\u1EA5p",
-      price: 79,
-      recommended: true,
-      features: ["Tr\xF2ng c\u1EADn cao 1.67", "Ph\u1EE7 ch\u1ED1ng ph\u1EA3n quang", "Ch\u1ED1ng tr\u1EA7y x\u01B0\u1EDBc t\u1ED1t", "L\u1ECDc \xE1nh s\xE1ng xanh"]
-    },
-    {
-      value: "ultra",
-      name: "Si\xEAu M\u1ECFng",
-      price: 129,
-      recommended: false,
-      features: ["Tr\xF2ng si\xEAu m\u1ECFng 1.74", "Ph\u1EE7 ch\u1ED1ng ph\u1EA3n quang cao c\u1EA5p", "Ch\u1ED1ng tr\u1EA7y x\u01B0\u1EDBc v\u01B0\u1EE3t tr\u1ED9i", "L\u1ECDc \xE1nh s\xE1ng xanh", "Ch\u1ED1ng b\xE1m b\u1EA9n"]
-    }
-  ].map((pkg) => <button
-    key={pkg.value}
-    onClick={() => setLensPackage(pkg.value)}
-    className={`relative p-6 rounded-xl border-2 text-left transition-all hover:shadow-lg ${lensPackage === pkg.value ? "border-primary bg-primary/5 shadow-md" : "border-border hover:border-primary/50"} ${pkg.recommended ? "ring-2 ring-accent ring-offset-2" : ""}`}
-  >
-                {pkg.recommended && <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-accent text-white text-xs px-4 py-1 rounded-full">
-                    Khuyên dùng
-                  </span>}
-                <div className="mb-4">
-                  <p className="mb-2">{pkg.name}</p>
-                  <p className="text-3xl text-primary">+${pkg.price}</p>
-                </div>
-                <ul className="space-y-2 mb-4">
-                  {pkg.features.map((feature, i) => <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
-                      <Check className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                      {feature}
-                    </li>)}
-                </ul>
-                {lensPackage === pkg.value && <div className="pt-4 border-t border-border flex items-center justify-center gap-2 text-primary">
-                    <Check className="w-5 h-5" />
-                    <span className="text-sm">Đã chọn</span>
-                  </div>}
-              </button>)}
-          </div>
-        </div>}
-
-      {currentStep === 4 && <div className="max-w-3xl mx-auto">
-          <h2 className="mb-3 text-center">Xem Lại Đơn Hàng</h2>
-          <p className="text-center text-muted-foreground mb-8">Vui lòng kiểm tra tất cả thông tin trước khi thêm vào giỏ</p>
-          <div className="bg-white border-2 border-border rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-border">
-              <div className="flex items-start justify-between">
-                <div className="flex gap-4 flex-1">
-                  <img
-    src="https://images.unsplash.com/photo-1626104853817-343b24b5613f?w=120"
-    alt="Frame"
-    className="w-20 h-20 object-cover rounded-lg"
-  />
-                  <div className="flex-1">
-                    <h3 className="mb-1">Gọng Chữ Nhật Cổ Điển</h3>
-                    <p className="text-sm text-muted-foreground mb-2">Đen</p>
-                    <p className="text-primary">$79.00</p>
+              {product.colors.length > 0 && (
+                <div className="mb-5">
+                  <p className="mb-3 text-sm">Màu sắc</p>
+                  <div className="flex flex-wrap gap-3">
+                    {product.colors.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setSelectedColor(color)}
+                        className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                          selectedColor === color ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/40"
+                        }`}
+                      >
+                        {color}
+                      </button>
+                    ))}
                   </div>
                 </div>
-                <button
-    onClick={() => navigate(`/product/${productId}`)}
-    className="text-primary hover:underline text-sm flex items-center gap-1"
-  >
-                  <Edit2 className="w-4 h-4" />
-                  Thay đổi
-                </button>
+              )}
+
+              {product.sizes.length > 0 && (
+                <div>
+                  <p className="mb-3 text-sm">Kích thước</p>
+                  <div className="flex flex-wrap gap-3">
+                    {product.sizes.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => setSelectedSize(size)}
+                        className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                          selectedSize === size ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/40"
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section>
+              <div className="mb-4">
+                <h2 className="text-xl">2. Chọn loại tròng</h2>
+                <p className="text-sm text-muted-foreground">Danh sách này đang đọc trực tiếp từ `GET /api/lens-types`.</p>
               </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                {lensTypes.map((lensType) => (
+                  <button
+                    key={lensType.lensTypeId}
+                    type="button"
+                    onClick={() => setSelectedLensTypeId(String(lensType.lensTypeId))}
+                    className={`rounded-2xl border p-4 text-left transition-colors ${
+                      String(selectedLensTypeId) === String(lensType.lensTypeId)
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p>{lensType.lensName}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{lensType.lensCode}</p>
+                      </div>
+                      <span className="text-primary">{formatCurrency(lensType.price)}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <div className="mb-4">
+                <h2 className="text-xl">3. Nhập thông số toa kính</h2>
+                <p className="text-sm text-muted-foreground">
+                  Nếu toa của bạn không có CYL/AXIS, hãy nhập `0`. Backend hiện tại yêu cầu đầy đủ các trường này.
+                </p>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-3">
+                <NumericField label="SPH mắt phải" value={formState.rightSph} onChange={(value) => updateField("rightSph", value)} placeholder="-1.25" />
+                <NumericField label="CYL mắt phải" value={formState.rightCyl} onChange={(value) => updateField("rightCyl", value)} placeholder="0.00" />
+                <NumericField label="AXIS mắt phải" value={formState.rightAxis} onChange={(value) => updateField("rightAxis", value)} placeholder="0" />
+                <NumericField label="SPH mắt trái" value={formState.leftSph} onChange={(value) => updateField("leftSph", value)} placeholder="-1.00" />
+                <NumericField label="CYL mắt trái" value={formState.leftCyl} onChange={(value) => updateField("leftCyl", value)} placeholder="0.00" />
+                <NumericField label="AXIS mắt trái" value={formState.leftAxis} onChange={(value) => updateField("leftAxis", value)} placeholder="0" />
+              </div>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <NumericField label="PD" value={formState.pd} onChange={(value) => updateField("pd", value)} placeholder="63" />
+                <TextField
+                  label="Chất liệu tròng"
+                  value={formState.lensMaterial}
+                  onChange={(value) => updateField("lensMaterial", value)}
+                  placeholder="Ví dụ: 1.56, 1.60..."
+                />
+              </div>
+            </section>
+
+            <section>
+              <div className="mb-4">
+                <h2 className="text-xl">4. Tùy chọn bổ sung</h2>
+                <p className="text-sm text-muted-foreground">Coating hiện chưa tính thêm phí trên backend, nhưng đã lưu vào đơn prescription.</p>
+              </div>
+
+              <div className="mb-4 flex flex-wrap gap-3">
+                {COATING_OPTIONS.map((coating) => {
+                  const isSelected = selectedCoatings.includes(coating);
+
+                  return (
+                    <button
+                      key={coating}
+                      type="button"
+                      onClick={() => toggleCoating(coating)}
+                      className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                        isSelected ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/40"
+                      }`}
+                    >
+                      {coating}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <label className="block">
+                <span className="mb-2 block text-sm">Ghi chú</span>
+                <textarea
+                  value={formState.notes}
+                  onChange={(event) => updateField("notes", event.target.value)}
+                  placeholder="Ghi chú thêm cho đơn kính theo toa"
+                  rows={4}
+                  className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition-colors focus:border-primary"
+                />
+              </label>
+            </section>
+
+            {formError && (
+              <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                <p className="text-sm leading-6">{formError}</p>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="submit"
+                disabled={submitting || pricing.status === "loading"}
+                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
+              >
+                {submitting ? (
+                  <>
+                    <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    Đang thêm vào giỏ...
+                  </>
+                ) : pricing.status === "loading" ? (
+                  <>
+                    <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    Đang tính giá từ backend...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="h-4 w-4" />
+                    Thêm đơn kính vào giỏ
+                  </>
+                )}
+              </button>
+
+              {!isCustomerSession && (
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-border px-6 py-3 transition-colors hover:bg-secondary"
+                >
+                  Đăng nhập để đặt hàng
+                </Link>
+              )}
+            </div>
+          </form>
+        </section>
+
+        <aside className="h-fit rounded-[28px] border border-border bg-white p-6 shadow-sm lg:sticky lg:top-24">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Eye className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-xl">Tóm tắt đơn kính</h2>
+              <p className="text-sm text-muted-foreground">Bạn xem nhanh trước khi thêm vào giỏ.</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-2xl bg-secondary/60 p-4">
+              <p className="text-sm text-muted-foreground">Biến thể đã chọn</p>
+              <p className="mt-2">{selectedColor || selectedVariant?.color || "Mặc định"}</p>
+              <p className="text-sm text-muted-foreground">{selectedSize || selectedVariant?.size || "Không có size"}</p>
+              <p className="mt-3 text-sm text-muted-foreground">SKU: {selectedVariant?.sku || "Đang cập nhật"}</p>
             </div>
 
-            <div className="p-6 border-b border-border bg-secondary/30">
-              <div className="flex items-start justify-between mb-3">
-                <h3>Loại Tròng</h3>
-                <button
-    onClick={() => goToStep(1)}
-    className="text-primary hover:underline text-sm flex items-center gap-1"
-  >
-                  <Edit2 className="w-4 h-4" />
-                  Sửa
-                </button>
-              </div>
-              <p className="text-foreground/80 capitalize">
-                {lensType === "single" ? "\u0110\u01A1n Tr\xF2ng" : lensType === "bluelight" ? "Ch\u1ED1ng \xC1nh S\xE1ng Xanh" : lensType === "progressive" ? "\u0110a Tr\xF2ng" : "Ch\u01B0a ch\u1ECDn"}
+            <div className="rounded-2xl bg-secondary/60 p-4">
+              <p className="text-sm text-muted-foreground">Tròng kính</p>
+              <p className="mt-2">{selectedLensType?.lensName || "Chưa chọn"}</p>
+              <p className="text-sm text-primary">{formatCurrency(pricing.lensPrice || selectedLensType?.price || 0)}</p>
+            </div>
+
+            <div className="rounded-2xl bg-secondary/60 p-4">
+              <p className="text-sm text-muted-foreground">Coatings</p>
+              <p className="mt-2 text-sm">
+                {selectedCoatings.length > 0 ? selectedCoatings.join(", ") : "Chưa chọn coating bổ sung"}
               </p>
             </div>
 
-            <div className="p-6 border-b border-border">
-              <div className="flex items-start justify-between mb-3">
-                <h3>Chi Tiết Đơn Kính</h3>
-                <button
-    onClick={() => goToStep(2)}
-    className="text-primary hover:underline text-sm flex items-center gap-1"
-  >
-                  <Edit2 className="w-4 h-4" />
-                  Sửa
-                </button>
-              </div>
-              <div className="bg-secondary p-4 rounded-lg space-y-2 text-sm">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-muted-foreground mb-1">Mắt Phải (OD)</p>
-                    <p>SPH: {prescription.odSph || "\u2014"}</p>
-                    <p>CYL: {prescription.odCyl || "\u2014"}</p>
-                    <p>AXIS: {prescription.odAxis || "\u2014"}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground mb-1">Mắt Trái (OS)</p>
-                    <p>SPH: {prescription.osSph || "\u2014"}</p>
-                    <p>CYL: {prescription.osCyl || "\u2014"}</p>
-                    <p>AXIS: {prescription.osAxis || "\u2014"}</p>
-                  </div>
-                </div>
-                <div className="border-t border-border pt-2">
-                  <p>Khoảng Cách Đồng Tử: {prescription.pd || "\u2014"} mm</p>
-                </div>
-              </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+              Tổng tạm tính: <span className="font-semibold">{formatCurrency(totalPrice)}</span>
+              <p className="mt-2 text-emerald-800">
+                Giá này đang ưu tiên đọc từ `POST /api/prescription-pricings/calculate`.
+              </p>
             </div>
 
-            <div className="p-6 border-b border-border bg-secondary/30">
-              <div className="flex items-start justify-between mb-3">
-                <h3>Gói Tròng Kính</h3>
-                <button
-    onClick={() => goToStep(3)}
-    className="text-primary hover:underline text-sm flex items-center gap-1"
-  >
-                  <Edit2 className="w-4 h-4" />
-                  Sửa
-                </button>
+            {pricing.error ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                {pricing.error}
+                <p className="mt-2">Tạm thời FE đang fallback về phép cộng local giá gọng + giá lens.</p>
               </div>
-              <div className="flex items-center justify-between">
-                <p className="text-foreground/80 capitalize">
-                  {lensPackage === "basic" ? "G\xF3i C\u01A1 B\u1EA3n" : lensPackage === "premium" ? "G\xF3i Cao C\u1EA5p" : lensPackage === "ultra" ? "G\xF3i Si\xEAu M\u1ECFng" : "Ch\u01B0a ch\u1ECDn"}
-                </p>
-                <p className="text-primary">
-                  +${lensPackage === "premium" ? "79" : lensPackage === "ultra" ? "129" : lensPackage === "basic" ? "29" : "0"}.00
-                </p>
-              </div>
-            </div>
+            ) : null}
 
-            <div className="p-6 bg-primary/5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-muted-foreground mb-1">Tổng Tiền</p>
-                  <p className="text-3xl text-primary">
-                    ${79 + (lensPackage === "premium" ? 79 : lensPackage === "ultra" ? 129 : lensPackage === "basic" ? 29 : 0)}.00
-                  </p>
-                </div>
-                <div className="text-right text-sm text-muted-foreground">
-                  <p>Miễn phí vận chuyển</p>
-                  <p>Đổi trả trong 30 ngày</p>
-                </div>
-              </div>
+            <div className="rounded-2xl bg-secondary/60 p-4 text-sm text-muted-foreground">
+              Checkout hiện tại đã có thể gửi cart item theo toa, miễn là giỏ hàng chỉ gồm cùng một loại đơn.
             </div>
           </div>
-        </div>}
-
-      <div className="flex items-center justify-between max-w-3xl mx-auto mt-12">
-        <button
-    onClick={handleBack}
-    disabled={currentStep === 1}
-    className="px-6 py-3 border border-border rounded hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-  >
-          Quay lại
-        </button>
-        <button
-    onClick={handleNext}
-    disabled={currentStep === 1 && !lensType || currentStep === 3 && !lensPackage}
-    className="px-8 py-3 bg-primary text-white rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-  >
-          {currentStep === 4 ? "Th\xEAm v\xE0o gi\u1ECF" : "Ti\u1EBFp t\u1EE5c"}
-        </button>
+        </aside>
       </div>
-    </div>;
+    </div>
+  );
 }
-export {
-  PrescriptionFlow as default
-};
+
+function NumericField({ label, value, onChange, placeholder }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition-colors focus:border-primary"
+      />
+    </label>
+  );
+}
+
+function TextField({ label, value, onChange, placeholder }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition-colors focus:border-primary"
+      />
+    </label>
+  );
+}
+
+function StateCard({ title, description }) {
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
+        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <AlertCircle className="h-10 w-10" />
+        </div>
+        <h1 className="mb-3 text-3xl">{title}</h1>
+        <p className="mx-auto mb-8 max-w-2xl text-muted-foreground leading-7">{description}</p>
+        <div className="flex justify-center gap-3">
+          <Link
+            to="/shop"
+            className="rounded-2xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
+          >
+            Quay về cửa hàng
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function validatePrescriptionForm(formState) {
+  const requiredDecimalFields = [
+    { key: "rightSph", label: "SPH mắt phải" },
+    { key: "rightCyl", label: "CYL mắt phải" },
+    { key: "leftSph", label: "SPH mắt trái" },
+    { key: "leftCyl", label: "CYL mắt trái" },
+    { key: "pd", label: "PD" },
+  ];
+
+  for (const field of requiredDecimalFields) {
+    if (!isFiniteNumber(formState[field.key])) {
+      return `${field.label} phải là số hợp lệ.`;
+    }
+  }
+
+  const axisFields = [
+    { key: "rightAxis", label: "AXIS mắt phải" },
+    { key: "leftAxis", label: "AXIS mắt trái" },
+  ];
+
+  for (const field of axisFields) {
+    if (!isValidAxis(formState[field.key])) {
+      return `${field.label} phải nằm trong khoảng 0-180.`;
+    }
+  }
+
+  if (parseDecimal(formState.pd) <= 0) {
+    return "PD phải lớn hơn 0.";
+  }
+
+  return "";
+}
+
+function isFiniteNumber(value) {
+  return Number.isFinite(parseDecimal(value));
+}
+
+function isValidAxis(value) {
+  const parsedValue = parseInteger(value);
+  return Number.isInteger(parsedValue) && parsedValue >= 0 && parsedValue <= 180;
+}
+
+function parseDecimal(value) {
+  return Number.parseFloat(String(value ?? "").trim().replace(",", "."));
+}
+
+function parseInteger(value) {
+  return Number.parseInt(String(value ?? "").trim(), 10);
+}
+
+function resolveErrorMessage(error, fallbackMessage) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error;
+  }
+
+  return fallbackMessage;
+}
+
+function normalizeOptionalField(value) {
+  const normalizedValue = String(value ?? "").trim();
+  return normalizedValue.length > 0 ? normalizedValue : undefined;
+}
+
+function normalizeText(value) {
+  const normalizedValue = String(value ?? "").trim();
+  return normalizedValue.length > 0 ? normalizedValue : null;
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(value ?? 0));
+}
+
+

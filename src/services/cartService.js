@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiRequest, ApiError } from "@/services/apiClient";
+﻿import { apiGet, apiPost, apiRequest, ApiError } from "@/services/apiClient";
 
 const CARTS_BASE_PATH = "/api/carts";
 const VARIANTS_BASE_PATH = "/api/variants";
@@ -11,6 +11,10 @@ export async function getMyCart(token) {
 
 export async function createStandardCartItem(token, payload) {
   return apiPost(`${CARTS_BASE_PATH}/me/items`, payload, { token });
+}
+
+export async function createPrescriptionCartItem(token, payload) {
+  return apiPost(`${CARTS_BASE_PATH}/me/prescription-items`, payload, { token });
 }
 
 export async function updateStandardCartItem(token, cartItemId, payload) {
@@ -83,7 +87,7 @@ export function createCartItemView(product, variant) {
   return {
     variantId: variant?.variantId ?? 0,
     productId: product?.productId ?? parseNumericId(product?.id),
-    name: product?.name?.trim() || "San pham",
+    name: product?.name?.trim() || "Sản phẩm",
     image: product?.image || product?.images?.[0] || PLACEHOLDER_IMAGE_URL,
     selectedColor: variant?.color || product?.selectedVariant?.color || null,
     size: variant?.size || product?.selectedVariant?.size || null,
@@ -147,8 +151,8 @@ export function getCartErrorMessage(error, fallbackMessage) {
 function normalizeCartItem(item, { cachedView, variantDetail }) {
   const normalizedView = cachedView ?? {};
   const image = normalizedView.image || PLACEHOLDER_IMAGE_URL;
-  const name = normalizedView.name || `San pham #${item?.variantId ?? "N/A"}`;
-  const color = normalizedView.selectedColor || variantDetail?.color || "Mac dinh";
+  const name = normalizedView.name || `Sản phẩm #${item?.variantId ?? "N/A"}`;
+  const color = normalizedView.selectedColor || variantDetail?.color || "Mặc định";
   const size = normalizedView.size || variantDetail?.size || "";
   const sku = normalizedView.sku || variantDetail?.sku || "";
   const quantity = Number(item?.quantity ?? 0);
@@ -228,3 +232,4 @@ function parseNumericId(value) {
 function isPlainObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+

@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
+  addPrescriptionCartItem,
   addStandardCartItem,
   clearMyCart,
   deleteCartItem,
@@ -24,6 +25,7 @@ export function useCart() {
     ...cart,
     isCustomerSession: Boolean(auth.accessToken) && auth.user?.role === "customer",
     addStandardItem: (payload) => dispatch(addStandardCartItem(payload)).unwrap(),
+    addPrescriptionItem: (payload) => dispatch(addPrescriptionCartItem(payload)).unwrap(),
     updateQuantity: (cartItemId, quantity) =>
       dispatch(updateCartItemQuantity({ cartItemId, quantity })).unwrap(),
     removeItem: (cartItemId, itemType = "standard") =>

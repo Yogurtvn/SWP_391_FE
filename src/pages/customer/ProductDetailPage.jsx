@@ -8,12 +8,15 @@ export default function ProductDetailPage() {
   const shouldShowPreOrder = product?.availabilityStatus !== "available";
 
   if (ui.loading) {
-    return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid md:grid-cols-2 gap-12 animate-pulse">
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="grid animate-pulse gap-12 md:grid-cols-2">
           <div>
-            <div className="aspect-square rounded-2xl bg-secondary mb-4" />
+            <div className="mb-4 aspect-square rounded-2xl bg-secondary" />
             <div className="grid grid-cols-4 gap-3">
-              {Array.from({ length: 4 }).map((_, index) => <div key={index} className="aspect-square rounded-lg bg-secondary" />)}
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="aspect-square rounded-lg bg-secondary" />
+              ))}
             </div>
           </div>
           <div className="space-y-4">
@@ -25,91 +28,105 @@ export default function ProductDetailPage() {
             <div className="h-12 rounded bg-secondary" />
           </div>
         </div>
-      </div>;
+      </div>
+    );
   }
 
   if (ui.error) {
-    return <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
           <h1 className="mb-3">Không thể tải chi tiết sản phẩm</h1>
-          <p className="text-sm text-red-800 mb-6">{ui.error}</p>
+          <p className="mb-6 text-sm text-red-800">{ui.error}</p>
           <button
             type="button"
             onClick={actions.goBackToShop}
-            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-3 text-white hover:bg-red-700 transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-5 py-3 text-white transition-colors hover:bg-red-700"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="h-4 w-4" />
             Quay lại cửa hàng
           </button>
         </div>
-      </div>;
+      </div>
+    );
   }
 
   if (ui.isNotFound || !product) {
-    return <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    return (
+      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="text-center">
           <h1 className="mb-4">Không tìm thấy sản phẩm</h1>
-          <p className="text-muted-foreground mb-6">
+          <p className="mb-6 text-muted-foreground">
             Sản phẩm bạn đang tìm không tồn tại hoặc đã bị ẩn khỏi catalog.
           </p>
           <button
             type="button"
             onClick={actions.goBackToShop}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-white hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="h-4 w-4" />
             Quay lại cửa hàng
           </button>
         </div>
-      </div>;
+      </div>
+    );
   }
 
-  return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
       <button
         type="button"
         onClick={actions.goBackToShop}
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8"
+        className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="w-4 h-4" />
+        <ArrowLeft className="h-4 w-4" />
         Quay lại cửa hàng
       </button>
 
-      <div className="grid md:grid-cols-2 gap-12 mb-20">
+      <div className="mb-20 grid gap-12 md:grid-cols-2">
         <div>
-          <div className="relative aspect-square bg-secondary rounded-2xl overflow-hidden mb-4">
+          <div className="relative mb-4 aspect-square overflow-hidden rounded-2xl bg-secondary">
             <img
               src={product.images[currentImage] ?? product.image}
               alt={product.name}
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover"
             />
-            {product.images.length > 1 && <>
+            {product.images.length > 1 ? (
+              <>
                 <button
                   type="button"
                   onClick={actions.showPreviousImage}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full hover:bg-white transition-colors"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 transition-colors hover:bg-white"
                 >
-                  <ChevronLeft className="w-6 h-6" />
+                  <ChevronLeft className="h-6 w-6" />
                 </button>
                 <button
                   type="button"
                   onClick={actions.showNextImage}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 p-2 rounded-full hover:bg-white transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 transition-colors hover:bg-white"
                 >
-                  <ChevronRight className="w-6 h-6" />
+                  <ChevronRight className="h-6 w-6" />
                 </button>
-              </>}
+              </>
+            ) : null}
           </div>
 
-          {product.images.length > 1 && <div className="flex gap-4">
-              {product.images.map((image, index) => <button
+          {product.images.length > 1 ? (
+            <div className="flex gap-4">
+              {product.images.map((image, index) => (
+                <button
                   key={`${image}-${index}`}
                   type="button"
                   onClick={() => actions.setCurrentImage(index)}
-                  className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${index === currentImage ? "border-primary" : "border-transparent"}`}
+                  className={`h-20 w-20 overflow-hidden rounded-lg border-2 transition-colors ${
+                    index === currentImage ? "border-primary" : "border-transparent"
+                  }`}
                 >
-                  <img src={image} alt="" className="w-full h-full object-cover" />
-                </button>)}
-            </div>}
+                  <img src={image} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div>
@@ -117,112 +134,156 @@ export default function ProductDetailPage() {
             <span className="rounded-full bg-secondary px-3 py-1 text-xs text-muted-foreground">
               {product.productTypeLabel}
             </span>
-            {canBuyNow && <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700">
-                Còn hàng
-              </span>}
-            {shouldShowPreOrder && <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">
-                Hết hàng
-              </span>}
+            {canBuyNow ? (
+              <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700">Còn hàng</span>
+            ) : null}
+            {shouldShowPreOrder ? (
+              <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">Hết hàng</span>
+            ) : null}
           </div>
 
           <h1 className="mb-4">{product.name}</h1>
-          <p className="text-3xl text-primary mb-6">{formatCurrency(product.price)}</p>
+          <p className="mb-6 text-3xl text-primary">{formatCurrency(product.price)}</p>
 
-          <p className="text-muted-foreground mb-6 leading-7">{product.description}</p>
+          <p className="mb-6 leading-7 text-muted-foreground">{product.description}</p>
 
-          {product.colors.length > 0 && <div className="mb-6">
-              <label className="block mb-3">Màu sắc</label>
-              <div className="flex gap-3 flex-wrap">
-                {product.colors.map((color) => <button
+          {product.colors.length > 0 ? (
+            <div className="mb-6">
+              <label className="mb-3 block">Màu sắc</label>
+              <div className="flex flex-wrap gap-3">
+                {product.colors.map((color) => (
+                  <button
                     key={color}
                     type="button"
                     onClick={() => actions.selectColor(color)}
-                    className={`rounded-full border px-4 py-2 text-sm transition-colors ${selectedColor === color ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/50"}`}
+                    className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                      selectedColor === color
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border hover:border-primary/50"
+                    }`}
                   >
                     {color}
-                  </button>)}
+                  </button>
+                ))}
               </div>
-            </div>}
+            </div>
+          ) : null}
 
-          {product.sizes.length > 0 && <div className="mb-6">
-              <label className="block mb-3">Kích thước</label>
-              <div className="flex gap-3 flex-wrap">
-                {product.sizes.map((size) => <button
+          {product.sizes.length > 0 ? (
+            <div className="mb-6">
+              <label className="mb-3 block">Kích thước</label>
+              <div className="flex flex-wrap gap-3">
+                {product.sizes.map((size) => (
+                  <button
                     key={size}
                     type="button"
                     onClick={() => actions.selectSize(size)}
-                    className={`rounded-full border px-4 py-2 text-sm transition-colors ${selectedSize === size ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/50"}`}
+                    className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                      selectedSize === size
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border hover:border-primary/50"
+                    }`}
                   >
                     {size}
-                  </button>)}
+                  </button>
+                ))}
               </div>
-            </div>}
+            </div>
+          ) : null}
 
-          {product.prescriptionCompatible && <div className="mb-6 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              <Check className="w-4 h-4 shrink-0" />
+          {product.prescriptionCompatible ? (
+            <div className="mb-6 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              <Check className="h-4 w-4 shrink-0" />
               <span>Sản phẩm này hỗ trợ đo kính theo toa.</span>
-            </div>}
+            </div>
+          ) : null}
 
-          {product.selectedVariant && <div className="mb-6 rounded-xl bg-secondary p-4 text-sm">
+          {product.selectedVariant ? (
+            <div className="mb-6 rounded-xl bg-secondary p-4 text-sm">
               <div className="grid grid-cols-2 gap-3">
-                {product.selectedVariant.color && <div>
-                    <p className="text-muted-foreground mb-1">Màu đang chọn</p>
+                {product.selectedVariant.color ? (
+                  <div>
+                    <p className="mb-1 text-muted-foreground">Màu đang chọn</p>
                     <p>{selectedColor || product.selectedVariant.color}</p>
-                  </div>}
-                {product.selectedVariant.size && <div>
-                    <p className="text-muted-foreground mb-1">Kích thước</p>
+                  </div>
+                ) : null}
+                {product.selectedVariant.size ? (
+                  <div>
+                    <p className="mb-1 text-muted-foreground">Kích thước</p>
                     <p>{selectedSize || product.selectedVariant.size}</p>
-                  </div>}
+                  </div>
+                ) : null}
                 <div>
-                  <p className="text-muted-foreground mb-1">Số lượng khả dụng</p>
+                  <p className="mb-1 text-muted-foreground">Số lượng khả dụng</p>
                   <p>{product.selectedVariant.quantity}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground mb-1">SKU</p>
+                  <p className="mb-1 text-muted-foreground">SKU</p>
                   <p>{product.selectedVariant.sku}</p>
                 </div>
               </div>
-            </div>}
+            </div>
+          ) : null}
 
           <div className="space-y-3">
-            {canBuyNow && <>
+            {product.prescriptionCompatible ? (
+              <button
+                type="button"
+                onClick={actions.goToPrescriptionFlow}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 py-4 text-white transition-colors hover:bg-emerald-700"
+              >
+                <Check className="h-5 w-5" />
+                <span>Đặt Kính Theo Toa</span>
+              </button>
+            ) : null}
+
+            {canBuyNow ? (
+              <>
                 <button
                   type="button"
                   onClick={actions.buyNow}
-                  className="w-full py-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 group"
+                  className="group flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-4 text-white transition-colors hover:bg-primary/90"
                 >
-                  <Zap className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <Zap className="h-5 w-5 transition-transform group-hover:scale-110" />
                   <span>Mua Ngay - {formatCurrency(product.price)}</span>
                 </button>
                 <button
                   type="button"
                   onClick={actions.addToCart}
-                  className="w-full py-4 border-2 border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-primary py-4 text-primary transition-colors hover:bg-primary/5"
                 >
-                  <ShoppingCart className="w-5 h-5" />
+                  <ShoppingCart className="h-5 w-5" />
                   <span>Thêm Vào Giỏ</span>
                 </button>
-              </>}
+              </>
+            ) : null}
 
-            {shouldShowPreOrder && <button
+            {shouldShowPreOrder ? (
+              <button
                 type="button"
                 onClick={actions.goToPreOrder}
-                className="w-full py-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-orange-600 py-4 text-white transition-colors hover:bg-orange-700"
               >
-                <Zap className="w-5 h-5" />
+                <Zap className="h-5 w-5" />
                 <span>Đặt Trước</span>
-              </button>}
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
 
-      {relatedProducts.length > 0 && <section>
+      {relatedProducts.length > 0 ? (
+        <section>
           <h2 className="mb-6">Sản phẩm liên quan</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-            {relatedProducts.map((item) => <ProductCard key={item.id} {...item} />)}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {relatedProducts.map((item) => (
+              <ProductCard key={item.id} {...item} />
+            ))}
           </div>
-        </section>}
-    </div>;
+        </section>
+      ) : null}
+    </div>
+  );
 }
 
 function formatCurrency(value) {

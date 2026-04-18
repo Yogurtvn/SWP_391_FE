@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+﻿import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { mergeCurrentUserProfile } from "@/store/auth/authSlice";
 import {
   createProfileUpdatePayload,
@@ -21,13 +21,13 @@ export const fetchMyProfile = createAsyncThunk(
     const { auth } = getState();
 
     if (!auth?.accessToken) {
-      return rejectWithValue("Vui long dang nhap de xem thong tin tai khoan.");
+      return rejectWithValue("Vui lòng đăng nhập để xem thông tin tài khoản.");
     }
 
     try {
       return await getMyProfile(auth.accessToken);
     } catch (error) {
-      return rejectWithValue(getProfileErrorMessage(error, "Khong the tai thong tin tai khoan."));
+      return rejectWithValue(getProfileErrorMessage(error, "Không thể tải thông tin tài khoản."));
     }
   },
 );
@@ -38,7 +38,7 @@ export const saveMyProfile = createAsyncThunk(
     const { auth } = getState();
 
     if (!auth?.accessToken) {
-      return rejectWithValue("Vui long dang nhap de cap nhat thong tin tai khoan.");
+      return rejectWithValue("Vui lòng đăng nhập để cập nhật thông tin tài khoản.");
     }
 
     try {
@@ -54,7 +54,7 @@ export const saveMyProfile = createAsyncThunk(
 
       return updatedProfile;
     } catch (error) {
-      return rejectWithValue(getProfileErrorMessage(error, "Khong the luu thong tin tai khoan."));
+      return rejectWithValue(getProfileErrorMessage(error, "Không thể lưu thông tin tài khoản."));
     }
   },
 );
@@ -85,7 +85,7 @@ const profileSlice = createSlice({
       .addCase(fetchMyProfile.rejected, (state, action) => {
         state.profile = null;
         state.status = "failed";
-        state.error = action.payload ?? "Khong the tai thong tin tai khoan.";
+        state.error = action.payload ?? "Không thể tải thông tin tài khoản.";
       })
       .addCase(saveMyProfile.pending, (state) => {
         state.mutationStatus = "loading";
@@ -99,7 +99,7 @@ const profileSlice = createSlice({
       })
       .addCase(saveMyProfile.rejected, (state, action) => {
         state.mutationStatus = "failed";
-        state.mutationError = action.payload ?? "Khong the luu thong tin tai khoan.";
+        state.mutationError = action.payload ?? "Không thể lưu thông tin tài khoản.";
       });
   },
 });
@@ -109,3 +109,4 @@ export const { clearProfileState } = profileSlice.actions;
 export const selectProfileState = (state) => state.profile;
 
 export default profileSlice.reducer;
+

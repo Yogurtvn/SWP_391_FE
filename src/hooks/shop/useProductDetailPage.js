@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { useCart } from "@/hooks/cart/useCart";
 import { useCartDrawer } from "@/store/cart/CartDrawerContext";
@@ -85,7 +85,7 @@ export function useProductDetailPage() {
 
         setProduct(null);
         setRelatedProducts([]);
-        setError(getCatalogErrorMessage(loadError, "Khong the tai chi tiet san pham."));
+        setError(getCatalogErrorMessage(loadError, "Không thể tải chi tiết sản phẩm."));
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -151,12 +151,12 @@ export function useProductDetailPage() {
 
   async function addCurrentProductToCart(openCartDrawer) {
     if (!resolvedProduct || resolvedProduct.availabilityStatus !== "available") {
-      toast.error("San pham nay hien chua san sang de mua.");
+      toast.error("Sản phẩm nay hien chua san sang de mua.");
       return false;
     }
 
     if (!resolvedProduct.selectedVariant?.variantId) {
-      toast.error("San pham nay chua co variant hop le de goi cart API.");
+      toast.error("Sản phẩm nay chua co variant hop le de goi cart API.");
       return false;
     }
 
@@ -168,7 +168,7 @@ export function useProductDetailPage() {
         view: createCartItemView(resolvedProduct, resolvedProduct.selectedVariant),
       });
 
-      toast.success("Da them vao gio hang!");
+      toast.success("Da them vao giỏ hàng!");
 
       if (openCartDrawer) {
         openDrawer();
@@ -176,7 +176,7 @@ export function useProductDetailPage() {
 
       return true;
     } catch (error) {
-      toast.error(getCartActionErrorMessage(error, "Khong the them san pham vao gio hang."));
+      toast.error(getCartActionErrorMessage(error, "Không thể thêm sản phẩm vào giỏ hàng."));
       return false;
     }
   }
@@ -218,6 +218,13 @@ export function useProductDetailPage() {
           navigate("/cart");
         }
       },
+      goToPrescriptionFlow: () =>
+        navigate(`/prescription/${id}`, {
+          state: {
+            selectedColor,
+            selectedSize,
+          },
+        }),
       goBackToShop: () => navigate("/shop"),
       goToPreOrder: () => navigate(`/preorder/${id}`),
     },
@@ -292,3 +299,4 @@ function getCartActionErrorMessage(error, fallbackMessage) {
 
   return fallbackMessage;
 }
+

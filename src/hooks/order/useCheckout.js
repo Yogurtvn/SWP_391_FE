@@ -18,37 +18,44 @@ export function useCheckout() {
   const order = useAppSelector(selectOrderState);
   const cart = useCart();
 
-  const readyItems = useMemo(
+  const orderTypes = useMemo(
     () =>
-      cart.items.filter(
-        (item) => item?.orderType === "ready" && item?.itemType === "standard" && !item?.hasPrescription,
+      Array.from(
+        new Set(
+          cart.items
+            .map((item) => String(item?.orderType ?? "").trim())
+            .filter((value) => value.length > 0),
+        ),
       ),
     [cart.items],
+  );
+
+  const checkoutItems = useMemo(
+    () => (orderTypes.length === 1 ? cart.items : []),
+    [cart.items, orderTypes.length],
   );
 
   const blockedItems = useMemo(
-    () =>
-      cart.items.filter(
-        (item) => item?.orderType !== "ready" || item?.itemType !== "standard" || Boolean(item?.hasPrescription),
-      ),
-    [cart.items],
+    () => (orderTypes.length <= 1 ? [] : cart.items),
+    [cart.items, orderTypes.length],
   );
 
   const itemCount = useMemo(
-    () => readyItems.reduce((count, item) => count + Number(item?.quantity ?? 0), 0),
-    [readyItems],
+    () => checkoutItems.reduce((count, item) => count + Number(item?.quantity ?? 0), 0),
+    [checkoutItems],
   );
 
   const subtotal = useMemo(
-    () => readyItems.reduce((total, item) => total + Number(item?.totalPrice ?? 0), 0),
-    [readyItems],
+    () => checkoutItems.reduce((total, item) => total + Number(item?.totalPrice ?? 0), 0),
+    [checkoutItems],
   );
 
   const shippingFee = 0;
+  const checkoutOrderType = checkoutItems[0]?.orderType ?? null;
 
   async function submitCheckout({ shippingInfo, paymentMethod }) {
     const payload = createCheckoutPayload({
-      cartItems: readyItems,
+      cartItems: checkoutItems,
       shippingInfo,
       paymentMethod,
     });
@@ -59,7 +66,7 @@ export function useCheckout() {
       result,
       orderSummary: buildOrderSummary({
         checkoutResult: result,
-        cartItems: readyItems,
+        cartItems: checkoutItems,
         shippingInfo,
         paymentMethod,
       }),
@@ -69,7 +76,7 @@ export function useCheckout() {
   function createDraftSummary({ shippingInfo, paymentMethod }) {
     return buildOrderSummary({
       checkoutResult: null,
-      cartItems: readyItems,
+      cartItems: checkoutItems,
       shippingInfo,
       paymentMethod,
     });
@@ -77,8 +84,9 @@ export function useCheckout() {
 
   return {
     isCustomerSession: Boolean(auth?.accessToken) && auth?.user?.role === "customer",
-    readyItems,
+    checkoutItems,
     blockedItems,
+    checkoutOrderType,
     itemCount,
     subtotal,
     shippingFee,

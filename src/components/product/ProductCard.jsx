@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+﻿import { Link } from "react-router";
 import { Heart, ShoppingCart, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/cart/useCart";
@@ -38,7 +38,7 @@ function ProductCard({
     event.preventDefault();
 
     if (!canBuyNow) {
-      toast.error("San pham nay hien chua san sang de mua ngay.");
+      toast.error("Sản phẩm nay hien chua san sang de mua ngay.");
       return;
     }
 
@@ -49,7 +49,7 @@ function ProductCard({
     event.preventDefault();
 
     if (!canBuyNow) {
-      toast.error("San pham nay hien chua the them vao gio.");
+      toast.error("Sản phẩm nay hien chua the them vao gio.");
       return;
     }
 
@@ -60,7 +60,7 @@ function ProductCard({
     const productId = Number.parseInt(String(product?.productId ?? id ?? ""), 10);
 
     if (!Number.isFinite(productId) || productId <= 0) {
-      toast.error("San pham mau nay chua duoc map variant de goi cart API.");
+      toast.error("Sản phẩm mau nay chua được map variant de goi cart API.");
       return;
     }
 
@@ -69,7 +69,7 @@ function ProductCard({
       const variant = resolvePreferredVariant(detailProduct);
 
       if (!variant?.variantId) {
-        toast.error("Khong tim thay bien the hop le de them vao gio hang.");
+        toast.error("Không tim thay bien the hop le de them vao giỏ hàng.");
         return;
       }
 
@@ -80,13 +80,13 @@ function ProductCard({
         view: createCartItemView(detailProduct, variant),
       });
 
-      toast.success("Da them vao gio hang!");
+      toast.success("Da them vao giỏ hàng!");
 
       if (openCartDrawer) {
         openDrawer();
       }
     } catch (error) {
-      toast.error(resolveErrorMessage(error, "Khong the them san pham vao gio hang."));
+      toast.error(resolveErrorMessage(error, "Không thể thêm sản phẩm vào giỏ hàng."));
     }
   }
 
@@ -114,14 +114,14 @@ function ProductCard({
                 event.preventDefault();
               }}
               className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white shadow-md hover:scale-110 transition-transform"
-              title="Them vao yeu thich"
+              title="Thêm vao yeu thich"
             >
               <Heart className="w-4 h-4 text-foreground" />
             </button>
             {canBuyNow && <button
                 onClick={handleAddToCart}
                 className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-primary hover:text-white shadow-md hover:scale-110 transition-all"
-                title="Them vao gio"
+                title="Thêm vao gio"
               >
                 <ShoppingCart className="w-4 h-4" />
               </button>}
@@ -183,3 +183,4 @@ function resolveErrorMessage(error, fallbackMessage) {
 export {
   ProductCard as default
 };
+

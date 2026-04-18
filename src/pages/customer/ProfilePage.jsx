@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+﻿import { Link } from "react-router";
 import { toast } from "sonner";
 import { Clock, Eye, Package, Settings, User } from "lucide-react";
 import { useProfilePage } from "@/hooks/profile/useProfilePage";
@@ -9,16 +9,16 @@ export default function ProfilePage() {
   async function handleSaveProfile() {
     try {
       await actions.saveAccount();
-      toast.success("Da luu thong tin tai khoan.");
+      toast.success("Đã lưu thông tin tài khoản.");
     } catch (error) {
-      toast.error(resolveErrorMessage(error, ui.saveError || "Khong the luu thong tin tai khoan."));
+      toast.error(resolveErrorMessage(error, ui.saveError || "Không thể lưu thông tin tài khoản."));
     }
   }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-      <h1 className="mb-4">Tai Khoan Cua Toi</h1>
-      <p className="mb-12 text-muted-foreground">{profile?.email || accountForm.email || "Dang tai thong tin..."}</p>
+      <h1 className="mb-4">Tài Khoản Của Tôi</h1>
+      <p className="mb-12 text-muted-foreground">{profile?.email || accountForm.email || "Đang tải thông tin..."}</p>
 
       <div className="grid gap-8 lg:grid-cols-4">
         <aside className="lg:col-span-1">
@@ -26,13 +26,13 @@ export default function ProfilePage() {
             <TabButton
               active={activeTab === "orders"}
               icon={Package}
-              label="Don hang"
+              label="Đơn hàng"
               onClick={() => actions.setActiveTab("orders")}
             />
             <TabButton
               active={activeTab === "prescriptions"}
               icon={Eye}
-              label="Don kinh"
+              label="Đơn kính"
               onClick={() => actions.setActiveTab("prescriptions")}
             />
             <TabButton
@@ -44,13 +44,13 @@ export default function ProfilePage() {
             <TabButton
               active={activeTab === "account"}
               icon={User}
-              label="Thong tin tai khoan"
+              label="Thông tin tài khoản"
               onClick={() => actions.setActiveTab("account")}
             />
             <TabButton
               active={activeTab === "settings"}
               icon={Settings}
-              label="Cai dat"
+              label="Cài đặt"
               onClick={() => actions.setActiveTab("settings")}
             />
           </nav>
@@ -60,21 +60,21 @@ export default function ProfilePage() {
           {activeTab === "orders" ? (
             <section>
               <div className="mb-6 flex items-center justify-between gap-4">
-                <h2>Lich Su Don Hang</h2>
+                <h2>Lịch Sử Đơn Hàng</h2>
                 <Link to="/orders" className="text-sm text-primary hover:underline">
-                  Xem tat ca
+                  Xem tất cả
                 </Link>
               </div>
 
               {ui.ordersError ? (
                 <ErrorCard message={ui.ordersError} onRetry={actions.retryOrders} />
               ) : ui.ordersLoading ? (
-                <LoadingCard message="Dang tai lich su don hang..." />
+                <LoadingCard message="Đang tải lịch sử đơn hàng..." />
               ) : recentOrders.length === 0 ? (
                 <EmptyCard
-                  title="Ban chua co don hang nao"
-                  description="Sau khi mua hang, lich su don hang se hien thi tai day."
-                  actionLabel="Kham pha san pham"
+                  title="Bạn chưa có đơn hàng nào"
+                  description="Sau khi mua hàng, lịch sử đơn hàng sẽ hiển thị tại đây."
+                  actionLabel="Khám phá sản phẩm"
                   actionTo="/shop"
                 />
               ) : (
@@ -92,7 +92,7 @@ export default function ProfilePage() {
                           className="h-16 w-16 rounded-lg object-cover"
                         />
                         <div className="flex-1">
-                          <p className="mb-1">Don hang #{order.orderId}</p>
+                          <p className="mb-1">Đơn hàng #{order.orderId}</p>
                           <p className="text-sm text-muted-foreground">{order.createdAtLabel}</p>
                         </div>
                         <div className="text-right">
@@ -111,8 +111,8 @@ export default function ProfilePage() {
 
           {activeTab === "prescriptions" ? (
             <PlaceholderSection
-              title="Don Kinh Da Luu"
-              description="FE nay chua duoc map API don kinh. Hien tai backend va UI cho tab nay chua duoc noi data that."
+              title="Đơn Kính Đã Lưu"
+              description="FE này chưa được map API đơn kính. Hiện tại backend và UI cho tab này chưa được nối data thật."
             />
           ) : null}
 
@@ -124,28 +124,28 @@ export default function ProfilePage() {
                   to="/profile/pre-orders"
                   className="rounded-lg bg-primary px-4 py-2 text-white transition-colors hover:bg-primary/90"
                 >
-                  Xem chi tiet
+                  Xem chi tiết
                 </Link>
               </div>
               <PlaceholderSection
                 title="Pre-order"
-                description="Tab nay dang giu link sang trang pre-order rieng. Neu ban muon, minh co the map tiep pre-order API sau."
+                description="Tab này đang giữ link sang trang pre-order riêng. Nếu bạn muốn, mình có thể map tiếp pre-order API sau."
               />
             </div>
           ) : null}
 
           {activeTab === "account" ? (
             <section>
-              <h2 className="mb-6">Thong Tin Tai Khoan</h2>
+              <h2 className="mb-6">Thông Tin Tài Khoản</h2>
 
               {ui.profileError ? <ErrorCard message={ui.profileError} onRetry={actions.retryProfile} /> : null}
 
               <div className="space-y-6 rounded bg-secondary p-6">
-                {ui.profileLoading && !profile ? <LoadingCard message="Dang tai thong tin tai khoan..." compact /> : null}
+                {ui.profileLoading && !profile ? <LoadingCard message="Đang tải thông tin tài khoản..." compact /> : null}
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label className="mb-2 block text-sm">Ho</label>
+                    <label className="mb-2 block text-sm">Họ</label>
                     <input
                       type="text"
                       value={accountForm.firstName}
@@ -154,7 +154,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label className="mb-2 block text-sm">Ten</label>
+                    <label className="mb-2 block text-sm">Tên</label>
                     <input
                       type="text"
                       value={accountForm.lastName}
@@ -175,7 +175,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm">So dien thoai</label>
+                  <label className="mb-2 block text-sm">Số điện thoại</label>
                   <input
                     type="tel"
                     value={accountForm.phone}
@@ -190,7 +190,7 @@ export default function ProfilePage() {
                   disabled={ui.saveStatus === "loading"}
                   className="rounded-lg bg-primary px-6 py-3 text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
                 >
-                  {ui.saveStatus === "loading" ? "Dang luu..." : "Luu thay doi"}
+                  {ui.saveStatus === "loading" ? "Đang lưu..." : "Lưu thay đổi"}
                 </button>
               </div>
             </section>
@@ -198,8 +198,8 @@ export default function ProfilePage() {
 
           {activeTab === "settings" ? (
             <PlaceholderSection
-              title="Cai Dat"
-              description="Trang settings van dang la UI mock rieng. Neu can, minh co the tiep tuc map du lieu that cho trang nay sau."
+              title="Cài Đặt"
+              description="Trang settings vẫn đang là UI mock riêng. Nếu cần, mình có thể tiếp tục map dữ liệu thật cho trang này sau."
             />
           ) : null}
         </div>
@@ -232,7 +232,7 @@ function ErrorCard({ message, onRetry }) {
         onClick={onRetry}
         className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
       >
-        Tai lai
+        Tải lại
       </button>
     </div>
   );
@@ -303,3 +303,5 @@ function resolveErrorMessage(error, fallbackMessage) {
 
   return fallbackMessage;
 }
+
+

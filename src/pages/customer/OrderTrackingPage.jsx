@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+﻿import { Link } from "react-router";
 import {
   AlertCircle,
   ArrowLeft,
@@ -18,14 +18,14 @@ export default function OrderTrackingPage() {
     return (
       <StateCard
         icon={Package}
-        title="Can dang nhap de xem don hang"
-        description="Chi tiet don hang chi hien thi cho tai khoan da dang nhap."
+        title="Cần đăng nhập để xem đơn hàng"
+        description="Chi tiết đơn hàng chỉ hiển thị cho tài khoản đã đăng nhập."
         primaryAction={{
-          label: "Dang nhap",
+          label: "Đăng nhập",
           to: "/login",
         }}
         secondaryAction={{
-          label: "Quay lai cua hang",
+          label: "Quay lại cửa hàng",
           to: "/shop",
         }}
       />
@@ -38,7 +38,7 @@ export default function OrderTrackingPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-center px-4">
           <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
             <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <p className="text-muted-foreground">Dang tai chi tiet don hang...</p>
+            <p className="text-muted-foreground">Đang tải chi tiết đơn hàng...</p>
           </div>
         </div>
       </div>
@@ -53,9 +53,9 @@ export default function OrderTrackingPage() {
             <div className="mb-6 flex items-start gap-4 rounded-2xl border border-red-200 bg-red-50 p-5">
               <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-red-600" />
               <div>
-                <h1 className="mb-2 text-2xl">Khong the mo don hang</h1>
+                <h1 className="mb-2 text-2xl">Không thể mở đơn hàng</h1>
                 <p className="text-sm leading-6 text-red-700">
-                  {ui.error || "Chi tiet don hang hien chua san sang."}
+                  {ui.error || "Chi tiết đơn hàng hiện chưa sẵn sàng."}
                 </p>
               </div>
             </div>
@@ -66,13 +66,13 @@ export default function OrderTrackingPage() {
                 onClick={actions.retry}
                 className="rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
               >
-                Tai lai
+                Tải lại
               </button>
               <Link
                 to="/shop"
                 className="rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
               >
-                Quay lai cua hang
+                Quay lại cửa hàng
               </Link>
             </div>
           </div>
@@ -86,7 +86,7 @@ export default function OrderTrackingPage() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <Link to="/shop" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
-          Quay lai cua hang
+          Quay lại cửa hàng
         </Link>
 
         <div className="mb-8 rounded-[28px] border border-border bg-white p-8 shadow-sm">
@@ -95,14 +95,14 @@ export default function OrderTrackingPage() {
               <p className="mb-2 text-sm uppercase tracking-[0.24em] text-muted-foreground">
                 {order.orderTypeLabel}
               </p>
-              <h1 className="mb-2 text-3xl">Don hang #{order.orderId}</h1>
+              <h1 className="mb-2 text-3xl">Đơn hàng #{order.orderId}</h1>
               <p className="text-muted-foreground">
-                Dat luc {order.createdAtLabel}
+                Đặt lúc {order.createdAtLabel}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge tone={getOrderTone(order.orderStatus)}>{order.orderStatusLabel}</Badge>
-              <Badge tone={getPaymentTone(order.payment?.paymentStatus)}>{order.payment?.paymentStatusLabel ?? "Chua co thanh toan"}</Badge>
+              <Badge tone={getPaymentTone(order.payment?.paymentStatus)}>{order.payment?.paymentStatusLabel ?? "Chưa có thanh toán"}</Badge>
               <Badge tone={getShippingTone(order.shippingStatus)}>{order.shippingStatusLabel}</Badge>
             </div>
           </div>
@@ -116,8 +116,8 @@ export default function OrderTrackingPage() {
                   <Clock3 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl">Lich su trang thai</h2>
-                  <p className="text-sm text-muted-foreground">Cap nhat tu backend cho don hang nay.</p>
+                  <h2 className="text-xl">Lịch sử trạng thái</h2>
+                  <p className="text-sm text-muted-foreground">Cập nhật từ backend cho đơn hàng này.</p>
                 </div>
               </div>
 
@@ -138,7 +138,7 @@ export default function OrderTrackingPage() {
                         <span className="text-sm text-muted-foreground">{history.updatedAtLabel}</span>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Cap nhat boi: {history.updatedByName}
+                        Cập nhật bởi: {history.updatedByName}
                       </p>
                       {history.note ? <p className="mt-2 text-sm leading-6 text-foreground/80">{history.note}</p> : null}
                     </div>
@@ -153,8 +153,8 @@ export default function OrderTrackingPage() {
                   <Package className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl">San pham trong don</h2>
-                  <p className="text-sm text-muted-foreground">{order.itemCount} san pham duoc tao tu checkout.</p>
+                  <h2 className="text-xl">Sản phẩm trong đơn</h2>
+                  <p className="text-sm text-muted-foreground">{order.itemCount} sản phẩm được tạo từ checkout.</p>
                 </div>
               </div>
 
@@ -165,9 +165,9 @@ export default function OrderTrackingPage() {
                       <div>
                         <p>{item.productName}</p>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          SKU {item.sku || "Dang cap nhat"} - Mau {item.selectedColor}
+                          SKU {item.sku || "Đang cập nhật"} - Màu {item.selectedColor}
                         </p>
-                        <p className="mt-1 text-sm text-muted-foreground">So luong {item.quantity}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Số lượng {item.quantity}</p>
                       </div>
                       <p className="text-primary">{formatCurrency(item.lineTotal)}</p>
                     </div>
@@ -184,8 +184,8 @@ export default function OrderTrackingPage() {
                   <MapPin className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl">Thong tin giao hang</h2>
-                  <p className="text-sm text-muted-foreground">Nguoi nhan va dia chi da luu.</p>
+                  <h2 className="text-xl">Thông tin giao hàng</h2>
+                  <p className="text-sm text-muted-foreground">Người nhận và địa chỉ đã lưu.</p>
                 </div>
               </div>
 
@@ -205,7 +205,7 @@ export default function OrderTrackingPage() {
                   <div className="flex items-start gap-3">
                     <Truck className="mt-0.5 h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p>Ma van don</p>
+                      <p>Mã vận đơn</p>
                       <p className="text-muted-foreground">{order.shippingCode}</p>
                     </div>
                   </div>
@@ -219,24 +219,24 @@ export default function OrderTrackingPage() {
                   <CreditCard className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="text-xl">Thanh toan va tong don</h2>
-                  <p className="text-sm text-muted-foreground">Thong tin payment hien tai cua order.</p>
+                  <h2 className="text-xl">Thanh toán và tổng đơn</h2>
+                  <p className="text-sm text-muted-foreground">Thông tin thanh toán hiện tại của đơn hàng.</p>
                 </div>
               </div>
 
               <div className="space-y-3 text-sm">
-                <Row label="Tong tien" value={formatCurrency(order.totalAmount)} />
-                <Row label="Trang thai don" value={order.orderStatusLabel} />
-                <Row label="Trang thai giao" value={order.shippingStatusLabel} />
-                <Row label="Cap nhat lan cuoi" value={order.updatedAtLabel} />
+                <Row label="Tổng tiền" value={formatCurrency(order.totalAmount)} />
+                <Row label="Trạng thái đơn" value={order.orderStatusLabel} />
+                <Row label="Trạng thái giao" value={order.shippingStatusLabel} />
+                <Row label="Cập nhật lần cuối" value={order.updatedAtLabel} />
                 {order.payment ? (
                   <>
                     <Row label="Payment" value={order.payment.paymentMethodLabel} />
-                    <Row label="Trang thai payment" value={order.payment.paymentStatusLabel} />
-                    <Row label="Thanh toan luc" value={order.payment.paidAtLabel} />
+                    <Row label="Trạng thái thanh toán" value={order.payment.paymentStatusLabel} />
+                    <Row label="Thanh toán lúc" value={order.payment.paidAtLabel} />
                   </>
                 ) : (
-                  <Row label="Payment" value="Chua co ban ghi thanh toan" />
+                  <Row label="Payment" value="Chưa có bản ghi thanh toán" />
                 )}
               </div>
             </section>
@@ -295,7 +295,7 @@ function createFallbackHistory(order) {
     historyId: 0,
     orderStatus: order.orderStatus,
     orderStatusLabel: order.orderStatusLabel,
-    updatedByName: "He thong",
+    updatedByName: "Hệ thống",
     note: "",
     updatedAtLabel: order.updatedAtLabel,
   };
@@ -358,3 +358,4 @@ function formatCurrency(value) {
     currency: "VND",
   }).format(Number(value ?? 0));
 }
+

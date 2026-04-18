@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router";
+﻿import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/common/ui/sheet";
@@ -24,16 +24,16 @@ function CartDrawer({ open, onOpenChange }) {
     try {
       await updateQuantity(cartItemId, Math.max(1, item.quantity + change));
     } catch (error) {
-      toast.error(resolveErrorMessage(error, "Khong the cap nhat so luong san pham."));
+      toast.error(resolveErrorMessage(error, "Không thể cập nhật số lượng sản phẩm."));
     }
   }
 
   async function handleRemoveItem(item) {
     try {
       await removeItem(item.cartItemId, item.itemType);
-      toast.success("Da xoa san pham khoi gio hang");
+      toast.success("Đã xóa sản phẩm khỏi giỏ hàng");
     } catch (error) {
-      toast.error(resolveErrorMessage(error, "Khong the xoa san pham khoi gio hang."));
+      toast.error(resolveErrorMessage(error, "Không thể xóa sản phẩm khỏi giỏ hàng."));
     }
   }
 
@@ -46,7 +46,7 @@ function CartDrawer({ open, onOpenChange }) {
       <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
         <SheetHeader className="px-6 py-4 border-b border-border">
           <SheetDescription className="sr-only">
-            Xem va quan ly cac san pham trong gio hang cua ban
+            Xem và quản lý các sản phẩm trong giỏ hàng của bạn
           </SheetDescription>
           <div className="flex items-center justify-between">
             <SheetTitle className="text-xl">
@@ -69,7 +69,7 @@ function CartDrawer({ open, onOpenChange }) {
                     <span className="font-semibold">
                       {formatCurrency(5e5 - subtotal)}
                     </span>{" "}
-                    nua de duoc mien phi van chuyen!
+                    nữa để được miễn phí vận chuyển!
                   </p>
                   <div className="w-full bg-amber-200 rounded-full h-1.5">
                     <div
@@ -103,13 +103,13 @@ function CartDrawer({ open, onOpenChange }) {
                     </div>
 
                     <div className="space-y-1 text-xs text-muted-foreground mb-2">
-                      {item.selectedColor && <p>Mau: {item.selectedColor}</p>}
+                      {item.selectedColor && <p>Màu: {item.selectedColor}</p>}
                       {item.size && <p>Size: {item.size}</p>}
                       {item.sku && <p>SKU: {item.sku}</p>}
                       {item.prescriptionDetails ? <>
-                          <p>Trong: {item.prescriptionDetails.lensType}</p>
+                          <p>Tròng: {item.prescriptionDetails.lensType}</p>
                           <p className="text-amber-600">• Theo don thuoc</p>
-                        </> : item.orderType === "preOrder" ? <p className="text-blue-600">• Dat truoc</p> : <p className="text-green-600">• Hang co san</p>}
+                        </> : item.orderType === "preOrder" ? <p className="text-blue-600">• Đặt trước</p> : <p className="text-green-600">• Hang có sẵn</p>}
                     </div>
 
                     <div className="flex items-center justify-between">
@@ -145,15 +145,15 @@ function CartDrawer({ open, onOpenChange }) {
         {isCustomerSession && items.length > 0 && <div className="border-t border-border px-6 py-4 space-y-4 bg-secondary">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tam tinh</span>
+                <span className="text-muted-foreground">Tạm tính</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Van chuyen</span>
-                {shipping === 0 ? <span className="text-green-600 font-medium">Mien phi</span> : <span>{formatCurrency(shipping)}</span>}
+                <span className="text-muted-foreground">Vận chuyển</span>
+                {shipping === 0 ? <span className="text-green-600 font-medium">Miễn phí</span> : <span>{formatCurrency(shipping)}</span>}
               </div>
               <div className="border-t border-border pt-2 flex justify-between items-center">
-                <span className="font-semibold">Tong cong</span>
+                <span className="font-semibold">Tổng cộng</span>
                 <span className="text-xl font-bold text-primary">
                   {formatCurrency(total)}
                 </span>
@@ -189,7 +189,7 @@ function GuestCartState({ onOpenChange }) {
   return <div className="flex flex-col items-center justify-center h-full text-center py-12">
       <ShoppingBag className="w-16 h-16 text-muted-foreground opacity-50 mb-4" />
       <p className="text-muted-foreground mb-6">
-        Vui long dang nhap bang tai khoan khach hang de su dung gio hang
+        Vui lòng đăng nhập bằng tài khoản khách hàng để sử dụng giỏ hàng
       </p>
       <button
         onClick={() => {
@@ -198,7 +198,7 @@ function GuestCartState({ onOpenChange }) {
         }}
         className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
       >
-        Dang Nhap
+        Đang Nhap
       </button>
     </div>;
 }
@@ -206,7 +206,7 @@ function GuestCartState({ onOpenChange }) {
 function LoadingState() {
   return <div className="flex flex-col items-center justify-center h-full text-center py-12">
       <div className="h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-4" />
-      <p className="text-muted-foreground">Dang tai gio hang...</p>
+      <p className="text-muted-foreground">Đang tải giỏ hàng...</p>
     </div>;
 }
 
@@ -216,7 +216,7 @@ function EmptyCartState({ onOpenChange }) {
   return <div className="flex flex-col items-center justify-center h-full text-center py-12">
       <ShoppingBag className="w-16 h-16 text-muted-foreground opacity-50 mb-4" />
       <p className="text-muted-foreground mb-6">
-        Gio hang cua ban dang trong
+        Giỏ hàng của bạn đang trống
       </p>
       <button
         onClick={() => {
@@ -252,3 +252,5 @@ function resolveErrorMessage(error, fallbackMessage) {
 export {
   CartDrawer as default
 };
+
+

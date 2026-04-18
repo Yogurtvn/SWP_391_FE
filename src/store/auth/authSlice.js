@@ -86,6 +86,18 @@ const authSlice = createSlice({
     clearAuthError(state) {
       state.error = null;
     },
+    mergeCurrentUserProfile(state, action) {
+      if (!state.user) {
+        return;
+      }
+
+      state.user = {
+        ...state.user,
+        fullName: action.payload?.fullName ?? state.user.fullName,
+        phone: action.payload?.phone ?? state.user.phone,
+        email: action.payload?.email ?? state.user.email,
+      };
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -147,7 +159,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearAuthError } = authSlice.actions;
+export const { clearAuthError, mergeCurrentUserProfile } = authSlice.actions;
 
 export const selectAuthState = (state) => state.auth;
 

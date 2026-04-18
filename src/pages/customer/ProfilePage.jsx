@@ -1,285 +1,305 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router";
-import { User, Package, Eye, Settings, Clock } from "lucide-react";
-const recentOrders = [
-  {
-    id: "ORD-12345",
-    date: "April 10, 2026",
-    total: 158,
-    status: "Shipped",
-    image: "https://images.unsplash.com/photo-1626104853817-343b24b5613f?w=80"
-  },
-  {
-    id: "ORD-12344",
-    date: "March 15, 2026",
-    total: 89,
-    status: "Delivered",
-    image: "https://images.unsplash.com/photo-1654274285614-37cad6007665?w=80"
-  },
-  {
-    id: "ORD-12343",
-    date: "February 22, 2026",
-    total: 199,
-    status: "Delivered",
-    image: "https://images.unsplash.com/photo-1681147768015-c6d3702f5e4f?w=80"
-  }
-];
-const savedPrescriptions = [
-  {
-    id: "1",
-    name: "Current Prescription",
-    date: "January 2026",
-    od: { sph: "-2.00", cyl: "-0.50", axis: "180" },
-    os: { sph: "-1.75", cyl: "-0.25", axis: "170" },
-    pd: "63"
-  },
-  {
-    id: "2",
-    name: "Previous Prescription",
-    date: "June 2024",
-    od: { sph: "-1.75", cyl: "-0.25", axis: "175" },
-    os: { sph: "-1.50", cyl: "-0.50", axis: "165" },
-    pd: "63"
-  }
-];
-function ProfilePage() {
-  const [activeTab, setActiveTab] = useState("orders");
-  const [userEmail, setUserEmail] = useState("");
-  useEffect(() => {
-    const email = localStorage.getItem("userEmail");
-    if (email) {
-      setUserEmail(email);
-    }
-  }, []);
-  return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="mb-4">Tài Khoản Của Tôi</h1>
-      <p className="text-muted-foreground mb-12">{userEmail}</p>
+import { toast } from "sonner";
+import { Clock, Eye, Package, Settings, User } from "lucide-react";
+import { useProfilePage } from "@/hooks/profile/useProfilePage";
 
-      <div className="grid lg:grid-cols-4 gap-8">
+export default function ProfilePage() {
+  const { activeTab, profile, accountForm, recentOrders, ui, actions } = useProfilePage();
+
+  async function handleSaveProfile() {
+    try {
+      await actions.saveAccount();
+      toast.success("Da luu thong tin tai khoan.");
+    } catch (error) {
+      toast.error(resolveErrorMessage(error, ui.saveError || "Khong the luu thong tin tai khoan."));
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <h1 className="mb-4">Tai Khoan Cua Toi</h1>
+      <p className="mb-12 text-muted-foreground">{profile?.email || accountForm.email || "Dang tai thong tin..."}</p>
+
+      <div className="grid gap-8 lg:grid-cols-4">
         <aside className="lg:col-span-1">
           <nav className="space-y-2">
-            <button
-    onClick={() => setActiveTab("orders")}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === "orders" ? "bg-primary text-white" : "hover:bg-secondary"}`}
-  >
-              <Package className="w-5 h-5" />
-              Đơn hàng
-            </button>
-            <button
-    onClick={() => setActiveTab("prescriptions")}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === "prescriptions" ? "bg-primary text-white" : "hover:bg-secondary"}`}
-  >
-              <Eye className="w-5 h-5" />
-              Đơn kính
-            </button>
-            <button
-    onClick={() => setActiveTab("pre-orders")}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === "pre-orders" ? "bg-primary text-white" : "hover:bg-secondary"}`}
-  >
-              <Clock className="w-5 h-5" />
-              Pre-orders
-            </button>
-            <button
-    onClick={() => setActiveTab("account")}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === "account" ? "bg-primary text-white" : "hover:bg-secondary"}`}
-  >
-              <User className="w-5 h-5" />
-              Thông tin tài khoản
-            </button>
-            <button
-    onClick={() => setActiveTab("settings")}
-    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${activeTab === "settings" ? "bg-primary text-white" : "hover:bg-secondary"}`}
-  >
-              <Settings className="w-5 h-5" />
-              Cài đặt
-            </button>
+            <TabButton
+              active={activeTab === "orders"}
+              icon={Package}
+              label="Don hang"
+              onClick={() => actions.setActiveTab("orders")}
+            />
+            <TabButton
+              active={activeTab === "prescriptions"}
+              icon={Eye}
+              label="Don kinh"
+              onClick={() => actions.setActiveTab("prescriptions")}
+            />
+            <TabButton
+              active={activeTab === "pre-orders"}
+              icon={Clock}
+              label="Pre-orders"
+              onClick={() => actions.setActiveTab("pre-orders")}
+            />
+            <TabButton
+              active={activeTab === "account"}
+              icon={User}
+              label="Thong tin tai khoan"
+              onClick={() => actions.setActiveTab("account")}
+            />
+            <TabButton
+              active={activeTab === "settings"}
+              icon={Settings}
+              label="Cai dat"
+              onClick={() => actions.setActiveTab("settings")}
+            />
           </nav>
         </aside>
 
         <div className="lg:col-span-3">
-          {activeTab === "orders" && <div>
-              <h2 className="mb-6">Lịch Sử Đơn Hàng</h2>
-              <div className="space-y-4">
-                {recentOrders.map((order) => <Link
-    key={order.id}
-    to={`/orders/${order.id}`}
-    className="block bg-secondary p-6 rounded-xl hover:bg-muted transition-colors"
-  >
-                    <div className="flex items-center gap-6">
-                      <img
-    src={order.image}
-    alt="Order"
-    className="w-16 h-16 object-cover rounded-lg"
-  />
-                      <div className="flex-1">
-                        <p className="mb-1">Đơn hàng #{order.id}</p>
-                        <p className="text-sm text-muted-foreground">{order.date}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="mb-1">${order.total.toFixed(2)}</p>
-                        <span
-    className={`inline-block px-3 py-1 text-xs rounded-full ${order.status === "Delivered" ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"}`}
-  >
-                          {order.status === "Delivered" ? "\u0110\xE3 giao" : order.status === "Shipped" ? "\u0110ang giao" : order.status}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>)}
+          {activeTab === "orders" ? (
+            <section>
+              <div className="mb-6 flex items-center justify-between gap-4">
+                <h2>Lich Su Don Hang</h2>
+                <Link to="/orders" className="text-sm text-primary hover:underline">
+                  Xem tat ca
+                </Link>
               </div>
-            </div>}
 
-          {activeTab === "prescriptions" && <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2>Đơn Kính Đã Lưu</h2>
-                <button className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors">
-                  Thêm mới
-                </button>
-              </div>
-              <div className="space-y-4">
-                {savedPrescriptions.map((rx) => <div key={rx.id} className="bg-secondary p-6 rounded">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="mb-1">{rx.name}</h3>
-                        <p className="text-sm text-muted-foreground">{rx.date}</p>
+              {ui.ordersError ? (
+                <ErrorCard message={ui.ordersError} onRetry={actions.retryOrders} />
+              ) : ui.ordersLoading ? (
+                <LoadingCard message="Dang tai lich su don hang..." />
+              ) : recentOrders.length === 0 ? (
+                <EmptyCard
+                  title="Ban chua co don hang nao"
+                  description="Sau khi mua hang, lich su don hang se hien thi tai day."
+                  actionLabel="Kham pha san pham"
+                  actionTo="/shop"
+                />
+              ) : (
+                <div className="space-y-4">
+                  {recentOrders.map((order) => (
+                    <Link
+                      key={order.orderId}
+                      to={`/orders/${order.orderId}`}
+                      className="block rounded-xl bg-secondary p-6 transition-colors hover:bg-muted"
+                    >
+                      <div className="flex items-center gap-6">
+                        <img
+                          src={order.firstItemImage}
+                          alt={order.firstItemName}
+                          className="h-16 w-16 rounded-lg object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="mb-1">Don hang #{order.orderId}</p>
+                          <p className="text-sm text-muted-foreground">{order.createdAtLabel}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="mb-1">{formatCurrency(order.totalAmount)}</p>
+                          <span className={`inline-block rounded-full px-3 py-1 text-xs ${getStatusColor(order.statusKey)}`}>
+                            {order.statusLabel}
+                          </span>
+                        </div>
                       </div>
-                      <button className="text-primary hover:underline text-sm">
-                        Sửa
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p className="text-muted-foreground mb-2">OD (Mắt phải)</p>
-                        <p>
-                          SPH: {rx.od.sph} | CYL: {rx.od.cyl} | AXIS: {rx.od.axis}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-2">OS (Mắt trái)</p>
-                        <p>
-                          SPH: {rx.os.sph} | CYL: {rx.os.cyl} | AXIS: {rx.os.axis}
-                        </p>
-                      </div>
-                      <div className="col-span-2">
-                        <p className="text-muted-foreground">PD: {rx.pd}mm</p>
-                      </div>
-                    </div>
-                  </div>)}
-              </div>
-            </div>}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : null}
 
-          {activeTab === "pre-orders" && <div>
-              <div className="flex items-center justify-between mb-6">
+          {activeTab === "prescriptions" ? (
+            <PlaceholderSection
+              title="Don Kinh Da Luu"
+              description="FE nay chua duoc map API don kinh. Hien tai backend va UI cho tab nay chua duoc noi data that."
+            />
+          ) : null}
+
+          {activeTab === "pre-orders" ? (
+            <div>
+              <div className="mb-6 flex items-center justify-between">
                 <h2>Pre-orders</h2>
                 <Link
-    to="/pre-order"
-    className="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
-  >
-                  Tạo pre-order mới
+                  to="/profile/pre-orders"
+                  className="rounded-lg bg-primary px-4 py-2 text-white transition-colors hover:bg-primary/90"
+                >
+                  Xem chi tiet
                 </Link>
               </div>
-              <div className="text-center py-12 bg-secondary rounded-lg">
-                <Clock className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <p className="mb-2">Bạn chưa có pre-order nào</p>
-                <p className="text-sm text-muted-foreground mb-6">
-                  Không tìm thấy kính phù hợp? Tạo yêu cầu đặt trước ngay
-                </p>
-                <Link
-    to="/profile/pre-orders"
-    className="text-primary hover:underline text-sm"
-  >
-                  Xem tất cả pre-orders →
-                </Link>
-              </div>
-            </div>}
+              <PlaceholderSection
+                title="Pre-order"
+                description="Tab nay dang giu link sang trang pre-order rieng. Neu ban muon, minh co the map tiep pre-order API sau."
+              />
+            </div>
+          ) : null}
 
-          {activeTab === "account" && <div>
-              <h2 className="mb-6">Thông Tin Tài Khoản</h2>
-              <div className="bg-secondary p-6 rounded space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
+          {activeTab === "account" ? (
+            <section>
+              <h2 className="mb-6">Thong Tin Tai Khoan</h2>
+
+              {ui.profileError ? <ErrorCard message={ui.profileError} onRetry={actions.retryProfile} /> : null}
+
+              <div className="space-y-6 rounded bg-secondary p-6">
+                {ui.profileLoading && !profile ? <LoadingCard message="Dang tai thong tin tai khoan..." compact /> : null}
+
+                <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label className="block mb-2 text-sm">Họ</label>
+                    <label className="mb-2 block text-sm">Ho</label>
                     <input
-    type="text"
-    defaultValue="Nguyễn"
-    className="w-full px-4 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
-  />
+                      type="text"
+                      value={accountForm.firstName}
+                      onChange={(event) => actions.setAccountField("firstName", event.target.value)}
+                      className="w-full rounded-lg border border-border bg-white px-4 py-3 focus:border-primary focus:outline-none"
+                    />
                   </div>
                   <div>
-                    <label className="block mb-2 text-sm">Tên</label>
+                    <label className="mb-2 block text-sm">Ten</label>
                     <input
-    type="text"
-    defaultValue="Văn A"
-    className="w-full px-4 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
-  />
+                      type="text"
+                      value={accountForm.lastName}
+                      onChange={(event) => actions.setAccountField("lastName", event.target.value)}
+                      className="w-full rounded-lg border border-border bg-white px-4 py-3 focus:border-primary focus:outline-none"
+                    />
                   </div>
                 </div>
+
                 <div>
-                  <label className="block mb-2 text-sm">Email</label>
+                  <label className="mb-2 block text-sm">Email</label>
                   <input
-    type="email"
-    value={userEmail}
-    readOnly
-    className="w-full px-4 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
-  />
+                    type="email"
+                    value={accountForm.email}
+                    readOnly
+                    className="w-full rounded-lg border border-border bg-white px-4 py-3 text-muted-foreground focus:outline-none"
+                  />
                 </div>
+
                 <div>
-                  <label className="block mb-2 text-sm">Số điện thoại</label>
+                  <label className="mb-2 block text-sm">So dien thoai</label>
                   <input
-    type="tel"
-    defaultValue="0912345678"
-    className="w-full px-4 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
-  />
+                    type="tel"
+                    value={accountForm.phone}
+                    onChange={(event) => actions.setAccountField("phone", event.target.value)}
+                    className="w-full rounded-lg border border-border bg-white px-4 py-3 focus:border-primary focus:outline-none"
+                  />
                 </div>
-                <button className="px-6 py-3 bg-primary text-white rounded hover:bg-primary/90 transition-colors">
-                  Lưu thay đổi
+
+                <button
+                  type="button"
+                  onClick={handleSaveProfile}
+                  disabled={ui.saveStatus === "loading"}
+                  className="rounded-lg bg-primary px-6 py-3 text-white transition-colors hover:bg-primary/90 disabled:opacity-60"
+                >
+                  {ui.saveStatus === "loading" ? "Dang luu..." : "Luu thay doi"}
                 </button>
               </div>
-            </div>}
+            </section>
+          ) : null}
 
-          {activeTab === "settings" && <div>
-              <h2 className="mb-6">Cài Đặt</h2>
-              <div className="space-y-6">
-                <div className="bg-secondary p-6 rounded">
-                  <h3 className="mb-4">Tùy Chọn Email</h3>
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-    type="checkbox"
-    defaultChecked
-    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
-  />
-                      <span>Cập nhật đơn hàng và thông báo giao hàng</span>
-                    </label>
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-    type="checkbox"
-    defaultChecked
-    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
-  />
-                      <span>Email khuyến mãi và ưu đãi đặc biệt</span>
-                    </label>
-                    <label className="flex items-center gap-3 cursor-pointer">
-                      <input
-    type="checkbox"
-    className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
-  />
-                      <span>Thông báo sản phẩm mới</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="bg-secondary p-6 rounded">
-                  <h3 className="mb-4">Mật khẩu</h3>
-                  <button className="text-primary hover:underline">
-                    Đổi mật khẩu
-                  </button>
-                </div>
-              </div>
-            </div>}
+          {activeTab === "settings" ? (
+            <PlaceholderSection
+              title="Cai Dat"
+              description="Trang settings van dang la UI mock rieng. Neu can, minh co the tiep tuc map du lieu that cho trang nay sau."
+            />
+          ) : null}
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }
-export {
-  ProfilePage as default
-};
+
+function TabButton({ active, icon: Icon, label, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors ${
+        active ? "bg-primary text-white" : "hover:bg-secondary"
+      }`}
+    >
+      <Icon className="h-5 w-5" />
+      {label}
+    </button>
+  );
+}
+
+function ErrorCard({ message, onRetry }) {
+  return (
+    <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+      <p className="mb-4 text-sm text-red-700">{message}</p>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+      >
+        Tai lai
+      </button>
+    </div>
+  );
+}
+
+function LoadingCard({ message, compact = false }) {
+  return (
+    <div className={`rounded-xl bg-white/70 text-center ${compact ? "p-4" : "p-8"}`}>
+      <div className="mx-auto mb-3 h-8 w-8 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
+  );
+}
+
+function EmptyCard({ title, description, actionLabel, actionTo }) {
+  return (
+    <div className="rounded-xl bg-secondary p-8 text-center">
+      <Package className="mx-auto mb-4 h-14 w-14 text-muted-foreground opacity-50" />
+      <p className="mb-2">{title}</p>
+      <p className="mb-5 text-sm text-muted-foreground">{description}</p>
+      <Link
+        to={actionTo}
+        className="inline-block rounded-lg bg-primary px-5 py-2 text-white transition-colors hover:bg-primary/90"
+      >
+        {actionLabel}
+      </Link>
+    </div>
+  );
+}
+
+function PlaceholderSection({ title, description }) {
+  return (
+    <div className="rounded-xl bg-secondary p-8">
+      <h2 className="mb-3">{title}</h2>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function getStatusColor(statusKey) {
+  switch (statusKey) {
+    case "delivered":
+      return "bg-green-100 text-green-700";
+    case "shipping":
+      return "bg-blue-100 text-blue-700";
+    case "cancelled":
+      return "bg-red-100 text-red-700";
+    default:
+      return "bg-amber-100 text-amber-700";
+  }
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(value ?? 0));
+}
+
+function resolveErrorMessage(error, fallbackMessage) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error;
+  }
+
+  return fallbackMessage;
+}

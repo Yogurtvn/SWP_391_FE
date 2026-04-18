@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router";
 import { Search, ShoppingBag, User, HelpCircle, Heart, Menu, LogOut, Package, Settings, UserCircle, LayoutDashboard } from "lucide-react";
 import { useState } from "react";
-import { useCart } from "@/store/cart/CartContext";
+import { useCart } from "@/hooks/cart/useCart";
 import { useCartDrawer } from "@/store/cart/CartDrawerContext";
 import { useAuth } from "@/store/auth/AuthContext";
 import { getDashboardPathByRole } from "@/store/auth/authRedirect";
@@ -18,11 +18,12 @@ import {
 import { Avatar, AvatarFallback } from "@/components/common/ui/avatar";
 function Header() {
   const navigate = useNavigate();
-  const { items } = useCart();
+  const { getItemCount } = useCart();
   const { isOpen, openDrawer, closeDrawer } = useCartDrawer();
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const cartItemCount = getItemCount();
   const handleLogout = () => {
     logout();
     navigate("/");
@@ -145,8 +146,8 @@ function Header() {
     className="text-foreground hover:text-primary transition-colors relative"
   >
               <ShoppingBag className="w-5 h-5" />
-              {items.length > 0 && <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-xs w-4 h-4 rounded-full flex items-center justify-center" style={{ fontSize: "10px" }}>
-                  {items.length}
+              {cartItemCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-xs w-4 h-4 rounded-full flex items-center justify-center" style={{ fontSize: "10px" }}>
+                  {cartItemCount}
                 </span>}
             </button>
             <button

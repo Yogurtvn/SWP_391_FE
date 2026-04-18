@@ -143,7 +143,7 @@ function mapApiUserToAppUser(apiUser, previousUser = null) {
     id: String(apiUser.userId ?? previousUser?.id ?? apiUser.email),
     email: apiUser.email,
     fullName: apiUser.fullName ?? previousUser?.fullName ?? "",
-    phone: previousUser?.phone ?? "",
+    phone: apiUser.phone ?? previousUser?.phone ?? "",
     role: normalizeRole(apiUser.role),
   };
 }

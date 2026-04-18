@@ -8,7 +8,9 @@ import ProductDetailPage from "@/pages/customer/ProductDetailPage";
 import PrescriptionFlow from "@/pages/customer/PrescriptionFlow";
 import CartPage from "@/pages/customer/CartPage";
 import CheckoutPage from "@/pages/customer/CheckoutPage";
+import OrderSuccessPage from "@/pages/customer/OrderSuccessPage";
 import OrderTrackingPage from "@/pages/customer/OrderTrackingPage";
+import PaymentFailedPage from "@/pages/customer/PaymentFailedPage";
 import ProfilePage from "@/pages/customer/ProfilePage";
 import StaffDashboard from "@/pages/staff/StaffDashboard";
 import LoginPage from "@/pages/customer/LoginPage";
@@ -46,7 +48,14 @@ const router = createBrowserRouter([
       { path: "prescription/:productId", Component: PrescriptionFlow },
       { path: "cart", Component: CartPage },
       { path: "checkout", Component: CheckoutPage },
-      { path: "orders/:orderId", Component: OrderTrackingPage },
+      { path: "checkout/success", Component: OrderSuccessPage },
+      { path: "checkout/failure", Component: PaymentFailedPage },
+      {
+        path: "orders/:orderId",
+        element: <ProtectedRoute>
+            <OrderTrackingPage />
+          </ProtectedRoute>
+      },
       {
         path: "profile",
         element: <ProtectedRoute>
@@ -103,7 +112,12 @@ const router = createBrowserRouter([
           </ProtectedRoute>
       },
       { path: "settings", Component: SettingsPage },
-      { path: "orders", Component: OrdersPage },
+      {
+        path: "orders",
+        element: <ProtectedRoute>
+            <OrdersPage />
+          </ProtectedRoute>
+      },
       { path: "*", Component: NotFoundPage }
     ]
   },

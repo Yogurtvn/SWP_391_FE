@@ -1,561 +1,497 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
-import { useCart } from "@/store/cart/CartContext";
+import { Link, useNavigate } from "react-router";
 import {
+  AlertCircle,
+  ArrowLeft,
   CreditCard,
-  Lock,
+  MapPin,
+  Package,
+  ShieldCheck,
   Truck,
   Wallet,
-  MapPin,
-  Phone,
-  Mail,
-  User,
-  Building,
-  CheckCircle,
-  AlertCircle
 } from "lucide-react";
-function CheckoutPage() {
+import { useCheckout } from "@/hooks/order/useCheckout";
+
+const INITIAL_SHIPPING_INFO = {
+  fullName: "",
+  email: "",
+  phone: "",
+  address: "",
+  ward: "",
+  district: "",
+  city: "",
+};
+
+export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, getTotal, clearCart } = useCart();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [shippingInfo, setShippingInfo] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    address: "",
-    city: "",
-    district: "",
-    ward: ""
-  });
+  const {
+    isCustomerSession,
+    readyItems,
+    blockedItems,
+    itemCount,
+    subtotal,
+    shippingFee,
+    total,
+    cartStatus,
+    checkoutStatus,
+    checkoutError,
+    submitCheckout,
+    createDraftSummary,
+  } = useCheckout();
+
+  const [shippingInfo, setShippingInfo] = useState(INITIAL_SHIPPING_INFO);
   const [paymentMethod, setPaymentMethod] = useState("cod");
-  const [cardInfo, setCardInfo] = useState({
-    cardNumber: "",
-    cardName: "",
-    expiryDate: "",
-    cvv: ""
-  });
-  const subtotal = getTotal();
-  const shippingFee = subtotal > 5e5 ? 0 : 3e4;
-  const total = subtotal + shippingFee;
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsProcessing(true);
-    setTimeout(() => {
-      clearCart();
-      navigate("/orders/ORD-12345");
-    }, 2e3);
-  };
-  const isFormValid = () => {
-    const isShippingValid = shippingInfo.firstName && shippingInfo.lastName && shippingInfo.email && shippingInfo.phone && shippingInfo.address && shippingInfo.city;
-    if (paymentMethod === "online") {
-      const isCardValid = cardInfo.cardNumber && cardInfo.cardName && cardInfo.expiryDate && cardInfo.cvv;
-      return isShippingValid && isCardValid;
+  const [localError, setLocalError] = useState("");
+
+  const isLoadingCart = cartStatus === "loading" && readyItems.length === 0 && blockedItems.length === 0;
+  const isSubmitting = checkoutStatus === "loading";
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setLocalError("");
+
+    try {
+      const { result, orderSummary } = await submitCheckout({
+        shippingInfo,
+        paymentMethod,
+      });
+
+      if (paymentMethod === "momo") {
+        if (result?.payment?.payUrl) {
+          window.location.assign(result.payment.payUrl);
+          return;
+        }
+
+        navigate("/checkout/failure", {
+          state: {
+            orderSummary,
+            orderCreated: true,
+            errorMessage:
+              "Don hang da duoc tao, nhung he thong chua lay duoc lien ket thanh toan MoMo. Vui long thu lai sau hoac lien he cua hang.",
+          },
+        });
+        return;
+      }
+
+      navigate("/checkout/success", {
+        state: {
+          orderSummary,
+        },
+      });
+    } catch (error) {
+      const errorMessage = resolveErrorMessage(
+        error,
+        checkoutError || "Khong the tao don hang tu gio hang hien tai.",
+      );
+
+      setLocalError(errorMessage);
+
+      navigate("/checkout/failure", {
+        state: {
+          orderSummary: createDraftSummary({ shippingInfo, paymentMethod }),
+          orderCreated: false,
+          errorMessage,
+        },
+      });
     }
-    return isShippingValid;
-  };
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND"
-    }).format(amount);
-  };
-  if (items.length === 0) {
-    return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center py-16">
-          <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl mb-2">Giỏ hàng trống</h2>
-          <p className="text-gray-600 mb-6">
-            Bạn chưa có sản phẩm nào trong giỏ hàng
-          </p>
-          <button
-      onClick={() => navigate("/shop")}
-      className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-    >
-            Tiếp tục mua sắm
-          </button>
+  }
+
+  if (!isCustomerSession) {
+    return (
+      <StateCard
+        icon={Wallet}
+        title="Checkout can tai khoan khach hang"
+        description="Vui long dang nhap bang tai khoan customer de tao don hang va dong bo gio hang."
+        primaryAction={{
+          label: "Dang nhap",
+          to: "/login",
+        }}
+        secondaryAction={{
+          label: "Quay lai gio hang",
+          to: "/cart",
+        }}
+      />
+    );
+  }
+
+  if (isLoadingCart) {
+    return (
+      <div className="min-h-screen bg-secondary/30 py-12">
+        <div className="mx-auto flex max-w-6xl items-center justify-center px-4">
+          <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
+            <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <p className="text-muted-foreground">Dang dong bo gio hang tu he thong...</p>
+          </div>
         </div>
-      </div>;
+      </div>
+    );
   }
-  return <div className="bg-gray-50 min-h-screen py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {
-    /* Header */
-  }
-        <div className="mb-8">
-          <h1 className="text-3xl mb-2">Thanh Toán</h1>
-          <p className="text-gray-600">
-            Hoàn tất đơn hàng của bạn trong vài bước đơn giản
-          </p>
-        </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="grid lg:grid-cols-3 gap-8">
-            {
-    /* Left Column - Forms */
+  if (readyItems.length === 0 && blockedItems.length === 0) {
+    return (
+      <StateCard
+        icon={Package}
+        title="Khong co san pham de checkout"
+        description="Gio hang cua ban dang trong. Hay them mot vai san pham co san truoc khi thanh toan."
+        primaryAction={{
+          label: "Kham pha san pham",
+          to: "/shop",
+        }}
+        secondaryAction={{
+          label: "Xem gio hang",
+          to: "/cart",
+        }}
+      />
+    );
   }
-            <div className="lg:col-span-2 space-y-6">
-              {
-    /* Shipping Information */
-  }
-              <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl">Thông Tin Giao Hàng</h2>
-                    <p className="text-sm text-gray-600">
-                      Nhập địa chỉ nhận hàng của bạn
-                    </p>
-                  </div>
-                </div>
 
-                <div className="space-y-4">
-                  {
-    /* Name Fields */
-  }
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-gray-700">
-                        <User className="w-4 h-4 inline mr-1" />
-                        Họ <span className="text-red-500">*</span>
-                      </label>
-                      <input
-    type="text"
-    required
-    value={shippingInfo.firstName}
-    onChange={(e) => setShippingInfo({
-      ...shippingInfo,
-      firstName: e.target.value
-    })}
-    placeholder="Nhập họ của bạn"
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                    </div>
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-gray-700">
-                        Tên <span className="text-red-500">*</span>
-                      </label>
-                      <input
-    type="text"
-    required
-    value={shippingInfo.lastName}
-    onChange={(e) => setShippingInfo({
-      ...shippingInfo,
-      lastName: e.target.value
-    })}
-    placeholder="Nhập tên của bạn"
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                    </div>
-                  </div>
-
-                  {
-    /* Contact Fields */
-  }
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-gray-700">
-                        <Mail className="w-4 h-4 inline mr-1" />
-                        Email <span className="text-red-500">*</span>
-                      </label>
-                      <input
-    type="email"
-    required
-    value={shippingInfo.email}
-    onChange={(e) => setShippingInfo({
-      ...shippingInfo,
-      email: e.target.value
-    })}
-    placeholder="example@email.com"
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                    </div>
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-gray-700">
-                        <Phone className="w-4 h-4 inline mr-1" />
-                        Số điện thoại <span className="text-red-500">*</span>
-                      </label>
-                      <input
-    type="tel"
-    required
-    value={shippingInfo.phone}
-    onChange={(e) => setShippingInfo({
-      ...shippingInfo,
-      phone: e.target.value
-    })}
-    placeholder="0123 456 789"
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                    </div>
-                  </div>
-
-                  {
-    /* Address Field */
-  }
-                  <div>
-                    <label className="block mb-2 text-sm font-medium text-gray-700">
-                      <Building className="w-4 h-4 inline mr-1" />
-                      Địa chỉ <span className="text-red-500">*</span>
-                    </label>
-                    <input
-    type="text"
-    required
-    value={shippingInfo.address}
-    onChange={(e) => setShippingInfo({
-      ...shippingInfo,
-      address: e.target.value
-    })}
-    placeholder="Số nhà, tên đường"
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                  </div>
-
-                  {
-    /* Location Fields */
-  }
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-gray-700">
-                        Phường/Xã
-                      </label>
-                      <input
-    type="text"
-    value={shippingInfo.ward}
-    onChange={(e) => setShippingInfo({
-      ...shippingInfo,
-      ward: e.target.value
-    })}
-    placeholder="Phường 1"
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                    </div>
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-gray-700">
-                        Quận/Huyện
-                      </label>
-                      <input
-    type="text"
-    value={shippingInfo.district}
-    onChange={(e) => setShippingInfo({
-      ...shippingInfo,
-      district: e.target.value
-    })}
-    placeholder="Quận 1"
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                    </div>
-                    <div>
-                      <label className="block mb-2 text-sm font-medium text-gray-700">
-                        Tỉnh/Thành phố <span className="text-red-500">*</span>
-                      </label>
-                      <input
-    type="text"
-    required
-    value={shippingInfo.city}
-    onChange={(e) => setShippingInfo({
-      ...shippingInfo,
-      city: e.target.value
-    })}
-    placeholder="TP. Hồ Chí Minh"
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {
-    /* Payment Method */
-  }
-              <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <Wallet className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl">Phương Thức Thanh Toán</h2>
-                    <p className="text-sm text-gray-600">
-                      Chọn cách thanh toán phù hợp
-                    </p>
-                  </div>
-                </div>
-
-                {
-    /* Payment Options */
-  }
-                <div className="space-y-3 mb-6">
-                  {
-    /* COD Option */
-  }
-                  <label
-    className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === "cod" ? "border-primary bg-primary/5" : "border-gray-300 hover:border-gray-400"}`}
-  >
-                    <input
-    type="radio"
-    name="payment"
-    value="cod"
-    checked={paymentMethod === "cod"}
-    onChange={(e) => setPaymentMethod(e.target.value)}
-    className="w-5 h-5 text-primary"
-  />
-                    <Truck className="w-6 h-6 text-gray-600" />
-                    <div className="flex-1">
-                      <p className="font-medium">Thanh toán khi nhận hàng</p>
-                      <p className="text-sm text-gray-600">
-                        Thanh toán bằng tiền mặt khi nhận hàng
-                      </p>
-                    </div>
-                    {paymentMethod === "cod" && <CheckCircle className="w-6 h-6 text-primary" />}
-                  </label>
-
-                  {
-    /* Online Payment Option */
-  }
-                  <label
-    className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${paymentMethod === "online" ? "border-primary bg-primary/5" : "border-gray-300 hover:border-gray-400"}`}
-  >
-                    <input
-    type="radio"
-    name="payment"
-    value="online"
-    checked={paymentMethod === "online"}
-    onChange={(e) => setPaymentMethod(e.target.value)}
-    className="w-5 h-5 text-primary"
-  />
-                    <CreditCard className="w-6 h-6 text-gray-600" />
-                    <div className="flex-1">
-                      <p className="font-medium">Thanh toán bằng MOMO</p>
-                      <p className="text-sm text-gray-600">
-                        Ví điện tử MOMO - Nhanh chóng & Tiện lợi
-                      </p>
-                    </div>
-                    {paymentMethod === "online" && <CheckCircle className="w-6 h-6 text-primary" />}
-                  </label>
-                </div>
-
-                {
-    /* Card Details (if online selected) */
-  }
-                {paymentMethod === "online" && <div className="pt-6 border-t-2 border-gray-200">
-                    <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <Lock className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-blue-900">
-                        Thông tin thanh toán được mã hóa và bảo mật
-                      </span>
-                    </div>
-
-                    <div className="space-y-4">
-                      {
-    /* Card Number */
-  }
-                      <div>
-                        <label className="block mb-2 text-sm font-medium text-gray-700">
-                          Số thẻ <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <input
-    type="text"
-    required={paymentMethod === "online"}
-    value={cardInfo.cardNumber}
-    onChange={(e) => setCardInfo({
-      ...cardInfo,
-      cardNumber: e.target.value
-    })}
-    placeholder="1234 5678 9012 3456"
-    maxLength={19}
-    className="w-full px-4 py-3 pr-12 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                          <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        </div>
-                      </div>
-
-                      {
-    /* Card Name */
-  }
-                      <div>
-                        <label className="block mb-2 text-sm font-medium text-gray-700">
-                          Tên chủ thẻ <span className="text-red-500">*</span>
-                        </label>
-                        <input
-    type="text"
-    required={paymentMethod === "online"}
-    value={cardInfo.cardName}
-    onChange={(e) => setCardInfo({
-      ...cardInfo,
-      cardName: e.target.value
-    })}
-    placeholder="NGUYEN VAN A"
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all uppercase"
-  />
-                      </div>
-
-                      {
-    /* Expiry & CVV */
-  }
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">
-                            Ngày hết hạn <span className="text-red-500">*</span>
-                          </label>
-                          <input
-    type="text"
-    required={paymentMethod === "online"}
-    value={cardInfo.expiryDate}
-    onChange={(e) => setCardInfo({
-      ...cardInfo,
-      expiryDate: e.target.value
-    })}
-    placeholder="MM / YY"
-    maxLength={7}
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                        </div>
-                        <div>
-                          <label className="block mb-2 text-sm font-medium text-gray-700">
-                            CVV <span className="text-red-500">*</span>
-                          </label>
-                          <input
-    type="text"
-    required={paymentMethod === "online"}
-    value={cardInfo.cvv}
-    onChange={(e) => setCardInfo({ ...cardInfo, cvv: e.target.value })}
-    placeholder="123"
-    maxLength={4}
-    className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-  />
-                        </div>
-                      </div>
-                    </div>
-                  </div>}
+  if (blockedItems.length > 0) {
+    return (
+      <div className="min-h-screen bg-secondary/30 py-12">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="rounded-[28px] border border-border bg-white p-8 shadow-sm">
+            <div className="mb-6 flex items-start gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+              <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" />
+              <div>
+                <h1 className="mb-2 text-2xl">Checkout nay chi xu ly don hang co san</h1>
+                <p className="text-sm leading-6 text-amber-900">
+                  Trong gio hang cua ban dang co san pham dat truoc hoac san pham theo toa.
+                  Flow hien tai minh da map API cho don hang co san, nen ban can quay lai gio hang
+                  de tach nhom san pham nay ra truoc khi thanh toan.
+                </p>
               </div>
             </div>
 
-            {
-    /* Right Column - Order Summary */
-  }
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl border-2 border-gray-200 p-6 shadow-sm sticky top-24">
-                <h2 className="text-xl mb-6">Tóm Tắt Đơn Hàng</h2>
-
-                {
-    /* Cart Items */
-  }
-                <div className="space-y-4 mb-6 max-h-64 overflow-y-auto">
-                  {items.map((item) => <div key={item.id} className="flex gap-3">
-                      <img
-    src={item.product.image || "https://images.unsplash.com/photo-1626104853817-343b24b5613f?w=80"}
-    alt={item.product.name}
-    className="w-16 h-16 object-cover rounded-lg border-2 border-gray-200"
-  />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate mb-1">
-                          {item.product.name}
-                        </p>
-                        <p className="text-xs text-gray-600 mb-1">
-                          Số lượng: {item.quantity}
-                        </p>
-                        <p className="text-sm font-medium text-primary">
-                          {formatCurrency(item.totalPrice)}
-                        </p>
-                      </div>
-                    </div>)}
-                </div>
-
-                <div className="border-t-2 border-gray-200 pt-4 space-y-3">
-                  {
-    /* Subtotal */
-  }
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Tạm tính:</span>
-                    <span className="font-medium">
-                      {formatCurrency(subtotal)}
-                    </span>
-                  </div>
-
-                  {
-    /* Shipping */
-  }
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Phí vận chuyển:</span>
-                    <span className="font-medium">
-                      {shippingFee === 0 ? <span className="text-green-600">Miễn phí</span> : formatCurrency(shippingFee)}
-                    </span>
-                  </div>
-
-                  {
-    /* Free shipping notice */
-  }
-                  {shippingFee > 0 && <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                      <p className="text-xs text-amber-800">
-                        💡 Mua thêm{" "}
-                        <span className="font-bold">
-                          {formatCurrency(5e5 - subtotal)}
-                        </span>{" "}
-                        để được miễn phí vận chuyển!
+            <div className="mb-8 rounded-2xl bg-secondary/60 p-6">
+              <p className="mb-3 text-sm text-muted-foreground">San pham dang chan checkout:</p>
+              <div className="space-y-3">
+                {blockedItems.map((item) => (
+                  <div
+                    key={item.cartItemId}
+                    className="flex items-center justify-between gap-4 rounded-xl bg-white px-4 py-3"
+                  >
+                    <div>
+                      <p>{item.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.orderType === "preOrder" ? "Dat truoc" : item.hasPrescription ? "Theo toa" : "Khac"}
                       </p>
-                    </div>}
-
-                  {
-    /* Total */
-  }
-                  <div className="pt-3 border-t-2 border-gray-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-base font-medium">Tổng cộng:</span>
-                      <span className="text-2xl font-bold text-primary">
-                        {formatCurrency(total)}
-                      </span>
                     </div>
+                    <span className="text-sm text-muted-foreground">SL {item.quantity}</span>
                   </div>
-                </div>
-
-                {
-    /* Submit Button */
-  }
-                <button
-    type="submit"
-    disabled={!isFormValid() || isProcessing}
-    className="w-full mt-6 px-6 py-4 bg-primary text-white rounded-xl hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium text-lg shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30"
-  >
-                  {isProcessing ? <span className="flex items-center justify-center gap-2">
-                      <svg
-    className="animate-spin h-5 w-5"
-    viewBox="0 0 24 24"
-  >
-                        <circle
-    className="opacity-25"
-    cx="12"
-    cy="12"
-    r="10"
-    stroke="currentColor"
-    strokeWidth="4"
-    fill="none"
-  />
-                        <path
-    className="opacity-75"
-    fill="currentColor"
-    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-  />
-                      </svg>
-                      Đang xử lý...
-                    </span> : "\u0110\u1EB7t H\xE0ng Ngay"}
-                </button>
-
-                {
-    /* Security Notice */
-  }
-                <div className="mt-4 flex items-center justify-center gap-2 text-xs text-gray-500">
-                  <Lock className="w-3 h-3" />
-                  <span>Thanh toán an toàn và bảo mật</span>
-                </div>
+                ))}
               </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/cart"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Quay lai gio hang
+              </Link>
+              <Link
+                to="/shop"
+                className="inline-flex items-center gap-2 rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
+              >
+                Tiep tuc mua sam
+              </Link>
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-secondary/30 py-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <Link to="/cart" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            Quay lai gio hang
+          </Link>
+          <h1 className="mb-2 text-3xl">Thanh toan don hang co san</h1>
+          <p className="text-muted-foreground">
+            Hoan tat thong tin giao hang va chon cach thanh toan cho {itemCount} san pham.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-[1.4fr_0.9fr]">
+          <div className="space-y-6">
+            {(localError || checkoutError) && (
+              <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+                <p className="text-sm leading-6">{localError || checkoutError}</p>
+              </div>
+            )}
+
+            <section className="rounded-[28px] border border-border bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl">Thong tin giao hang</h2>
+                  <p className="text-sm text-muted-foreground">Nhap nguoi nhan va dia chi giao hang.</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field
+                  label="Ho va ten"
+                  required
+                  value={shippingInfo.fullName}
+                  onChange={(value) => setShippingInfo((current) => ({ ...current, fullName: value }))}
+                  placeholder="Nguyen Van A"
+                />
+                <Field
+                  label="So dien thoai"
+                  required
+                  value={shippingInfo.phone}
+                  onChange={(value) => setShippingInfo((current) => ({ ...current, phone: value }))}
+                  placeholder="0901 234 567"
+                />
+                <Field
+                  label="Email"
+                  type="email"
+                  value={shippingInfo.email}
+                  onChange={(value) => setShippingInfo((current) => ({ ...current, email: value }))}
+                  placeholder="ban@email.com"
+                />
+                <Field
+                  label="Dia chi"
+                  required
+                  value={shippingInfo.address}
+                  onChange={(value) => setShippingInfo((current) => ({ ...current, address: value }))}
+                  placeholder="So nha, ten duong"
+                />
+                <Field
+                  label="Phuong / Xa"
+                  value={shippingInfo.ward}
+                  onChange={(value) => setShippingInfo((current) => ({ ...current, ward: value }))}
+                  placeholder="Phuong 1"
+                />
+                <Field
+                  label="Quan / Huyen"
+                  value={shippingInfo.district}
+                  onChange={(value) => setShippingInfo((current) => ({ ...current, district: value }))}
+                  placeholder="Quan 1"
+                />
+                <div className="md:col-span-2">
+                  <Field
+                    label="Tinh / Thanh pho"
+                    required
+                    value={shippingInfo.city}
+                    onChange={(value) => setShippingInfo((current) => ({ ...current, city: value }))}
+                    placeholder="TP Ho Chi Minh"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-border bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Wallet className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl">Phuong thuc thanh toan</h2>
+                  <p className="text-sm text-muted-foreground">Flow nay da map COD va MoMo theo API hien co.</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <PaymentOption
+                  icon={Truck}
+                  title="Thanh toan khi nhan hang"
+                  description="Don hang duoc tao ngay. Ban thanh toan luc nhan hang."
+                  checked={paymentMethod === "cod"}
+                  onSelect={() => setPaymentMethod("cod")}
+                />
+                <PaymentOption
+                  icon={CreditCard}
+                  title="Thanh toan bang MoMo"
+                  description="Sau khi tao don, he thong se chuyen ban sang cong thanh toan MoMo neu backend tra ve payUrl."
+                  checked={paymentMethod === "momo"}
+                  onSelect={() => setPaymentMethod("momo")}
+                />
+              </div>
+
+              {paymentMethod === "momo" && (
+                <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-900">
+                  Sau khi bam thanh toan, FE se goi `POST /api/orders/checkout`.
+                  Neu BE tra ve `payment.payUrl`, trinh duyet se duoc chuyen sang MoMo.
+                </div>
+              )}
+            </section>
+          </div>
+
+          <aside className="lg:sticky lg:top-24 h-fit">
+            <div className="rounded-[28px] border border-border bg-white p-6 shadow-sm">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <Package className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl">Tom tat don hang</h2>
+                  <p className="text-sm text-muted-foreground">Chi gom cac san pham co san trong gio.</p>
+                </div>
+              </div>
+
+              <div className="mb-6 space-y-4">
+                {readyItems.map((item) => (
+                  <div key={item.cartItemId} className="flex gap-3 rounded-2xl bg-secondary/60 p-3">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="h-20 w-20 rounded-xl object-cover"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="line-clamp-2">{item.name}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {item.color}
+                        {item.size ? ` / ${item.size}` : ""}
+                      </p>
+                      <p className="mt-1 text-sm text-muted-foreground">SL {item.quantity}</p>
+                      <p className="mt-2 text-sm text-primary">{formatCurrency(item.totalPrice)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="space-y-3 border-t border-border pt-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Tam tinh</span>
+                  <span>{formatCurrency(subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Van chuyen</span>
+                  <span className="text-muted-foreground">Shop xac nhan sau</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-3">
+                  <span className="text-lg">Tong cong</span>
+                  <span className="text-2xl text-primary">{formatCurrency(total)}</span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    Dang xu ly don hang...
+                  </>
+                ) : paymentMethod === "momo" ? (
+                  "Tiep tuc voi MoMo"
+                ) : (
+                  "Xac nhan dat hang"
+                )}
+              </button>
+
+              <div className="mt-4 flex items-start gap-3 rounded-2xl bg-secondary/60 p-4 text-sm text-muted-foreground">
+                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
+                <p>
+                  Backend hien tai chua tinh phi giao hang trong order total.
+                  Flow nay dang dung checkout API that cua backend, nen tong tien tren trang nay se khop voi don hang tao ra.
+                </p>
+              </div>
+            </div>
+          </aside>
         </form>
       </div>
-    </div>;
+    </div>
+  );
 }
-export {
-  CheckoutPage as default
-};
+
+function Field({ label, value, onChange, placeholder, required = false, type = "text" }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm text-foreground">
+        {label}
+        {required ? <span className="text-red-500"> *</span> : null}
+      </span>
+      <input
+        type={type}
+        required={required}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-border bg-background px-4 py-3 outline-none transition-colors focus:border-primary"
+      />
+    </label>
+  );
+}
+
+function PaymentOption({ icon: Icon, title, description, checked, onSelect }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`flex w-full items-start gap-4 rounded-2xl border p-4 text-left transition-colors ${
+        checked ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+      }`}
+    >
+      <div className={`flex h-11 w-11 items-center justify-center rounded-full ${checked ? "bg-primary text-white" : "bg-secondary text-foreground"}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="flex-1">
+        <p>{title}</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">{description}</p>
+      </div>
+      <div className={`mt-1 h-5 w-5 rounded-full border-2 ${checked ? "border-primary bg-primary" : "border-border"}`} />
+    </button>
+  );
+}
+
+function StateCard({ icon: Icon, title, description, primaryAction, secondaryAction }) {
+  return (
+    <div className="min-h-screen bg-secondary/30 py-12">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
+          <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Icon className="h-10 w-10" />
+          </div>
+          <h1 className="mb-3 text-3xl">{title}</h1>
+          <p className="mx-auto mb-8 max-w-2xl text-muted-foreground leading-7">{description}</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              to={primaryAction.to}
+              className="rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
+            >
+              {primaryAction.label}
+            </Link>
+            <Link
+              to={secondaryAction.to}
+              className="rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
+            >
+              {secondaryAction.label}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(value ?? 0));
+}
+
+function resolveErrorMessage(error, fallbackMessage) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error;
+  }
+
+  return fallbackMessage;
+}

@@ -1,196 +1,236 @@
-import { useState } from "react";
-import { Package, Search, Eye, ChevronRight } from "lucide-react";
 import { Link } from "react-router";
-function OrdersPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const orders = [
-    {
-      id: "ORD-2026-001",
-      date: "2026-04-10",
-      status: "delivered",
-      statusText: "\u0110\xE3 giao h\xE0ng",
-      total: 25e5,
-      items: [
-        { name: "G\u1ECDng Ch\u1EEF Nh\u1EADt C\u1ED5 \u0110i\u1EC3n", quantity: 1, image: "https://images.unsplash.com/photo-1626104853817-343b24b5613f?w=200" }
-      ]
-    },
-    {
-      id: "ORD-2026-002",
-      date: "2026-04-12",
-      status: "shipping",
-      statusText: "\u0110ang giao h\xE0ng",
-      total: 18e5,
-      items: [
-        { name: "K\xEDnh R\xE2m Aviator", quantity: 1, image: "https://images.unsplash.com/photo-1681147768015-c6d3702f5e4f?w=200" }
-      ]
-    },
-    {
-      id: "ORD-2026-003",
-      date: "2026-04-14",
-      status: "processing",
-      statusText: "\u0110ang x\u1EED l\xFD",
-      total: 32e5,
-      items: [
-        { name: "K\xEDnh Ho\xE0n Ch\u1EC9nh Premium", quantity: 1, image: "https://images.unsplash.com/photo-1662230177619-e190429b87fd?w=200" }
-      ]
-    }
-  ];
-  const statusColors = {
-    delivered: "bg-green-100 text-green-700",
-    shipping: "bg-blue-100 text-blue-700",
-    processing: "bg-yellow-100 text-yellow-700",
-    cancelled: "bg-red-100 text-red-700"
-  };
-  const filteredOrders = orders.filter((order) => {
-    if (filterStatus !== "all" && order.status !== filterStatus) return false;
-    if (searchQuery && !order.id.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND"
-    }).format(price);
-  };
-  const formatDate = (dateStr) => {
-    return new Date(dateStr).toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric"
-    });
-  };
-  return <div className="min-h-screen bg-white">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {
-    /* Header */
+import { ChevronRight, Eye, Package, Search } from "lucide-react";
+import { useOrdersPage } from "@/hooks/order/useOrdersPage";
+
+export default function OrdersPage() {
+  const { isAuthenticated, orders, filters, ui, actions } = useOrdersPage();
+
+  if (!isAuthenticated) {
+    return (
+      <StateCard
+        title="Can dang nhap de xem don hang"
+        description="Danh sach don hang cua ban chi hien thi sau khi dang nhap."
+        primaryAction={{
+          label: "Dang nhap",
+          to: "/login",
+        }}
+        secondaryAction={{
+          label: "Quay lai cua hang",
+          to: "/shop",
+        }}
+      />
+    );
   }
+
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl mb-2">Đơn Hàng Của Tôi</h1>
-          <p className="text-muted-foreground">
-            Quản lý và theo dõi tất cả đơn hàng của bạn
-          </p>
+          <h1 className="mb-2 text-3xl">Don Hang Cua Toi</h1>
+          <p className="text-muted-foreground">Quan ly va theo doi tat ca don hang co san cua ban.</p>
         </div>
 
-        {
-    /* Filters */
-  }
-        <div className="mb-6 flex flex-col sm:flex-row gap-4">
-          {
-    /* Search */
-  }
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
-    type="text"
-    placeholder="Tìm mã đơn hàng..."
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    className="w-full pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
-  />
+              type="text"
+              placeholder="Tim ma don hang..."
+              value={filters.searchQuery}
+              onChange={(event) => actions.setSearchQuery(event.target.value)}
+              className="w-full rounded-lg border border-border py-2 pl-10 pr-4 focus:border-primary focus:outline-none"
+            />
           </div>
 
-          {
-    /* Status Filter */
-  }
           <select
-    value={filterStatus}
-    onChange={(e) => setFilterStatus(e.target.value)}
-    className="px-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary"
-  >
-            <option value="all">Tất cả trạng thái</option>
-            <option value="processing">Đang xử lý</option>
-            <option value="shipping">Đang giao hàng</option>
-            <option value="delivered">Đã giao hàng</option>
-            <option value="cancelled">Đã hủy</option>
+            value={filters.filterStatus}
+            onChange={(event) => actions.setFilterStatus(event.target.value)}
+            className="rounded-lg border border-border px-4 py-2 focus:border-primary focus:outline-none"
+          >
+            <option value="all">Tat ca trang thai</option>
+            <option value="processing">Dang xu ly</option>
+            <option value="shipping">Dang giao hang</option>
+            <option value="delivered">Da giao hang</option>
+            <option value="cancelled">Da huy</option>
           </select>
         </div>
 
-        {
-    /* Orders List */
-  }
-        {filteredOrders.length === 0 ? <div className="text-center py-12 bg-secondary rounded-lg">
-            <Package className="w-16 h-16 text-muted-foreground opacity-50 mx-auto mb-4" />
-            <p className="text-muted-foreground mb-4">
-              {searchQuery || filterStatus !== "all" ? "Kh\xF4ng t\xECm th\u1EA5y \u0111\u01A1n h\xE0ng ph\xF9 h\u1EE3p" : "B\u1EA1n ch\u01B0a c\xF3 \u0111\u01A1n h\xE0ng n\xE0o"}
-            </p>
-            {!searchQuery && filterStatus === "all" && <Link
-    to="/shop"
-    className="inline-block px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-  >
-                Khám Phá Sản Phẩm
-              </Link>}
-          </div> : <div className="space-y-4">
-            {filteredOrders.map((order) => <div
-    key={order.id}
-    className="bg-white border border-border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-  >
-                {
-    /* Order Header */
-  }
-                <div className="bg-secondary px-6 py-4 flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex flex-wrap items-center gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Mã đơn hàng</p>
-                      <p className="font-semibold">{order.id}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Ngày đặt</p>
-                      <p>{formatDate(order.date)}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Tổng tiền</p>
-                      <p className="font-semibold text-primary">{formatPrice(order.total)}</p>
-                    </div>
+        {ui.error ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-6">
+            <p className="mb-4 text-sm text-red-700">{ui.error}</p>
+            <button
+              type="button"
+              onClick={actions.retry}
+              className="rounded-lg bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+            >
+              Tai lai
+            </button>
+          </div>
+        ) : ui.isLoading ? (
+          <LoadingState />
+        ) : ui.isEmpty ? (
+          <EmptyState searchQuery={filters.searchQuery} filterStatus={filters.filterStatus} />
+        ) : (
+          <div className="space-y-5">
+            {orders.map((order) => (
+              <div
+                key={order.orderId}
+                className="overflow-hidden rounded-lg border border-border bg-white transition-shadow hover:shadow-md"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-4 bg-secondary px-6 py-4">
+                  <div className="flex flex-wrap items-center gap-8">
+                    <Column label="Ma don hang" value={`#${order.orderId}`} />
+                    <Column label="Ngay dat" value={formatDate(order.createdAt)} />
+                    <Column label="Tong tien" value={formatCurrency(order.totalAmount)} isAccent />
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[order.status]}`}>
-                    {order.statusText}
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusColor(order.statusKey)}`}>
+                    {order.statusLabel}
                   </span>
                 </div>
 
-                {
-    /* Order Items */
-  }
-                <div className="px-6 py-4">
-                  <div className="space-y-3">
-                    {order.items.map((item, index) => <div key={index} className="flex items-center gap-4">
-                        <img
-    src={item.image}
-    alt={item.name}
-    className="w-16 h-16 object-cover rounded-lg"
-  />
-                        <div className="flex-1">
-                          <p className="font-medium">{item.name}</p>
-                          <p className="text-sm text-muted-foreground">Số lượng: {item.quantity}</p>
-                        </div>
-                      </div>)}
+                <div className="px-6 py-5">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={order.firstItemImage}
+                      alt={order.firstItemName}
+                      className="h-20 w-20 rounded-lg object-cover"
+                    />
+                    <div className="flex-1">
+                      <p className="font-medium">{order.firstItemName}</p>
+                      <p className="text-sm text-muted-foreground">So luong: {order.firstItemQuantity}</p>
+                      {order.itemCount > 1 ? (
+                        <p className="text-sm text-muted-foreground">Tong cong {order.itemCount} san pham trong don</p>
+                      ) : null}
+                    </div>
                   </div>
 
-                  {
-    /* Actions */
-  }
-                  <div className="mt-4 pt-4 border-t border-border flex gap-3">
+                  <div className="mt-4 flex gap-3 border-t border-border pt-4">
                     <Link
-    to={`/orders/${order.id}`}
-    className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg hover:bg-secondary transition-colors"
-  >
-                      <Eye className="w-4 h-4" />
-                      <span className="text-sm">Chi tiết</span>
+                      to={`/orders/${order.orderId}`}
+                      className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 transition-colors hover:bg-secondary"
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span className="text-sm">Chi tiet</span>
                     </Link>
-                    {order.status === "delivered" && <Link
-    to={`/invoice/${order.id}`}
-    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-  >
-                        <span className="text-sm">Xem hóa đơn</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </Link>}
+                    <Link
+                      to={`/invoice/${order.orderId}`}
+                      className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-white transition-colors hover:bg-primary/90"
+                    >
+                      <span className="text-sm">Xem hoa don</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </Link>
                   </div>
                 </div>
-              </div>)}
-          </div>}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </div>;
+    </div>
+  );
 }
-export {
-  OrdersPage as default
-};
+
+function StateCard({ title, description, primaryAction, secondaryAction }) {
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="rounded-2xl border border-border bg-secondary/40 p-10 text-center">
+          <Package className="mx-auto mb-4 h-16 w-16 text-muted-foreground opacity-60" />
+          <h1 className="mb-3 text-3xl">{title}</h1>
+          <p className="mx-auto mb-6 max-w-2xl text-muted-foreground">{description}</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              to={primaryAction.to}
+              className="rounded-lg bg-primary px-6 py-3 text-white transition-colors hover:bg-primary/90"
+            >
+              {primaryAction.label}
+            </Link>
+            <Link
+              to={secondaryAction.to}
+              className="rounded-lg border border-border px-6 py-3 transition-colors hover:bg-secondary"
+            >
+              {secondaryAction.label}
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="rounded-lg bg-secondary/60 p-12 text-center">
+      <div className="mx-auto mb-4 h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+      <p className="text-muted-foreground">Dang tai danh sach don hang...</p>
+    </div>
+  );
+}
+
+function EmptyState({ searchQuery, filterStatus }) {
+  return (
+    <div className="rounded-lg bg-secondary p-12 text-center">
+      <Package className="mx-auto mb-4 h-16 w-16 text-muted-foreground opacity-50" />
+      <p className="mb-4 text-muted-foreground">
+        {searchQuery || filterStatus !== "all"
+          ? "Khong tim thay don hang phu hop"
+          : "Ban chua co don hang nao"}
+      </p>
+      {!searchQuery && filterStatus === "all" ? (
+        <Link
+          to="/shop"
+          className="inline-block rounded-lg bg-primary px-6 py-2 text-white transition-colors hover:bg-primary/90"
+        >
+          Kham Pha San Pham
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function Column({ label, value, isAccent = false }) {
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className={isAccent ? "font-semibold text-primary" : "font-semibold"}>{value}</p>
+    </div>
+  );
+}
+
+function getStatusColor(statusKey) {
+  switch (statusKey) {
+    case "delivered":
+      return "bg-green-100 text-green-700";
+    case "shipping":
+      return "bg-blue-100 text-blue-700";
+    case "cancelled":
+      return "bg-red-100 text-red-700";
+    default:
+      return "bg-amber-100 text-amber-700";
+  }
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(value ?? 0));
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "Chua cap nhat";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Chua cap nhat";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}

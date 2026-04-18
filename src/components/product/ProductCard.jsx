@@ -1,133 +1,185 @@
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Heart, ShoppingCart, Zap } from "lucide-react";
-import { useCart } from "@/store/cart/CartContext";
-import { useCartDrawer } from "@/store/cart/CartDrawerContext";
 import { toast } from "sonner";
+import { useCart } from "@/hooks/cart/useCart";
+import { useCartDrawer } from "@/store/cart/CartDrawerContext";
+import {
+  createCartItemView,
+  resolvePreferredVariant,
+} from "@/services/cartService";
+import { getCatalogProductById } from "@/services/catalogService";
+
 function ProductCard({
   id,
   name,
   price,
   image,
-  rating,
-  reviews,
+  subtitle,
   color = "Black",
   colors = ["#000000", "#8B4513", "#D4AF37"],
   inStock = true,
-  product
+  isPreOrderAllowed = false,
+  availabilityStatus,
+  product,
 }) {
-  const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { addStandardItem } = useCart();
   const { openDrawer } = useCartDrawer();
-  const handleQuickBuy = (e) => {
-    e.preventDefault();
-    if (inStock && product) {
-      addItem({
-        id: `cart-${id}-${color}-${Date.now()}`,
-        product,
-        quantity: 1,
-        orderType: product.inStock ? "regular" : "pre-order",
-        selectedColor: color,
-        totalPrice: product.price
-      });
-      toast.success("\u0110\xE3 th\xEAm v\xE0o gi\u1ECF h\xE0ng!");
-      openDrawer();
-    } else if (inStock) {
-      toast.error("Vui l\xF2ng xem chi ti\u1EBFt s\u1EA3n ph\u1EA9m \u0111\u1EC3 mua h\xE0ng");
+
+  const displayPrice = Number(price ?? 0);
+  const displaySubtitle = subtitle || color;
+  const displayColors = Array.isArray(colors) ? colors.filter(Boolean) : [];
+  const resolvedAvailabilityStatus =
+    availabilityStatus ||
+    (inStock ? "available" : isPreOrderAllowed || product?.allowPreOrder ? "preorder" : "unavailable");
+  const canBuyNow = resolvedAvailabilityStatus === "available";
+  const shouldShowPreOrder = resolvedAvailabilityStatus !== "available";
+
+  async function handleQuickBuy(event) {
+    event.preventDefault();
+
+    if (!canBuyNow) {
+      toast.error("San pham nay hien chua san sang de mua ngay.");
+      return;
     }
-  };
-  const handleAddToCart = (e) => {
-    e.preventDefault();
-    if (inStock && product) {
-      addItem({
-        id: `cart-${id}-${color}-${Date.now()}`,
-        product,
-        quantity: 1,
-        orderType: product.inStock ? "regular" : "pre-order",
-        selectedColor: color,
-        totalPrice: product.price
-      });
-      toast.success("\u0110\xE3 th\xEAm v\xE0o gi\u1ECF h\xE0ng!");
-    } else if (inStock) {
-      toast.error("Vui l\xF2ng xem chi ti\u1EBFt s\u1EA3n ph\u1EA9m \u0111\u1EC3 mua h\xE0ng");
+
+    await addToCart(true);
+  }
+
+  async function handleAddToCart(event) {
+    event.preventDefault();
+
+    if (!canBuyNow) {
+      toast.error("San pham nay hien chua the them vao gio.");
+      return;
     }
-  };
+
+    await addToCart(false);
+  }
+
+  async function addToCart(openCartDrawer) {
+    const productId = Number.parseInt(String(product?.productId ?? id ?? ""), 10);
+
+    if (!Number.isFinite(productId) || productId <= 0) {
+      toast.error("San pham mau nay chua duoc map variant de goi cart API.");
+      return;
+    }
+
+    try {
+      const detailProduct = await getCatalogProductById(productId);
+      const variant = resolvePreferredVariant(detailProduct);
+
+      if (!variant?.variantId) {
+        toast.error("Khong tim thay bien the hop le de them vao gio hang.");
+        return;
+      }
+
+      await addStandardItem({
+        variantId: variant.variantId,
+        quantity: 1,
+        orderType: "ready",
+        view: createCartItemView(detailProduct, variant),
+      });
+
+      toast.success("Da them vao gio hang!");
+
+      if (openCartDrawer) {
+        openDrawer();
+      }
+    } catch (error) {
+      toast.error(resolveErrorMessage(error, "Khong the them san pham vao gio hang."));
+    }
+  }
+
   return <div className="group relative">
-      <Link to={`/product/${id}`} className="block">
+      <Link to={`/product/${id}`} state={product ? { prefetchedProduct: product } : undefined} className="block">
         <div className="relative aspect-[4/3] overflow-hidden mb-3 rounded-lg">
           <img
-    src={image}
-    alt={name}
-    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-  />
-          
-          {
-    /* Stock Badge */
-  }
+            src={image}
+            alt={name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
+
           <div className="absolute top-3 left-3">
-            {inStock ? <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-md">
-                Còn hàng
-              </span> : <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
-                Hết hàng
+            {canBuyNow && <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-md">
+                Con hang
+              </span>}
+            {shouldShowPreOrder && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
+                Het hang
               </span>}
           </div>
 
-          {
-    /* Quick Actions */
-  }
           <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
-    onClick={(e) => {
-      e.preventDefault();
-    }}
-    className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white shadow-md hover:scale-110 transition-transform"
-    title="Thêm vào yêu thích"
-  >
+              onClick={(event) => {
+                event.preventDefault();
+              }}
+              className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white shadow-md hover:scale-110 transition-transform"
+              title="Them vao yeu thich"
+            >
               <Heart className="w-4 h-4 text-foreground" />
             </button>
-            {inStock && <button
-    onClick={handleAddToCart}
-    className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-primary hover:text-white shadow-md hover:scale-110 transition-all"
-    title="Thêm vào giỏ"
-  >
+            {canBuyNow && <button
+                onClick={handleAddToCart}
+                className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-primary hover:text-white shadow-md hover:scale-110 transition-all"
+                title="Them vao gio"
+              >
                 <ShoppingCart className="w-4 h-4" />
               </button>}
           </div>
         </div>
-        
+
         <h3 className="text-sm mb-1 text-foreground line-clamp-1" style={{ fontWeight: 400 }}>
           {name}
         </h3>
-        <p className="text-sm mb-1" style={{ fontWeight: 600 }}>${price.toFixed(2)}</p>
-        <p className="text-xs text-muted-foreground mb-2">{color}</p>
-        
-        <div className="flex items-center gap-1.5 mb-3">
-          {colors.map((c, i) => <div
-    key={i}
-    className="w-4 h-4 rounded-full border border-border"
-    style={{ backgroundColor: c }}
-  />)}
-        </div>
+        <p className="text-sm mb-1" style={{ fontWeight: 600 }}>{formatCurrency(displayPrice)}</p>
+        <p className="text-xs text-muted-foreground mb-2">{displaySubtitle}</p>
+
+        {displayColors.length > 0 && <div className="flex items-center gap-1.5 mb-3">
+            {displayColors.map((item, index) => <div
+                key={`${item}-${index}`}
+                className="w-4 h-4 rounded-full border border-border"
+                style={{ backgroundColor: item }}
+              />)}
+          </div>}
       </Link>
-      
-      {
-    /* Quick Buy Button */
-  }
-      {inStock ? <button
-    onClick={handleQuickBuy}
-    className="w-full py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 group/btn"
-    style={{ fontWeight: 500 }}
-  >
+
+      {canBuyNow && <button
+          onClick={handleQuickBuy}
+          className="w-full py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 group/btn"
+          style={{ fontWeight: 500 }}
+        >
           <Zap className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
           Mua Ngay
-        </button> : <Link
-    to={`/preorder/${id}`}
-    className="block w-full py-2 text-sm text-center bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-    style={{ fontWeight: 500 }}
-  >
-          Đặt Trước
+        </button>}
+      {shouldShowPreOrder && <Link
+          to={`/preorder/${id}`}
+          className="block w-full py-2 text-sm text-center bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+          style={{ fontWeight: 500 }}
+        >
+          Dat Truoc
         </Link>}
     </div>;
 }
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(value);
+}
+
+function resolveErrorMessage(error, fallbackMessage) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error;
+  }
+
+  return fallbackMessage;
+}
+
 export {
   ProductCard as default
 };

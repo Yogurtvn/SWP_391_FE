@@ -1,322 +1,73 @@
-import { useCallback, useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { useNavigate } from "react-router";
-import { selectAuthState } from "@/store/auth/authSlice";
-import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
-import {
-  createCategory,
-  createProduct,
-  createProductVariant,
-  getInventories,
-  getCategories,
-  getProducts,
-  updateInventory,
-  updateProductStatus,
-} from "@/services/adminService";
-
-const PRODUCT_TYPES = ["Frame", "Sunglasses", "Lens"];
+import { useAdminProductsPage } from "@/hooks/admin/useAdminProductsPage";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
 }
 
 export default function AdminProductsPage() {
-  const navigate = useNavigate();
-  const { accessToken } = useSelector(selectAuthState);
-  const { popupAlert, popupElement } = usePopupDialog();
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [form, setForm] = useState({
-    productName: "",
-    categoryId: "",
-    productType: PRODUCT_TYPES[0],
-    basePrice: "",
-    prescriptionCompatible: false,
-    description: "",
-  });
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
-  const [isCreatingVariant, setIsCreatingVariant] = useState(false);
-  const [variantForm, setVariantForm] = useState({
-    productId: null,
-    productName: "",
-    sku: "",
-    price: "",
-    quantity: "1",
-    color: "",
-    size: "",
-    frameType: "",
-  });
-
-  const fetchProducts = useCallback(async () => {
-    if (!accessToken) {
-      setError("Không có access token.");
-      setProducts([]);
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const [productResult, categoryResult] = await Promise.all([
-        getProducts({ page: 1, pageSize: 50, sortBy: "newest", sortOrder: "desc" }, accessToken),
-        getCategories({ page: 1, pageSize: 100, sortBy: "categoryName", sortOrder: "asc" }, accessToken),
-      ]);
-
-      setProducts(productResult?.items ?? []);
-      setCategories(categoryResult?.items ?? []);
-    } catch (requestError) {
-      setError(requestError?.message || "Không tải được dữ liệu sản phẩm.");
-    } finally {
-      setLoading(false);
-    }
-  }, [accessToken]);
-
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
-
-  async function handleCreateProduct(event) {
-    event.preventDefault();
-
-    if (!form.categoryId) {
-      await popupAlert("Vui lòng chọn danh mục.");
-      return;
-    }
-
-    try {
-      await createProduct(
-        {
-          productName: form.productName.trim(),
-          categoryId: Number(form.categoryId),
-          productType: form.productType,
-          basePrice: Number(form.basePrice || 0),
-          prescriptionCompatible: form.prescriptionCompatible,
-          description: form.description.trim() || null,
-        },
-        accessToken,
-      );
-
-      setForm({
-        productName: "",
-        categoryId: "",
-        productType: PRODUCT_TYPES[0],
-        basePrice: "",
-        prescriptionCompatible: false,
-        description: "",
-      });
-      fetchProducts();
-    } catch (requestError) {
-      await popupAlert(requestError?.message || "Không tạo được sản phẩm.");
-    }
-  }
-
-  async function handleCreateCategory(event) {
-    event.preventDefault();
-
-    const categoryName = newCategoryName.trim();
-    if (!categoryName) {
-      await popupAlert("Vui lòng nhập tên danh mục.");
-      return;
-    }
-
-    try {
-      const created = await createCategory({ categoryName }, accessToken);
-      setNewCategoryName("");
-      await fetchProducts();
-
-      if (created?.categoryId) {
-        setForm((currentForm) => ({ ...currentForm, categoryId: String(created.categoryId) }));
-      }
-    } catch (requestError) {
-      await popupAlert(requestError?.message || "Không tạo được danh mục.");
-    }
-  }
-
-  async function handleToggleProductStatus(product) {
-    if (!product.isAvailable) {
-      await popupAlert("Sản phẩm chưa có tồn kho. Vào Quản Lý Kho để nhập số lượng trước khi mở bán.");
-      navigate("/admin/inventory");
-      return;
-    }
-
-    try {
-      const inventoryResult = await getInventories(
-        { page: 1, pageSize: 200, productId: product.productId, sortBy: "variantId", sortOrder: "asc" },
-        accessToken,
-      );
-
-      const inventories = inventoryResult?.items ?? [];
-      if (inventories.length === 0) {
-        await popupAlert("Sản phẩm chưa có variant trong kho.");
-        navigate("/admin/inventory");
-        return;
-      }
-
-      await Promise.all(
-        inventories.map((item) =>
-          updateInventory(
-            item.variantId,
-            {
-              quantity: 0,
-              isPreOrderAllowed: Boolean(item.isPreOrderAllowed),
-              expectedRestockDate: item.expectedRestockDate ?? null,
-              preOrderNote: item.preOrderNote ?? null,
-            },
-            accessToken,
-          ),
-        ),
-      );
-
-      await updateProductStatus(product.productId, false, accessToken);
-      await popupAlert("Đã ngừng bán sản phẩm (đưa tồn kho về 0).");
-      await fetchProducts();
-    } catch (requestError) {
-      await popupAlert(requestError?.message || "Không đổi được trạng thái sản phẩm.");
-    }
-  }
-
-  function openVariantModal(product) {
-    setVariantForm({
-      productId: product.productId,
-      productName: product.productName,
-      sku: `SKU-${product.productId}-${Date.now()}`,
-      price: String(product.basePrice ?? ""),
-      quantity: "1",
-      color: "",
-      size: "",
-      frameType: "",
-    });
-    setIsVariantModalOpen(true);
-  }
-
-  function closeVariantModal() {
-    if (isCreatingVariant) {
-      return;
-    }
-
-    setIsVariantModalOpen(false);
-    setVariantForm({
-      productId: null,
-      productName: "",
-      sku: "",
-      price: "",
-      quantity: "1",
-      color: "",
-      size: "",
-      frameType: "",
-    });
-  }
-
-  function handleVariantFieldChange(event) {
-    const { name, value } = event.target;
-    setVariantForm((currentForm) => ({ ...currentForm, [name]: value }));
-  }
-
-  async function handleSubmitVariant(event) {
-    event.preventDefault();
-
-    const normalizedSku = variantForm.sku.trim();
-    const price = Number(variantForm.price);
-    const quantity = Number(variantForm.quantity);
-
-    if (!variantForm.productId) {
-      await popupAlert("Không xác định được sản phẩm để tạo variant.");
-      return;
-    }
-
-    if (!normalizedSku) {
-      await popupAlert("SKU không được để trống.");
-      return;
-    }
-
-    if (Number.isNaN(price) || price < 0 || Number.isNaN(quantity) || quantity < 0) {
-      await popupAlert("Giá hoặc số lượng không hợp lệ.");
-      return;
-    }
-
-    setIsCreatingVariant(true);
-    try {
-      await createProductVariant(
-        variantForm.productId,
-        {
-          sku: normalizedSku,
-          price,
-          quantity,
-          color: variantForm.color.trim() || null,
-          size: variantForm.size.trim() || null,
-          frameType: variantForm.frameType.trim() || null,
-          isPreOrderAllowed: false,
-          expectedRestockDate: null,
-          preOrderNote: null,
-        },
-        accessToken,
-      );
-
-      await popupAlert("Tạo variant thành công.");
-      closeVariantModal();
-      await fetchProducts();
-    } catch (requestError) {
-      await popupAlert(requestError?.message || "Không tạo được variant.");
-    } finally {
-      setIsCreatingVariant(false);
-    }
-  }
+  const {
+    products,
+    categories,
+    productDetail,
+    form,
+    newCategoryName,
+    variantForm,
+    ui,
+    actions,
+    popupElement,
+  } = useAdminProductsPage();
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Quản Lý Sản Phẩm</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Quan Ly San Pham</h1>
         <button
           type="button"
-          onClick={fetchProducts}
+          onClick={actions.retry}
           className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold"
         >
-          Tải lại
+          Tai lai
         </button>
       </div>
 
-      {error ? <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{error}</p> : null}
+      {ui.error ? <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{ui.error}</p> : null}
 
-      <form onSubmit={handleCreateCategory} className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Tạo danh mục mới</h2>
+      <form onSubmit={actions.createCategory} className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Tao danh muc moi</h2>
         <div className="flex flex-col gap-3 md:flex-row">
           <input
             type="text"
             value={newCategoryName}
-            onChange={(event) => setNewCategoryName(event.target.value)}
-            placeholder="Tên danh mục"
+            onChange={(event) => actions.setNewCategoryName(event.target.value)}
+            placeholder="Ten danh muc"
             className="w-full rounded-md border border-gray-300 px-3 py-2"
             required
           />
           <button type="submit" className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white md:w-auto">
-            Tạo danh mục
+            Tao danh muc
           </button>
         </div>
       </form>
 
-      <form onSubmit={handleCreateProduct} className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Tạo sản phẩm mới</h2>
+      <form onSubmit={actions.createProduct} className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
+        <h2 className="mb-3 text-lg font-semibold text-gray-900">Tao san pham moi</h2>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           <input
             type="text"
             value={form.productName}
-            onChange={(event) => setForm((currentForm) => ({ ...currentForm, productName: event.target.value }))}
-            placeholder="Tên sản phẩm"
+            onChange={(event) => actions.setFormField("productName", event.target.value)}
+            placeholder="Ten san pham"
             className="rounded-md border border-gray-300 px-3 py-2"
             required
           />
 
           <select
             value={form.categoryId}
-            onChange={(event) => setForm((currentForm) => ({ ...currentForm, categoryId: event.target.value }))}
+            onChange={(event) => actions.setFormField("categoryId", event.target.value)}
             className="rounded-md border border-gray-300 px-3 py-2"
             required
           >
-            <option value="">Chọn danh mục</option>
+            <option value="">Chon danh muc</option>
             {categories.map((category) => (
               <option key={category.categoryId} value={category.categoryId}>
                 {category.categoryName}
@@ -326,22 +77,20 @@ export default function AdminProductsPage() {
 
           <select
             value={form.productType}
-            onChange={(event) => setForm((currentForm) => ({ ...currentForm, productType: event.target.value }))}
+            onChange={(event) => actions.setFormField("productType", event.target.value)}
             className="rounded-md border border-gray-300 px-3 py-2"
           >
-            {PRODUCT_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
+            <option value="Frame">Frame</option>
+            <option value="Sunglasses">Sunglasses</option>
+            <option value="Lens">Lens</option>
           </select>
 
           <input
             type="number"
             min="0"
             value={form.basePrice}
-            onChange={(event) => setForm((currentForm) => ({ ...currentForm, basePrice: event.target.value }))}
-            placeholder="Giá cơ bản"
+            onChange={(event) => actions.setFormField("basePrice", event.target.value)}
+            placeholder="Gia co ban"
             className="rounded-md border border-gray-300 px-3 py-2"
             required
           />
@@ -350,22 +99,22 @@ export default function AdminProductsPage() {
             <input
               type="checkbox"
               checked={form.prescriptionCompatible}
-              onChange={(event) => setForm((currentForm) => ({ ...currentForm, prescriptionCompatible: event.target.checked }))}
+              onChange={(event) => actions.setFormField("prescriptionCompatible", event.target.checked)}
             />
-            Hỗ trợ kính thuốc
+            Ho tro kinh thuoc
           </label>
 
           <input
             type="text"
             value={form.description}
-            onChange={(event) => setForm((currentForm) => ({ ...currentForm, description: event.target.value }))}
-            placeholder="Mô tả"
+            onChange={(event) => actions.setFormField("description", event.target.value)}
+            placeholder="Mo ta"
             className="rounded-md border border-gray-300 px-3 py-2"
           />
         </div>
 
         <button type="submit" className="mt-3 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
-          Tạo sản phẩm
+          Tao san pham
         </button>
       </form>
 
@@ -374,17 +123,19 @@ export default function AdminProductsPage() {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">ID</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Tên</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Loại</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Giá</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Khả dụng</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Thao tác</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Ten</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Loai</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Gia</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Kha dung</th>
+              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Thao tac</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {!loading && products.length === 0 ? (
+            {!ui.isLoading && products.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">Không có dữ liệu.</td>
+                <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
+                  Khong co du lieu.
+                </td>
               </tr>
             ) : null}
 
@@ -394,22 +145,36 @@ export default function AdminProductsPage() {
                 <td className="px-4 py-3 text-sm font-semibold text-gray-900">{product.productName}</td>
                 <td className="px-4 py-3 text-sm text-gray-700">{product.productType}</td>
                 <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(product.basePrice)}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{product.isAvailable ? "Đang bán" : "Ngừng bán"}</td>
+                <td className="px-4 py-3 text-sm text-gray-700">{product.isAvailable ? "Dang ban" : "Ngung ban"}</td>
                 <td className="px-4 py-3 text-sm">
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => openVariantModal(product)}
+                      onClick={() => actions.viewDetail(product)}
                       className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
                     >
-                      Tạo variant
+                      Chi tiet
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleToggleProductStatus(product)}
+                      onClick={() => actions.openVariantModal(product)}
                       className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
                     >
-                      {product.isAvailable ? "Ngừng bán" : "Nhập kho"}
+                      Tao variant
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => actions.toggleProductStatus(product)}
+                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
+                    >
+                      {product.isAvailable ? "Ngung ban" : "Nhap kho"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => actions.deleteProduct(product)}
+                      className="rounded-md border border-red-300 px-2 py-1 text-xs font-semibold text-red-700"
+                    >
+                      Xoa
                     </button>
                   </div>
                 </td>
@@ -419,17 +184,133 @@ export default function AdminProductsPage() {
         </table>
       </div>
 
-      {isVariantModalOpen ? (
+      {productDetail ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form onSubmit={handleSubmitVariant} className="w-full max-w-2xl rounded-xl bg-white p-5 shadow-xl">
-            <h2 className="text-xl font-bold text-gray-900">Tạo variant</h2>
-            <p className="mt-1 text-sm text-gray-600">Sản phẩm: {variantForm.productName}</p>
+          <div className="max-h-[90vh] w-full max-w-5xl overflow-auto rounded-xl bg-white p-5 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{productDetail.productName}</h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  {productDetail.productType} • {formatCurrency(productDetail.basePrice)}
+                </p>
+                <p className="mt-1 text-sm text-gray-600">{productDetail.description || "Khong co mo ta."}</p>
+                <p className="mt-1 text-sm text-gray-600">
+                  Prescription compatible: {productDetail.prescriptionCompatible ? "Yes" : "No"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={actions.clearDetail}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold"
+              >
+                Dong
+              </button>
+            </div>
+
+            {ui.detailLoading ? <p className="mt-4 text-sm text-gray-500">Dang tai chi tiet...</p> : null}
+
+            <div className="mt-6 grid gap-6 lg:grid-cols-2">
+              <section className="rounded-xl border border-gray-200 p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Anh san pham</h3>
+                  <label className="cursor-pointer rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
+                    Upload anh
+                    <input type="file" multiple accept="image/*" className="hidden" onChange={actions.uploadImages} />
+                  </label>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {(productDetail.images ?? []).length === 0 ? (
+                    <p className="text-sm text-gray-500">Chua co anh.</p>
+                  ) : (
+                    (productDetail.images ?? []).map((image) => (
+                      <div key={image.imageId} className="rounded-lg border border-gray-200 p-3">
+                        <img
+                          src={image.imageUrl}
+                          alt={`Product ${image.imageId}`}
+                          className="h-40 w-full rounded-md object-cover"
+                        />
+                        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-gray-600">
+                          <span>
+                            #{image.imageId} • order {image.displayOrder}
+                          </span>
+                          <span>{image.isPrimary ? "Primary" : "Secondary"}</span>
+                        </div>
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => actions.setPrimaryImage(image)}
+                            className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
+                          >
+                            Dat anh chinh
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => actions.deleteImage(image)}
+                            className="rounded-md border border-red-300 px-2 py-1 text-xs font-semibold text-red-700"
+                          >
+                            Xoa anh
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-gray-200 p-4">
+                <h3 className="mb-3 text-lg font-semibold text-gray-900">Variants</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-bold uppercase text-gray-600">Variant ID</th>
+                        <th className="px-3 py-2 text-left text-xs font-bold uppercase text-gray-600">SKU</th>
+                        <th className="px-3 py-2 text-left text-xs font-bold uppercase text-gray-600">Gia</th>
+                        <th className="px-3 py-2 text-left text-xs font-bold uppercase text-gray-600">Color</th>
+                        <th className="px-3 py-2 text-left text-xs font-bold uppercase text-gray-600">Size</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {(productDetail.variants ?? []).length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-3 py-4 text-center text-sm text-gray-500">
+                            Chua co variant.
+                          </td>
+                        </tr>
+                      ) : (
+                        (productDetail.variants ?? []).map((variant) => (
+                          <tr key={variant.variantId}>
+                            <td className="px-3 py-2 text-sm text-gray-700">{variant.variantId}</td>
+                            <td className="px-3 py-2 text-sm font-semibold text-gray-900">{variant.sku || "-"}</td>
+                            <td className="px-3 py-2 text-sm text-gray-700">{formatCurrency(variant.price)}</td>
+                            <td className="px-3 py-2 text-sm text-gray-700">{variant.color || "-"}</td>
+                            <td className="px-3 py-2 text-sm text-gray-700">{variant.size || "-"}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-3 text-xs text-amber-700">
+                  Phan sua product chua map duoc vi payload chi tiet hien tai cua BE chua tra categoryId.
+                </p>
+              </section>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {ui.isVariantModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form onSubmit={actions.submitVariant} className="w-full max-w-2xl rounded-xl bg-white p-5 shadow-xl">
+            <h2 className="text-xl font-bold text-gray-900">Tao variant</h2>
+            <p className="mt-1 text-sm text-gray-600">San pham: {variantForm.productName}</p>
 
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               <input
                 name="sku"
                 value={variantForm.sku}
-                onChange={handleVariantFieldChange}
+                onChange={(event) => actions.setVariantField("sku", event.target.value)}
                 placeholder="SKU"
                 className="rounded-md border border-gray-300 px-3 py-2"
                 required
@@ -439,8 +320,8 @@ export default function AdminProductsPage() {
                 min="0"
                 name="price"
                 value={variantForm.price}
-                onChange={handleVariantFieldChange}
-                placeholder="Giá"
+                onChange={(event) => actions.setVariantField("price", event.target.value)}
+                placeholder="Gia"
                 className="rounded-md border border-gray-300 px-3 py-2"
                 required
               />
@@ -449,30 +330,30 @@ export default function AdminProductsPage() {
                 min="0"
                 name="quantity"
                 value={variantForm.quantity}
-                onChange={handleVariantFieldChange}
-                placeholder="Số lượng tồn kho ban đầu"
+                onChange={(event) => actions.setVariantField("quantity", event.target.value)}
+                placeholder="So luong ton kho ban dau"
                 className="rounded-md border border-gray-300 px-3 py-2"
                 required
               />
               <input
                 name="color"
                 value={variantForm.color}
-                onChange={handleVariantFieldChange}
-                placeholder="Màu sắc (không bắt buộc)"
+                onChange={(event) => actions.setVariantField("color", event.target.value)}
+                placeholder="Mau sac"
                 className="rounded-md border border-gray-300 px-3 py-2"
               />
               <input
                 name="size"
                 value={variantForm.size}
-                onChange={handleVariantFieldChange}
-                placeholder="Kích thước (không bắt buộc)"
+                onChange={(event) => actions.setVariantField("size", event.target.value)}
+                placeholder="Kich thuoc"
                 className="rounded-md border border-gray-300 px-3 py-2"
               />
               <input
                 name="frameType"
                 value={variantForm.frameType}
-                onChange={handleVariantFieldChange}
-                placeholder="Frame type (không bắt buộc)"
+                onChange={(event) => actions.setVariantField("frameType", event.target.value)}
+                placeholder="Frame type"
                 className="rounded-md border border-gray-300 px-3 py-2"
               />
             </div>
@@ -480,18 +361,18 @@ export default function AdminProductsPage() {
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
-                onClick={closeVariantModal}
+                onClick={actions.closeVariantModal}
                 className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold"
-                disabled={isCreatingVariant}
+                disabled={ui.isCreatingVariant}
               >
-                Hủy
+                Huy
               </button>
               <button
                 type="submit"
                 className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                disabled={isCreatingVariant}
+                disabled={ui.isCreatingVariant}
               >
-                {isCreatingVariant ? "Đang tạo..." : "Tạo variant"}
+                {ui.isCreatingVariant ? "Dang tao..." : "Tao variant"}
               </button>
             </div>
           </form>

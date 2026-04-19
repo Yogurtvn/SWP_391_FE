@@ -30,6 +30,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import SettingsPage from "@/pages/customer/SettingsPage";
 import OrdersPage from "@/pages/customer/OrdersPage";
 import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
+import AdminOrderDetailPage from "@/pages/admin/AdminOrderDetailPage";
 import AdminProductsPage from "@/pages/admin/AdminProductsPage";
 import AdminInventoryPage from "@/pages/admin/AdminInventoryPage";
 import AdminLensPackagesPage from "@/pages/admin/AdminLensPackagesPage";
@@ -133,6 +134,7 @@ const router = createBrowserRouter([
       { path: "dashboard", Component: AdminDashboard },
       { path: "users", Component: AdminUsersPage },
       { path: "orders", Component: AdminOrdersPage },
+      { path: "orders/:orderId", Component: AdminOrderDetailPage },
       { path: "products", Component: AdminProductsPage },
       { path: "inventory", Component: AdminInventoryPage },
       { path: "lens-packages", Component: AdminLensPackagesPage },

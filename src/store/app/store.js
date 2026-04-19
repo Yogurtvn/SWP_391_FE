@@ -4,6 +4,7 @@ import cartReducer from "@/store/cart/cartSlice";
 import catalogReducer from "@/store/catalog/catalogSlice";
 import orderReducer from "@/store/order/orderSlice";
 import profileReducer from "@/store/profile/profileSlice";
+import adminReducer from "@/store/admin/adminSlice";
 import { persistStoredAuth } from "@/store/auth/authStorage";
 import { persistStoredCartViewCache } from "@/store/cart/cartStorage";
 
@@ -14,6 +15,7 @@ const store = configureStore({
     catalog: catalogReducer,
     order: orderReducer,
     profile: profileReducer,
+    admin: adminReducer,
   },
 });
 

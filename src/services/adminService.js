@@ -162,6 +162,14 @@ export async function getOrderById(orderId, token) {
   return apiGet(`/api/orders/${orderId}`, { token });
 }
 
+export async function getOrderItems(orderId, token) {
+  return apiGet(`/api/orders/${orderId}/items`, { token });
+}
+
+export async function getOrderStatusHistories(orderId, token) {
+  return apiGet(`/api/orders/${orderId}/status-histories`, { token });
+}
+
 /**
  * PATCH /api/orders/{orderId}/statuses
  * Cập nhật trạng thái đơn hàng (Staff/Admin).
@@ -210,6 +218,21 @@ export async function getCategories(params = {}, token) {
 
 export async function createCategory(data, token) {
   return apiPost("/api/categories", data, { token });
+}
+
+export async function updateCategory(categoryId, data, token) {
+  return apiRequest(`/api/categories/${categoryId}`, {
+    method: "PUT",
+    body: data,
+    token,
+  });
+}
+
+export async function deleteCategory(categoryId, token) {
+  return apiRequest(`/api/categories/${categoryId}`, {
+    method: "DELETE",
+    token,
+  });
 }
 
 export async function getProducts(params = {}, token) {
@@ -267,6 +290,74 @@ export async function getVariantById(variantId, token) {
   return apiGet(`/api/variants/${variantId}`, { token });
 }
 
+export async function getVariantsByProduct(productId, params = {}, token) {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", params.page);
+  if (params.pageSize) query.set("pageSize", params.pageSize);
+  if (params.search) query.set("search", params.search);
+  if (params.sortBy) query.set("sortBy", params.sortBy);
+  if (params.sortOrder) query.set("sortOrder", params.sortOrder);
+  const queryStr = query.toString();
+
+  return apiGet(`/api/products/${productId}/variants${queryStr ? `?${queryStr}` : ""}`, { token });
+}
+
+export async function updateVariant(variantId, data, token) {
+  return apiRequest(`/api/variants/${variantId}`, {
+    method: "PUT",
+    body: data,
+    token,
+  });
+}
+
+export async function updateVariantStatus(variantId, isActive, token) {
+  return apiRequest(`/api/variants/${variantId}/status`, {
+    method: "PATCH",
+    body: { isActive },
+    token,
+  });
+}
+
+export async function deleteVariant(variantId, token) {
+  return apiRequest(`/api/variants/${variantId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
+export async function getProductImages(productId, token) {
+  return apiGet(`/api/products/${productId}/images`, { token });
+}
+
+export async function uploadProductImages(productId, files, token) {
+  const formData = new FormData();
+
+  Array.from(files).forEach((file) => {
+    formData.append("files", file);
+  });
+
+  return apiRequest(`/api/products/${productId}/images`, {
+    method: "POST",
+    body: formData,
+    token,
+  });
+}
+
+export async function updateProductImageMetadata(productId, imageId, data, token) {
+  return apiRequest(`/api/products/${productId}/images/${imageId}`, {
+    method: "PUT",
+    body: data,
+    token,
+  });
+}
+
+export async function deleteProductImage(productId, imageId, token) {
+  return apiRequest(`/api/products/${productId}/images/${imageId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
 // =============================================
 // INVENTORY (Admin + Staff)
 // =============================================
@@ -300,6 +391,23 @@ export async function updatePreOrder(variantId, data, token) {
     body: data,
     token,
   });
+}
+
+export async function createStockReceipt(data, token) {
+  return apiPost("/api/stock-receipts", data, { token });
+}
+
+export async function getStockReceipts(params = {}, token) {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", params.page);
+  if (params.pageSize) query.set("pageSize", params.pageSize);
+  if (params.variantId) query.set("variantId", params.variantId);
+  if (params.staffId) query.set("staffId", params.staffId);
+  if (params.fromDate) query.set("fromDate", params.fromDate);
+  if (params.toDate) query.set("toDate", params.toDate);
+  const queryStr = query.toString();
+
+  return apiGet(`/api/stock-receipts${queryStr ? `?${queryStr}` : ""}`, { token });
 }
 
 // =============================================

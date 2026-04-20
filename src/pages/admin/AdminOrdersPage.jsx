@@ -1,146 +1,332 @@
-import { ADMIN_ORDER_STATUSES, ADMIN_SHIPPING_STATUSES, useAdminOrdersPage } from "@/hooks/admin/useAdminOrdersPage";
-import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
+import {
+  CheckCircle,
+  Clock3,
+  Eye,
+  FileText,
+  Loader2,
+  Package,
+  Search,
+  ShoppingBag,
+} from "lucide-react";
+import { useAdminOrdersPage } from "@/hooks/admin/useAdminOrdersPage";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
 }
 
+function formatDateTime(value) {
+  if (!value) {
+    return "-";
+  }
+
+  return new Date(value).toLocaleString("vi-VN");
+}
+
+function normalizeValue(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+}
+
+function getTypeLabel(type) {
+  const normalized = normalizeValue(type);
+
+  if (normalized === "ready" || normalized === "regular") return "Don thuong";
+  if (normalized === "prescription") return "Don kinh";
+  if (normalized === "preorder") return "Pre-order";
+  return type || "-";
+}
+
+function getTypeIcon(type) {
+  const normalized = normalizeValue(type);
+
+  if (normalized === "prescription") return FileText;
+  if (normalized === "preorder") return Clock3;
+  return Package;
+}
+
+function getStatusColor(status) {
+  const normalized = normalizeValue(status);
+
+  if (normalized === "pending") return "border-yellow-300 bg-yellow-100 text-yellow-800";
+  if (normalized === "confirmed") return "border-blue-300 bg-blue-100 text-blue-800";
+  if (normalized === "processing") return "border-purple-300 bg-purple-100 text-purple-800";
+  if (normalized === "shipped" || normalized === "delivering") return "border-orange-300 bg-orange-100 text-orange-800";
+  if (normalized === "completed" || normalized === "delivered") return "border-green-300 bg-green-100 text-green-800";
+  if (normalized === "cancelled" || normalized === "failed") return "border-red-300 bg-red-100 text-red-800";
+  if (normalized === "awaitingstock") return "border-amber-300 bg-amber-100 text-amber-800";
+  return "border-gray-300 bg-gray-100 text-gray-800";
+}
+
 export default function AdminOrdersPage() {
-  const { orders, filters, pageInfo, ui, actions, popupElement } = useAdminOrdersPage();
+  const {
+    orders,
+    filters,
+    selectedOrderId,
+    selectedOrderSummary,
+    selectedOrder,
+    orderTypeOptions,
+    typeFilter,
+    ui,
+    actions,
+    popupElement,
+  } = useAdminOrdersPage();
+
+  const detailOrder = selectedOrder ?? selectedOrderSummary;
 
   return (
-    <AdminPageShell
-      title="Quan Ly Don Hang"
-      actions={
-        <button type="button" onClick={actions.retry} className={adminStyles.secondaryButton}>
-          Tai lai
-        </button>
-      }
-    >
-      <AdminErrorBanner message={ui.error} />
-
-      <AdminSection>
-        <div className={adminStyles.toolbarGrid}>
-          <input
-            type="text"
-            name="search"
-            value={filters.search}
-            onChange={(event) => actions.setFilter("search", event.target.value)}
-            placeholder="Tim theo ma don, nguoi nhan..."
-            className={adminStyles.input}
-          />
-          <select
-            name="orderStatus"
-            value={filters.orderStatus}
-            onChange={(event) => actions.setFilter("orderStatus", event.target.value)}
-            className={adminStyles.input}
+    <div className="min-h-screen bg-orange-50 px-4 py-6 md:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+          <div className="rounded-2xl border-2 border-orange-300 bg-white p-6 shadow-sm xl:flex-1">
+            <h1 className="mb-2 text-3xl font-bold text-gray-900">Quan Ly Don Hang</h1>
+            <p className="font-medium text-gray-600">Xac nhan, duyet don kinh va pre-order</p>
+          </div>
+          <button
+            type="button"
+            onClick={actions.retry}
+            className="inline-flex items-center justify-center rounded-2xl border-2 border-orange-300 bg-white px-5 py-3 font-bold text-gray-900 shadow-sm transition hover:bg-orange-50"
           >
-            <option value="">Tat ca trang thai don</option>
-            {ADMIN_ORDER_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-          <select
-            name="shippingStatus"
-            value={filters.shippingStatus}
-            onChange={(event) => actions.setFilter("shippingStatus", event.target.value)}
-            className={adminStyles.input}
-          >
-            <option value="">Tat ca trang thai van chuyen</option>
-            {ADMIN_SHIPPING_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
+            Tai lai
+          </button>
         </div>
-      </AdminSection>
 
-      <div className={adminStyles.tableWrapper}>
-        <table className={adminStyles.table}>
-          <thead className={adminStyles.tableHead}>
-            <tr>
-              <th className={adminStyles.th}>Ma don</th>
-              <th className={adminStyles.th}>Nguoi nhan</th>
-              <th className={adminStyles.th}>Loai</th>
-              <th className={adminStyles.th}>Trang thai</th>
-              <th className={adminStyles.th}>Van chuyen</th>
-              <th className={adminStyles.th}>Tong tien</th>
-              <th className={adminStyles.th}>Thao tac</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {!ui.isLoading && orders.length === 0 ? (
-              <tr>
-                <td colSpan={7} className={adminStyles.emptyState}>
-                  Khong co du lieu.
-                </td>
-              </tr>
-            ) : null}
+        {ui.error ? (
+          <div className="rounded-2xl border-2 border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {ui.error}
+          </div>
+        ) : null}
 
-            {orders.map((order) => (
-              <tr key={order.orderId}>
-                <td className={`${adminStyles.td} font-semibold text-slate-950`}>#{order.orderId}</td>
-                <td className={adminStyles.td}>{order.receiverName || "-"}</td>
-                <td className={adminStyles.td}>{order.orderType || "-"}</td>
-                <td className={adminStyles.td}>{order.orderStatus || "-"}</td>
-                <td className={adminStyles.td}>{order.shippingStatus || "-"}</td>
-                <td className={adminStyles.td}>{formatCurrency(order.totalAmount)}</td>
-                <td className={adminStyles.td}>
-                  <div className="flex flex-wrap gap-2">
+        <div className="rounded-2xl border-2 border-orange-300 bg-white p-6 shadow-sm">
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(event) => actions.setFilter("search", event.target.value)}
+                placeholder="Tim kiem theo ma don hoac ten khach hang..."
+                className="w-full rounded-xl border-2 border-gray-300 py-3 pl-12 pr-4 text-base text-gray-900 transition-all placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
+              />
+            </div>
+
+            <div className="flex flex-col gap-4 md:flex-row">
+              <select
+                value={typeFilter}
+                onChange={(event) => actions.setTypeFilter(event.target.value)}
+                className="rounded-xl border-2 border-gray-300 px-4 py-3 font-medium text-gray-900 focus:border-orange-500 focus:outline-none"
+              >
+                <option value="all">Tat ca loai don</option>
+                {orderTypeOptions.map((type) => (
+                  <option key={type} value={type}>
+                    {getTypeLabel(type)}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={filters.orderStatus}
+                onChange={(event) => actions.setFilter("orderStatus", event.target.value)}
+                className="rounded-xl border-2 border-gray-300 px-4 py-3 font-medium text-gray-900 focus:border-orange-500 focus:outline-none"
+              >
+                <option value="">Tat ca trang thai</option>
+                <option value="Pending">Cho duyet</option>
+                <option value="Confirmed">Da xac nhan</option>
+                <option value="Processing">Dang xu ly</option>
+                <option value="Shipped">Dang giao</option>
+                <option value="Completed">Hoan thanh</option>
+                <option value="Cancelled">Da huy</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-1">
+            <div className="max-h-[calc(100vh-18rem)] space-y-3 overflow-y-auto pr-1">
+              {ui.isLoading ? (
+                <div className="rounded-2xl border-2 border-orange-200 bg-white p-6 text-center">
+                  <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-orange-500" />
+                  <p className="font-medium text-gray-600">Dang tai don hang...</p>
+                </div>
+              ) : null}
+
+              {!ui.isLoading && orders.length === 0 ? (
+                <div className="rounded-2xl border-2 border-orange-200 bg-white p-6 text-center text-gray-500">
+                  Khong tim thay don hang nao
+                </div>
+              ) : null}
+
+              {orders.map((order) => {
+                const Icon = getTypeIcon(order.orderType);
+                const isSelected = String(selectedOrderId) === String(order.orderId);
+
+                return (
+                  <button
+                    key={order.orderId}
+                    type="button"
+                    onClick={() => actions.selectOrder(order.orderId)}
+                    className={`w-full rounded-2xl border-2 bg-white p-5 text-left transition-all ${
+                      isSelected
+                        ? "border-orange-500 bg-orange-50 shadow-md"
+                        : "border-orange-200 hover:border-orange-400 hover:shadow-sm"
+                    }`}
+                  >
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4 text-gray-700" />
+                        <span className="text-sm font-bold text-gray-900">#{order.orderId}</span>
+                      </div>
+                      <span className={`rounded-lg border-2 px-3 py-1 text-xs font-bold ${getStatusColor(order.orderStatus)}`}>
+                        {order.orderStatus || "-"}
+                      </span>
+                    </div>
+
+                    <p className="mb-2 text-sm font-medium text-gray-700">{order.receiverName || order.customerName || "-"}</p>
+
+                    <div className="flex items-center justify-between gap-3 text-xs text-gray-600">
+                      <span className="font-medium">{getTypeLabel(order.orderType)}</span>
+                      <span className="font-bold text-orange-600">{formatCurrency(order.totalAmount)}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            {!detailOrder ? (
+              <div className="rounded-2xl border-2 border-orange-200 bg-white p-12 text-center">
+                <Eye className="mx-auto mb-4 h-20 w-20 text-orange-400" />
+                <p className="text-lg font-medium text-gray-600">Chon mot don hang de xem chi tiet</p>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-2xl border-2 border-orange-300 bg-white shadow-sm">
+                <div className="border-b-2 border-orange-300 bg-orange-50 p-6">
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="mb-2 text-2xl font-bold text-gray-900">#{detailOrder.orderId}</h2>
+                      <p className="text-sm font-medium text-gray-600">{getTypeLabel(detailOrder.orderType)}</p>
+                    </div>
+                    <span className={`rounded-xl border-2 px-4 py-2 text-sm font-bold ${getStatusColor(detailOrder.orderStatus)}`}>
+                      {detailOrder.orderStatus || "-"}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <p>
+                      <span className="font-bold text-gray-500">Nguoi nhan:</span> {detailOrder.receiverName || detailOrder.customerName || "-"}
+                    </p>
+                    <p>
+                      <span className="font-bold text-gray-500">So dien thoai:</span> {detailOrder.receiverPhone || "-"}
+                    </p>
+                    <p>
+                      <span className="font-bold text-gray-500">Dia chi:</span> {detailOrder.shippingAddress || "-"}
+                    </p>
+                    <p>
+                      <span className="font-bold text-gray-500">Ngay tao:</span> {formatDateTime(detailOrder.createdAt)}
+                    </p>
+                    <p>
+                      <span className="font-bold text-gray-500">Van chuyen:</span> {detailOrder.shippingStatus || "-"}
+                    </p>
+                  </div>
+                </div>
+
+                {ui.detailLoading && !selectedOrder ? (
+                  <div className="p-8 text-center">
+                    <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-orange-500" />
+                    <p className="font-medium text-gray-600">Dang tai chi tiet don hang...</p>
+                  </div>
+                ) : null}
+
+                {selectedOrder?.items?.length ? (
+                  <div className="border-b-2 border-orange-200 p-6">
+                    <h3 className="mb-4 text-lg font-bold text-gray-900">San pham</h3>
+                    <div className="space-y-3">
+                      {selectedOrder.items.map((item) => (
+                        <div
+                          key={item.orderItemId || `${item.productName}-${item.sku}-${item.quantity}`}
+                          className="flex items-center justify-between rounded-xl border-2 border-gray-200 bg-gray-50 p-4 text-sm"
+                        >
+                          <div>
+                            <p className="font-bold text-gray-900">{item.productName || "-"}</p>
+                            <p className="font-medium text-gray-600">SKU: {item.sku || "-"}</p>
+                            <p className="font-medium text-gray-600">So luong: {item.quantity ?? 0}</p>
+                          </div>
+                          <p className="font-bold text-orange-600">{formatCurrency(item.lineTotal ?? item.totalPrice ?? item.unitPrice)}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 flex items-center justify-between border-t-2 border-gray-200 pt-4">
+                      <span className="font-bold text-gray-900">Tong cong:</span>
+                      <span className="text-2xl font-bold text-orange-600">{formatCurrency(selectedOrder.totalAmount)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-b-2 border-orange-200 p-6">
+                    <div className="rounded-xl border-2 border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                      Khong co du lieu chi tiet san pham trong don nay.
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-b-2 border-orange-200 p-6">
+                  <h3 className="mb-4 text-lg font-bold text-gray-900">Thanh toan & giao hang</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 text-sm">
+                      <p className="mb-2 font-bold text-gray-900">Thanh toan</p>
+                      <p className="font-medium text-gray-700">
+                        Phuong thuc: {selectedOrder?.payment?.paymentMethod || detailOrder.paymentMethod || "-"}
+                      </p>
+                      <p className="font-medium text-gray-700">
+                        Trang thai: {selectedOrder?.payment?.paymentStatus || detailOrder.paymentStatus || "-"}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border-2 border-orange-200 bg-orange-50 p-4 text-sm">
+                      <p className="mb-2 font-bold text-gray-900">Giao hang</p>
+                      <p className="font-medium text-gray-700">Ma van don: {detailOrder.shippingCode || "-"}</p>
+                      <p className="font-medium text-gray-700">
+                        Du kien giao: {formatDateTime(detailOrder.expectedDeliveryDate)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-orange-50 p-6">
+                  <h3 className="mb-4 text-lg font-bold text-gray-900">Thao tac</h3>
+                  <div className="flex flex-col gap-3 md:flex-row">
                     <button
                       type="button"
-                      onClick={() => actions.goToDetail(order.orderId)}
-                      className={adminStyles.smallButton}
+                      onClick={() => actions.goToDetail(detailOrder.orderId)}
+                      className="flex items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-white px-5 py-3 font-bold text-gray-900 transition hover:bg-gray-50"
                     >
-                      Chi tiet
+                      <ShoppingBag className="h-5 w-5" />
+                      Trang chi tiet
                     </button>
                     <button
                       type="button"
-                      onClick={() => actions.updateOrderStatus(order.orderId)}
-                      className={adminStyles.smallButton}
+                      onClick={() => actions.updateOrderStatus(detailOrder.orderId)}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 font-bold text-white transition hover:bg-green-700"
                     >
+                      <CheckCircle className="h-5 w-5" />
                       Doi trang thai don
                     </button>
                     <button
                       type="button"
-                      onClick={() => actions.updateShippingStatus(order.orderId)}
-                      className={adminStyles.smallButton}
+                      onClick={() => actions.updateShippingStatus(detailOrder.orderId)}
+                      className="rounded-xl border-2 border-orange-500 px-5 py-3 font-bold text-orange-700 transition hover:bg-orange-100"
                     >
                       Doi van chuyen
                     </button>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex items-center justify-end gap-3">
-        <button
-          type="button"
-          disabled={filters.page <= 1}
-          onClick={() => actions.setFilter("page", Math.max(1, filters.page - 1))}
-          className={adminStyles.secondaryButton}
-        >
-          Truoc
-        </button>
-        <span className="text-base font-medium text-slate-700">
-          Trang {filters.page}/{pageInfo.totalPages || 1}
-        </span>
-        <button
-          type="button"
-          disabled={filters.page >= (pageInfo.totalPages || 1)}
-          onClick={() => actions.setFilter("page", Math.min(pageInfo.totalPages || 1, filters.page + 1))}
-          className={adminStyles.secondaryButton}
-        >
-          Sau
-        </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
       {popupElement}
-    </AdminPageShell>
+    </div>
   );
 }

@@ -102,8 +102,8 @@ export function useProductDetailPage() {
 
   useEffect(() => {
     setCurrentImage(0);
-    setSelectedColor(product?.colors?.[0] ?? "");
-    setSelectedSize(product?.sizes?.[0] ?? "");
+    setSelectedColor(product?.selectedVariant?.color ?? product?.colors?.[0] ?? "");
+    setSelectedSize(product?.selectedVariant?.size ?? product?.sizes?.[0] ?? "");
   }, [product]);
 
   const resolvedVariant = useMemo(() => {
@@ -145,7 +145,8 @@ export function useProductDetailPage() {
       price: activeVariant?.price ?? product.price,
       availabilityStatus,
       inStock: availabilityStatus === "available",
-      isPreOrderAllowed: availabilityStatus === "preorder",
+      isPreOrderAllowed: Boolean(activeVariant?.isPreOrderAllowed),
+      canPreOrder: Boolean(product.canPreOrder || activeVariant?.isPreOrderAllowed),
     };
   }, [product, resolvedVariant]);
 
@@ -181,6 +182,37 @@ export function useProductDetailPage() {
     }
   }
 
+  function selectColor(color) {
+    setSelectedColor(color);
+
+    const preferredVariant = resolvePreferredVariantBy(
+      product,
+      (variant) => variant.color === color,
+    );
+
+    if (preferredVariant?.size) {
+      setSelectedSize(preferredVariant.size);
+    }
+  }
+
+  function selectSize(size) {
+    setSelectedSize(size);
+
+    const preferredVariant =
+      resolvePreferredVariantBy(
+        product,
+        (variant) => variant.size === size && (!selectedColor || variant.color === selectedColor),
+      ) ??
+      resolvePreferredVariantBy(
+        product,
+        (variant) => variant.size === size,
+      );
+
+    if (preferredVariant?.color) {
+      setSelectedColor(preferredVariant.color);
+    }
+  }
+
   return {
     product: resolvedProduct,
     relatedProducts,
@@ -193,8 +225,8 @@ export function useProductDetailPage() {
       isNotFound: !loading && !error && !product,
     },
     actions: {
-      selectColor: setSelectedColor,
-      selectSize: setSelectedSize,
+      selectColor,
+      selectSize,
       setCurrentImage,
       showNextImage: () => {
         if (!product?.images?.length) {
@@ -231,6 +263,17 @@ export function useProductDetailPage() {
   };
 }
 
+function resolvePreferredVariantBy(product, predicate) {
+  const variants = Array.isArray(product?.variants) ? product.variants.filter(predicate) : [];
+
+  return (
+    variants.find((variant) => Number(variant?.quantity ?? 0) > 0) ||
+    variants.find((variant) => Boolean(variant?.isPreOrderAllowed)) ||
+    variants[0] ||
+    null
+  );
+}
+
 function normalizeMockProduct(product) {
   const colors = Array.isArray(product.frameSpecs?.colors)
     ? product.frameSpecs.colors.map((item) => item.name)
@@ -256,6 +299,7 @@ function normalizeMockProduct(product) {
     availabilityStatus: product.inStock ? "available" : product.allowPreOrder ? "preorder" : "unavailable",
     inStock: Boolean(product.inStock),
     isPreOrderAllowed: Boolean(product.allowPreOrder),
+    canPreOrder: Boolean(product.allowPreOrder),
     product,
   };
 }
@@ -272,6 +316,7 @@ function mapMockProductToCard(product) {
       : [],
     inStock: Boolean(product.inStock),
     isPreOrderAllowed: Boolean(product.allowPreOrder),
+    canPreOrder: Boolean(product.allowPreOrder),
     availabilityStatus: product.inStock ? "available" : product.allowPreOrder ? "preorder" : "unavailable",
     product,
   };

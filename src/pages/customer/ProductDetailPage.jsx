@@ -5,7 +5,12 @@ import { useProductDetailPage } from "@/hooks/shop/useProductDetailPage";
 export default function ProductDetailPage() {
   const { product, relatedProducts, selectedColor, selectedSize, currentImage, ui, actions } = useProductDetailPage();
   const canBuyNow = product?.availabilityStatus === "available";
-  const shouldShowPreOrder = product?.availabilityStatus !== "available";
+  const canPreOrder = Boolean(
+    product?.canPreOrder ||
+      product?.isPreOrderAllowed ||
+      product?.availabilityStatus === "preorder",
+  );
+  const shouldShowOutOfStock = product?.availabilityStatus !== "available";
 
   if (ui.loading) {
     return (
@@ -137,8 +142,11 @@ export default function ProductDetailPage() {
             {canBuyNow ? (
               <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-green-700">Còn hàng</span>
             ) : null}
-            {shouldShowPreOrder ? (
+            {shouldShowOutOfStock ? (
               <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">Hết hàng</span>
+            ) : null}
+            {canBuyNow && canPreOrder ? (
+              <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">Co the dat truoc</span>
             ) : null}
           </div>
 
@@ -258,7 +266,7 @@ export default function ProductDetailPage() {
               </>
             ) : null}
 
-            {shouldShowPreOrder ? (
+            {canPreOrder ? (
               <button
                 type="button"
                 onClick={actions.goToPreOrder}

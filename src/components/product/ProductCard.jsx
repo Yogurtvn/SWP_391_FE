@@ -32,7 +32,13 @@ function ProductCard({
     availabilityStatus ||
     (inStock ? "available" : isPreOrderAllowed || product?.allowPreOrder ? "preorder" : "unavailable");
   const canBuyNow = resolvedAvailabilityStatus === "available";
-  const shouldShowPreOrder = resolvedAvailabilityStatus !== "available";
+  const canPreOrder = Boolean(
+    isPreOrderAllowed ||
+      product?.allowPreOrder ||
+      product?.canPreOrder ||
+      resolvedAvailabilityStatus === "preorder",
+  );
+  const shouldShowOutOfStock = resolvedAvailabilityStatus !== "available";
 
   async function handleQuickBuy(event) {
     event.preventDefault();
@@ -100,12 +106,17 @@ function ProductCard({
           />
 
           <div className="absolute top-3 left-3">
-            {canBuyNow && <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-md">
-                Con hang
-              </span>}
-            {shouldShowPreOrder && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
-                Het hang
-              </span>}
+            <div className="flex flex-wrap gap-2">
+              {canBuyNow && <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-md">
+                  Con hang
+                </span>}
+              {shouldShowOutOfStock && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
+                  Het hang
+                </span>}
+              {canBuyNow && canPreOrder && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
+                  Co dat truoc
+                </span>}
+            </div>
           </div>
 
           <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -143,21 +154,23 @@ function ProductCard({
           </div>}
       </Link>
 
-      {canBuyNow && <button
-          onClick={handleQuickBuy}
-          className="w-full py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 group/btn"
-          style={{ fontWeight: 500 }}
-        >
-          <Zap className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
-          Mua Ngay
-        </button>}
-      {shouldShowPreOrder && <Link
-          to={`/preorder/${id}`}
-          className="block w-full py-2 text-sm text-center bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-          style={{ fontWeight: 500 }}
-        >
-          Dat Truoc
-        </Link>}
+      <div className={canBuyNow && canPreOrder ? "grid grid-cols-2 gap-2" : ""}>
+        {canBuyNow && <button
+            onClick={handleQuickBuy}
+            className="w-full py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 group/btn"
+            style={{ fontWeight: 500 }}
+          >
+            <Zap className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+            Mua Ngay
+          </button>}
+        {canPreOrder && <Link
+            to={`/preorder/${id}`}
+            className="block w-full py-2 text-sm text-center bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+            style={{ fontWeight: 500 }}
+          >
+            Dat Truoc
+          </Link>}
+      </div>
     </div>;
 }
 

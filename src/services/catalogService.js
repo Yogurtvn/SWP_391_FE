@@ -109,7 +109,9 @@ function normalizeCatalogListItem(item) {
   const productType = normalizeProductType(item?.productType);
   const price = normalizePrice(item?.basePrice);
   const image = resolveAssetUrl(item?.thumbnailUrl) ?? DEFAULT_IMAGE_URL;
-  const availabilityStatus = resolveAvailabilityStatus(item?.isAvailable, item?.isPreOrderAllowed);
+  const isAvailable = Boolean(item?.isAvailable);
+  const canPreOrder = Boolean(item?.isPreOrderAllowed);
+  const availabilityStatus = resolveAvailabilityStatus(isAvailable, canPreOrder);
 
   return {
     id: String(item?.productId ?? ""),
@@ -120,7 +122,8 @@ function normalizeCatalogListItem(item) {
     subtitle: getProductTypeLabel(productType),
     colors: [],
     inStock: availabilityStatus === "available",
-    isPreOrderAllowed: availabilityStatus === "preorder",
+    isPreOrderAllowed: canPreOrder,
+    canPreOrder,
     availabilityStatus,
     productType,
     productTypeLabel: getProductTypeLabel(productType),
@@ -131,7 +134,7 @@ function normalizeCatalogListItem(item) {
       image,
       productType,
       inStock: availabilityStatus === "available",
-      allowPreOrder: availabilityStatus === "preorder",
+      allowPreOrder: canPreOrder,
     }),
   };
 }
@@ -148,6 +151,7 @@ function normalizeCatalogDetail(item) {
   const firstPreOrderVariant = variants.find((variant) => variant.isPreOrderAllowed);
   const activeVariant = firstAvailableVariant ?? firstPreOrderVariant ?? variants[0] ?? null;
   const availabilityStatus = resolveDetailAvailabilityStatus(variants);
+  const canPreOrder = variants.some((variant) => variant.isPreOrderAllowed);
   const baseImage = images[0] ?? DEFAULT_IMAGE_URL;
   const displayPrice = activeVariant?.price ?? normalizePrice(item?.basePrice);
 
@@ -170,7 +174,8 @@ function normalizeCatalogDetail(item) {
     selectedVariant: activeVariant,
     availabilityStatus,
     inStock: availabilityStatus === "available",
-    isPreOrderAllowed: availabilityStatus === "preorder",
+    isPreOrderAllowed: Boolean(activeVariant?.isPreOrderAllowed),
+    canPreOrder,
     product: createCartProduct({
       id: item?.productId,
       name: item?.productName,
@@ -178,7 +183,7 @@ function normalizeCatalogDetail(item) {
       image: baseImage,
       productType,
       inStock: availabilityStatus === "available",
-      allowPreOrder: availabilityStatus === "preorder",
+      allowPreOrder: canPreOrder,
       prescriptionCompatible: Boolean(item?.prescriptionCompatible),
       images: images.length > 0 ? images : [DEFAULT_IMAGE_URL],
     }),

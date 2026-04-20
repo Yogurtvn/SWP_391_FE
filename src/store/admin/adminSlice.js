@@ -25,6 +25,7 @@ import {
   updateLensTypeStatus,
   updateOrderStatus,
   updatePreOrder,
+  updateProduct,
   updateProductImageMetadata,
   updateProductStatus,
   updateShippingStatus,
@@ -415,6 +416,22 @@ export const createAdminProduct = createAsyncThunk(
   },
 );
 
+export const updateAdminProduct = createAsyncThunk(
+  "admin/updateProduct",
+  async ({ productId, payload }, { getState, rejectWithValue }) => {
+    const token = getAdminToken(getState, rejectWithValue);
+    if (typeof token !== "string") {
+      return token;
+    }
+
+    try {
+      return await updateProduct(productId, payload, token);
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc san pham."));
+    }
+  },
+);
+
 export const createAdminVariant = createAsyncThunk(
   "admin/createVariant",
   async ({ productId, payload }, { getState, rejectWithValue }) => {
@@ -449,6 +466,16 @@ export const toggleAdminProductStatus = createAsyncThunk(
 
       if (inventories.length === 0) {
         throw new Error("San pham chua co variant trong kho.");
+      }
+
+      if (!product.isActive) {
+        const hasStock = inventories.some((item) => Number(item.quantity ?? 0) > 0);
+
+        if (!hasStock) {
+          throw new Error("San pham chua co ton kho de mo ban.");
+        }
+
+        return await updateProductStatus(product.productId, true, token);
       }
 
       await Promise.all(

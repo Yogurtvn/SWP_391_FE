@@ -7,6 +7,7 @@ import {
   Image as ImageIcon,
   Layers3,
   Palette,
+  Pencil,
   Plus,
   Power,
   Search,
@@ -76,6 +77,7 @@ export default function AdminProductsPage() {
     categories,
     productDetail,
     form,
+    editForm,
     currentColorForm,
     draftVariants,
     productSummaries,
@@ -112,8 +114,8 @@ export default function AdminProductsPage() {
 
       const matchesAvailability =
         availabilityFilter === "all" ||
-        (availabilityFilter === "available" && product.isAvailable) ||
-        (availabilityFilter === "inactive" && !product.isAvailable);
+        (availabilityFilter === "available" && product.isActive !== false) ||
+        (availabilityFilter === "inactive" && product.isActive === false);
 
       const matchesStock =
         stockFilter === "all" ||
@@ -333,7 +335,18 @@ export default function AdminProductsPage() {
 
                           <div>
                             <p className="text-xl font-bold text-gray-900">{product.productName}</p>
-                            <p className="mt-1 text-sm text-gray-500">ID: {product.productId}</p>
+                            <div className="mt-1 flex items-center gap-2">
+                              <p className="text-sm text-gray-500">ID: {product.productId}</p>
+                              <span
+                                className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                                  product.isActive === false
+                                    ? "bg-gray-200 text-gray-700"
+                                    : "bg-emerald-100 text-emerald-700"
+                                }`}
+                              >
+                                {product.isActive === false ? "Ngung ban" : "Dang ban"}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -384,6 +397,15 @@ export default function AdminProductsPage() {
                           </button>
                           <button
                             type="button"
+                            onClick={() => actions.openEditModal(product)}
+                            className="rounded-lg border-2 border-transparent p-2 text-sky-600 transition hover:border-sky-400 hover:bg-sky-50"
+                            title="Chinh sua"
+                            disabled={ui.isLoadingEditProduct}
+                          >
+                            <Pencil className="h-5 w-5" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => actions.openVariantModal(product)}
                             className="rounded-lg border-2 border-transparent p-2 text-primary transition hover:border-primary hover:bg-orange-50"
                             title="Them variant"
@@ -394,9 +416,11 @@ export default function AdminProductsPage() {
                             type="button"
                             onClick={() => actions.toggleProductStatus(product)}
                             className={`rounded-lg border-2 border-transparent p-2 transition hover:bg-gray-100 ${
-                              product.isAvailable ? "text-amber-600 hover:border-amber-400" : "text-green-600 hover:border-green-400"
+                              product.isActive === false
+                                ? "text-green-600 hover:border-green-400"
+                                : "text-amber-600 hover:border-amber-400"
                             }`}
-                            title={product.isAvailable ? "Ngung ban" : "Mo ban"}
+                            title={product.isActive === false ? "Mo ban" : "Ngung ban"}
                           >
                             <Power className="h-5 w-5" />
                           </button>
@@ -418,6 +442,129 @@ export default function AdminProductsPage() {
           </div>
         </div>
       </div>
+
+      {ui.isEditModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-3xl rounded-2xl border-2 border-gray-300 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b-2 border-gray-300 p-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Chinh Sua San Pham</h2>
+                <p className="mt-1 text-sm text-gray-500">Cap nhat thong tin co ban cua san pham.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => actions.closeEditModal()}
+                className="rounded-lg border-2 border-transparent p-2 transition hover:border-gray-300 hover:bg-gray-100"
+                disabled={ui.isUpdatingProduct}
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <form onSubmit={actions.submitEditProduct} className="p-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-bold text-gray-700">
+                    Ten san pham <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.productName}
+                    onChange={(event) => actions.setEditFormField("productName", event.target.value)}
+                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-bold text-gray-700">
+                    Danh muc <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={editForm.categoryId}
+                    onChange={(event) => actions.setEditFormField("categoryId", event.target.value)}
+                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
+                    required
+                  >
+                    <option value="">Chon danh muc</option>
+                    {categories.map((category) => (
+                      <option key={category.categoryId} value={category.categoryId}>
+                        {category.categoryName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-bold text-gray-700">
+                    Loai san pham <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={editForm.productType}
+                    onChange={(event) => actions.setEditFormField("productType", event.target.value)}
+                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
+                  >
+                    <option value="Frame">Frame</option>
+                    <option value="Sunglasses">Sunglasses</option>
+                    <option value="Lens">Lens</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-bold text-gray-700">
+                    Gia (VND) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={editForm.basePrice}
+                    onChange={(event) => actions.setEditFormField("basePrice", event.target.value)}
+                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <label className="mb-2 block text-sm font-bold text-gray-700">Mo ta</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(event) => actions.setEditFormField("description", event.target.value)}
+                  rows={4}
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <label className="mt-4 flex items-center gap-3 rounded-xl border-2 border-gray-300 px-4 py-3 font-semibold text-gray-900">
+                <input
+                  type="checkbox"
+                  checked={editForm.prescriptionCompatible}
+                  onChange={(event) => actions.setEditFormField("prescriptionCompatible", event.target.checked)}
+                />
+                Ho tro kinh thuoc
+              </label>
+
+              <div className="mt-6 flex items-center gap-3 border-t-2 border-gray-200 pt-6">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl border-2 border-primary bg-primary py-3 text-lg font-bold text-white transition hover:bg-primary/90 disabled:opacity-60"
+                  disabled={ui.isUpdatingProduct}
+                >
+                  {ui.isUpdatingProduct ? "Dang cap nhat..." : "Luu Thay Doi"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => actions.closeEditModal()}
+                  className="flex-1 rounded-xl border-2 border-gray-300 py-3 text-lg font-bold transition hover:bg-gray-50"
+                  disabled={ui.isUpdatingProduct}
+                >
+                  Huy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
 
       {isCreateModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">

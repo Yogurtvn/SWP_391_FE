@@ -6,6 +6,7 @@ import { selectAuthState } from "@/store/auth/authSlice";
 import {
   clearAdminCurrentProduct,
   createAdminProduct,
+  updateAdminProduct,
   createAdminVariant,
   fetchAdminProductDetail,
   fetchAdminProducts,
@@ -51,6 +52,16 @@ const DEFAULT_VARIANT_FORM = {
   frameType: "",
 };
 
+const DEFAULT_EDIT_PRODUCT_FORM = {
+  productId: null,
+  productName: "",
+  categoryId: "",
+  productType: PRODUCT_TYPES[0],
+  basePrice: "",
+  prescriptionCompatible: false,
+  description: "",
+};
+
 function normalizeSkuSegment(value) {
   return String(value || "")
     .trim()
@@ -80,6 +91,18 @@ function buildUniqueVariantSku(baseSku, colorName, existingDrafts) {
   return candidate;
 }
 
+function buildEditProductForm(detail) {
+  return {
+    productId: detail?.productId ?? null,
+    productName: detail?.productName ?? "",
+    categoryId: detail?.categoryId != null ? String(detail.categoryId) : "",
+    productType: detail?.productType || PRODUCT_TYPES[0],
+    basePrice: detail?.basePrice != null ? String(detail.basePrice) : "",
+    prescriptionCompatible: Boolean(detail?.prescriptionCompatible),
+    description: detail?.description ?? "",
+  };
+}
+
 export function useAdminProductsPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -96,6 +119,10 @@ export function useAdminProductsPage() {
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const [isCreatingVariant, setIsCreatingVariant] = useState(false);
   const [variantForm, setVariantForm] = useState(DEFAULT_VARIANT_FORM);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLoadingEditProduct, setIsLoadingEditProduct] = useState(false);
+  const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
+  const [editForm, setEditForm] = useState(DEFAULT_EDIT_PRODUCT_FORM);
 
   useEffect(() => {
     if (!auth.isReady || !auth.accessToken) {
@@ -346,6 +373,76 @@ export function useAdminProductsPage() {
     setVariantForm(DEFAULT_VARIANT_FORM);
   }
 
+  async function openEditModal(product) {
+    setIsLoadingEditProduct(true);
+
+    try {
+      const detail = await getProductById(product.productId, auth.accessToken);
+      setEditForm(buildEditProductForm(detail));
+      setIsEditModalOpen(true);
+    } catch (error) {
+      await popupAlert(error || "Khong tai duoc thong tin san pham de chinh sua.");
+    } finally {
+      setIsLoadingEditProduct(false);
+    }
+  }
+
+  function closeEditModal(forceClose = false) {
+    if (isUpdatingProduct && !forceClose) {
+      return;
+    }
+
+    setIsEditModalOpen(false);
+    setEditForm(DEFAULT_EDIT_PRODUCT_FORM);
+  }
+
+  async function submitEditProduct(event) {
+    event.preventDefault();
+
+    if (!editForm.productId) {
+      await popupAlert("Khong xac dinh duoc san pham can cap nhat.");
+      return false;
+    }
+
+    if (!editForm.categoryId) {
+      await popupAlert("Vui long chon danh muc.");
+      return false;
+    }
+
+    setIsUpdatingProduct(true);
+
+    try {
+      await dispatch(
+        updateAdminProduct({
+          productId: editForm.productId,
+          payload: {
+            productName: editForm.productName.trim(),
+            categoryId: Number(editForm.categoryId),
+            productType: editForm.productType,
+            basePrice: Number(editForm.basePrice || 0),
+            prescriptionCompatible: editForm.prescriptionCompatible,
+            description: editForm.description.trim() || null,
+          },
+        }),
+      ).unwrap();
+
+      await dispatch(fetchAdminProducts()).unwrap();
+
+      if (admin.currentProduct.data?.productId === editForm.productId) {
+        await dispatch(fetchAdminProductDetail(editForm.productId)).unwrap();
+      }
+
+      closeEditModal(true);
+      await popupAlert("Cap nhat san pham thanh cong.");
+      return true;
+    } catch (error) {
+      await popupAlert(error || "Khong cap nhat duoc san pham.");
+      return false;
+    } finally {
+      setIsUpdatingProduct(false);
+    }
+  }
+
   async function submitVariant(event) {
     event.preventDefault();
 
@@ -412,7 +509,7 @@ export function useAdminProductsPage() {
   }
 
   async function toggleProductStatus(product) {
-    if (!product.isAvailable) {
+    if (!product.isActive && !product.isAvailable) {
       await popupAlert("San pham chua co ton kho. Vao Quan Ly Kho de nhap so luong truoc khi mo ban.");
       navigate("/admin/inventory");
       return;
@@ -420,15 +517,27 @@ export function useAdminProductsPage() {
 
     try {
       await dispatch(toggleAdminProductStatus(product)).unwrap();
-      await popupAlert("Da ngung ban san pham va dua ton kho ve 0.");
+      await popupAlert(
+        product.isActive
+          ? "Da ngung ban san pham va dua ton kho ve 0."
+          : "Da mo ban lai san pham.",
+      );
       await dispatch(fetchAdminProducts()).unwrap();
 
       if (admin.currentProduct.data?.productId === product.productId) {
         await dispatch(fetchAdminProductDetail(product.productId)).unwrap();
       }
     } catch (error) {
-      if (String(error).includes("variant trong kho")) {
+      const errorMessage = String(error || "");
+
+      if (errorMessage.includes("variant trong kho")) {
         await popupAlert("San pham chua co variant trong kho.");
+        navigate("/admin/inventory");
+        return;
+      }
+
+      if (errorMessage.includes("ton kho")) {
+        await popupAlert("San pham chua co ton kho. Vao Quan Ly Kho de nhap so luong truoc khi mo ban.");
         navigate("/admin/inventory");
         return;
       }
@@ -520,6 +629,7 @@ export function useAdminProductsPage() {
     categories: admin.products.categories,
     productDetail: admin.currentProduct.data,
     form,
+    editForm,
     currentColorForm,
     draftVariants,
     productSummaries,
@@ -530,11 +640,15 @@ export function useAdminProductsPage() {
       isLoadingSummaries,
       detailLoading: admin.currentProduct.status === "loading",
       isCreatingProduct,
+      isEditModalOpen,
+      isLoadingEditProduct,
+      isUpdatingProduct,
       isVariantModalOpen,
       isCreatingVariant,
     },
     actions: {
       setFormField: (field, value) => setForm((current) => ({ ...current, [field]: value })),
+      setEditFormField: (field, value) => setEditForm((current) => ({ ...current, [field]: value })),
       setCurrentColorField,
       attachColorImages,
       removeColorImage,
@@ -544,6 +658,9 @@ export function useAdminProductsPage() {
       setVariantField: (field, value) => setVariantForm((current) => ({ ...current, [field]: value })),
       retry: () => dispatch(fetchAdminProducts()),
       createProduct,
+      openEditModal,
+      closeEditModal,
+      submitEditProduct,
       openVariantModal,
       closeVariantModal,
       submitVariant,

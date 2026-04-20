@@ -4,14 +4,30 @@ import {
   ChevronDown,
   Eye,
   Filter,
+  Image as ImageIcon,
   Layers3,
+  Palette,
   Plus,
   Power,
   Search,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import { useAdminProductsPage } from "@/hooks/admin/useAdminProductsPage";
+
+const COLOR_OPTIONS = [
+  { name: "Den", code: "#000000" },
+  { name: "Nau", code: "#8B4513" },
+  { name: "Xanh navy", code: "#1E3A8A" },
+  { name: "Xam", code: "#808080" },
+  { name: "Vang gold", code: "#FFD700" },
+  { name: "Bac", code: "#C0C0C0" },
+  { name: "Do", code: "#DC2626" },
+  { name: "Xanh la", code: "#16A34A" },
+  { name: "Hong", code: "#EC4899" },
+  { name: "Be", code: "#D2B48C" },
+];
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
@@ -24,16 +40,9 @@ function normalizeValue(value) {
     .replace(/[\s_-]+/g, "");
 }
 
-function resolveCategoryName(product, categories) {
-  if (product?.categoryName) {
-    return product.categoryName;
-  }
-
-  const matchedCategory = categories.find(
-    (category) => String(category.categoryId) === String(product?.categoryId ?? product?.category?.categoryId),
-  );
-
-  return matchedCategory?.categoryName || "Chua ro danh muc";
+function getColorCode(colorName) {
+  const matched = COLOR_OPTIONS.find((color) => normalizeValue(color.name) === normalizeValue(colorName));
+  return matched?.code || "#d1d5db";
 }
 
 function getProductImage(product) {
@@ -49,13 +58,27 @@ function getProductBadgeColor(type) {
   return "border-gray-200 bg-gray-100 text-gray-800";
 }
 
+function getStockBadgeColor(stock) {
+  if (stock <= 0) {
+    return "border-red-300 bg-red-100 text-red-800";
+  }
+
+  if (stock < 20) {
+    return "border-amber-300 bg-amber-100 text-amber-800";
+  }
+
+  return "border-green-300 bg-green-100 text-green-800";
+}
+
 export default function AdminProductsPage() {
   const {
     products,
     categories,
     productDetail,
     form,
-    newCategoryName,
+    currentColorForm,
+    draftVariants,
+    productSummaries,
     variantForm,
     ui,
     actions,
@@ -64,24 +87,26 @@ export default function AdminProductsPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const query = searchQuery.trim().toLowerCase();
-      const categoryName = resolveCategoryName(product, categories).toLowerCase();
+      const summary = productSummaries[String(product.productId)] ?? {
+        primarySku: "",
+        colors: [],
+        totalStock: 0,
+      };
+
       const matchesSearch =
         !query ||
         String(product.productName || "").toLowerCase().includes(query) ||
         String(product.productType || "").toLowerCase().includes(query) ||
-        categoryName.includes(query);
-
-      const matchesCategory =
-        categoryFilter === "all" ||
-        String(product.categoryId ?? product.category?.categoryId ?? "") === categoryFilter;
+        String(summary.primarySku || "").toLowerCase().includes(query) ||
+        summary.colors.some((color) => String(color).toLowerCase().includes(query));
 
       const matchesType = typeFilter === "all" || normalizeValue(product.productType) === normalizeValue(typeFilter);
 
@@ -90,12 +115,40 @@ export default function AdminProductsPage() {
         (availabilityFilter === "available" && product.isAvailable) ||
         (availabilityFilter === "inactive" && !product.isAvailable);
 
-      return matchesSearch && matchesCategory && matchesType && matchesAvailability;
+      const matchesStock =
+        stockFilter === "all" ||
+        (stockFilter === "low" && summary.totalStock > 0 && summary.totalStock < 20) ||
+        (stockFilter === "out" && summary.totalStock <= 0) ||
+        (stockFilter === "good" && summary.totalStock >= 20);
+
+      return matchesSearch && matchesType && matchesAvailability && matchesStock;
     });
-  }, [availabilityFilter, categories, categoryFilter, products, searchQuery, typeFilter]);
+  }, [availabilityFilter, productSummaries, products, searchQuery, stockFilter, typeFilter]);
+
+  const activeFilterCount = [typeFilter, stockFilter, availabilityFilter].filter((value) => value !== "all").length;
+
+  function openCreateModal() {
+    actions.resetCreateProductBuilder();
+    setIsCreateModalOpen(true);
+  }
+
+  function closeCreateModal() {
+    actions.resetCreateProductBuilder();
+    setIsCreateModalOpen(false);
+  }
 
   async function handleCreateProduct(event) {
-    await actions.createProduct(event);
+    const created = await actions.createProduct(event);
+
+    if (created?.productId) {
+      setIsCreateModalOpen(false);
+    }
+  }
+
+  function handleColorSelect(value) {
+    const selectedColor = COLOR_OPTIONS.find((item) => item.name === value);
+    actions.setCurrentColorField("colorName", value);
+    actions.setCurrentColorField("colorCode", selectedColor?.code || "#000000");
   }
 
   return (
@@ -120,7 +173,7 @@ export default function AdminProductsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setIsCreateModalOpen(true)}
+                onClick={openCreateModal}
                 className="inline-flex items-center gap-2 rounded-xl border-2 border-primary bg-primary px-6 py-3 font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
               >
                 <Plus className="h-5 w-5" />
@@ -141,7 +194,7 @@ export default function AdminProductsPage() {
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Tim kiem theo ten, loai, danh muc..."
+              placeholder="Tim kiem theo ten, SKU, mau sac..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               className="w-full rounded-xl border-2 border-gray-300 py-3 pl-12 pr-4 text-base text-gray-900 transition-all placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -156,42 +209,29 @@ export default function AdminProductsPage() {
             >
               <Filter className="h-4 w-4" />
               Bo Loc
+              {activeFilterCount > 0 ? (
+                <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-white">{activeFilterCount}</span>
+              ) : null}
               <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? "rotate-180" : ""}`} />
             </button>
 
-            {(categoryFilter !== "all" || typeFilter !== "all" || availabilityFilter !== "all") && (
+            {activeFilterCount > 0 ? (
               <button
                 type="button"
                 onClick={() => {
-                  setCategoryFilter("all");
                   setTypeFilter("all");
+                  setStockFilter("all");
                   setAvailabilityFilter("all");
                 }}
                 className="text-sm font-medium text-primary hover:underline"
               >
                 Xoa bo loc
               </button>
-            )}
+            ) : null}
           </div>
 
           {showFilters ? (
             <div className="mt-4 grid gap-4 border-t-2 border-gray-200 pt-4 md:grid-cols-3">
-              <div>
-                <label className="mb-2 block text-sm font-bold text-gray-700">Danh muc</label>
-                <select
-                  value={categoryFilter}
-                  onChange={(event) => setCategoryFilter(event.target.value)}
-                  className="w-full rounded-lg border-2 border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
-                >
-                  <option value="all">Tat ca</option>
-                  {categories.map((category) => (
-                    <option key={category.categoryId} value={String(category.categoryId)}>
-                      {category.categoryName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-700">Loai san pham</label>
                 <select
@@ -203,6 +243,20 @@ export default function AdminProductsPage() {
                   <option value="Frame">Frame</option>
                   <option value="Sunglasses">Sunglasses</option>
                   <option value="Lens">Lens</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-700">Ton kho</label>
+                <select
+                  value={stockFilter}
+                  onChange={(event) => setStockFilter(event.target.value)}
+                  className="w-full rounded-lg border-2 border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
+                >
+                  <option value="all">Tat ca</option>
+                  <option value="good">Tu 20 tro len</option>
+                  <option value="low">Duoi 20</option>
+                  <option value="out">Het hang</option>
                 </select>
               </div>
 
@@ -224,21 +278,22 @@ export default function AdminProductsPage() {
 
         <div className="overflow-hidden rounded-2xl border-2 border-gray-300 bg-white shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[980px]">
+            <table className="w-full min-w-[1080px]">
               <thead className="border-b-2 border-gray-300 bg-gray-50">
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">San pham</th>
+                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">SKU</th>
                   <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Loai</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Danh muc</th>
                   <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Gia</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Kha dung</th>
+                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Mau sac</th>
+                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Ton kho</th>
                   <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">Thao tac</th>
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-gray-200">
                 {ui.isLoading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                       Dang tai san pham...
                     </td>
                   </tr>
@@ -246,7 +301,7 @@ export default function AdminProductsPage() {
 
                 {!ui.isLoading && filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
                       Khong tim thay san pham nao
                     </td>
                   </tr>
@@ -254,7 +309,11 @@ export default function AdminProductsPage() {
 
                 {filteredProducts.map((product) => {
                   const imageUrl = getProductImage(product);
-                  const categoryName = resolveCategoryName(product, categories);
+                  const summary = productSummaries[String(product.productId)] ?? {
+                    primarySku: "-",
+                    colors: [],
+                    totalStock: 0,
+                  };
 
                   return (
                     <tr key={product.productId} className="transition-colors hover:bg-gray-50">
@@ -278,22 +337,39 @@ export default function AdminProductsPage() {
                           </div>
                         </div>
                       </td>
+                      <td className="px-6 py-5 text-sm font-semibold text-gray-700">
+                        {ui.isLoadingSummaries ? "Dang tai..." : summary.primarySku}
+                      </td>
                       <td className="px-6 py-5">
                         <span className={`rounded-full border-2 px-3 py-1 text-xs font-bold ${getProductBadgeColor(product.productType)}`}>
                           {product.productType}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-sm font-medium text-gray-700">{categoryName}</td>
                       <td className="px-6 py-5 text-base font-bold text-primary">{formatCurrency(product.basePrice)}</td>
                       <td className="px-6 py-5">
-                        <span
-                          className={`rounded-full border-2 px-3 py-1 text-xs font-bold ${
-                            product.isAvailable
-                              ? "border-green-300 bg-green-100 text-green-800"
-                              : "border-gray-300 bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {product.isAvailable ? "Dang ban" : "Ngung ban"}
+                        <div className="flex gap-1">
+                          {summary.colors.length === 0 ? (
+                            <span className="text-sm text-gray-400">-</span>
+                          ) : (
+                            summary.colors.slice(0, 4).map((color) => (
+                              <div
+                                key={color}
+                                className="h-6 w-6 rounded-full border-2 border-gray-300"
+                                style={{ backgroundColor: getColorCode(color) }}
+                                title={color}
+                              />
+                            ))
+                          )}
+                          {summary.colors.length > 4 ? (
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-300 bg-gray-100 text-[10px] font-bold text-gray-700">
+                              +{summary.colors.length - 4}
+                            </div>
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className={`rounded-full border-2 px-3 py-1 text-xs font-bold ${getStockBadgeColor(summary.totalStock)}`}>
+                          {summary.totalStock}
                         </span>
                       </td>
                       <td className="px-6 py-5">
@@ -310,7 +386,7 @@ export default function AdminProductsPage() {
                             type="button"
                             onClick={() => actions.openVariantModal(product)}
                             className="rounded-lg border-2 border-transparent p-2 text-primary transition hover:border-primary hover:bg-orange-50"
-                            title="Tao variant"
+                            title="Them variant"
                           >
                             <Layers3 className="h-5 w-5" />
                           </button>
@@ -320,7 +396,7 @@ export default function AdminProductsPage() {
                             className={`rounded-lg border-2 border-transparent p-2 transition hover:bg-gray-100 ${
                               product.isAvailable ? "text-amber-600 hover:border-amber-400" : "text-green-600 hover:border-green-400"
                             }`}
-                            title={product.isAvailable ? "Ngung ban" : "Nhap kho"}
+                            title={product.isAvailable ? "Ngung ban" : "Mo ban"}
                           >
                             <Power className="h-5 w-5" />
                           </button>
@@ -345,118 +421,302 @@ export default function AdminProductsPage() {
 
       {isCreateModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl border-2 border-gray-300 bg-white shadow-2xl">
+          <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-2xl border-2 border-gray-300 bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b-2 border-gray-300 bg-white p-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Them San Pham Moi</h2>
-                <p className="mt-1 text-sm text-gray-500">Gom tao danh muc va tao san pham trong cung mot modal.</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Tao thong tin san pham co ban, sau do them mau sac, ton kho va hinh anh trong cung mot modal.
+                </p>
               </div>
               <button
                 type="button"
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={closeCreateModal}
                 className="rounded-lg border-2 border-transparent p-2 transition hover:border-gray-300 hover:bg-gray-100"
               >
                 <X className="h-6 w-6" />
               </button>
             </div>
 
-            <div className="space-y-6 p-6">
-              <section className="rounded-2xl border-2 border-gray-200 p-5">
-                <h3 className="mb-4 text-xl font-bold text-gray-900">Tao danh muc moi</h3>
-                <form onSubmit={actions.createCategory} className="flex flex-col gap-4 xl:flex-row">
-                  <input
-                    type="text"
-                    value={newCategoryName}
-                    onChange={(event) => actions.setNewCategoryName(event.target.value)}
-                    placeholder="Ten danh muc"
-                    className="flex-1 rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    required
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-xl border-2 border-slate-900 bg-slate-900 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
-                  >
-                    Tao danh muc
-                  </button>
-                </form>
-              </section>
+            <form onSubmit={handleCreateProduct} className="p-6">
+              <div className="mb-6">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <ImageIcon className="h-4 w-4 text-primary" />
+                  </div>
+                  Thong Tin Co Ban
+                </h3>
 
-              <section className="rounded-2xl border-2 border-gray-200 p-5">
-                <h3 className="mb-4 text-xl font-bold text-gray-900">Tao san pham moi</h3>
-                <form onSubmit={handleCreateProduct} className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <input
-                      type="text"
-                      value={form.productName}
-                      onChange={(event) => actions.setFormField("productName", event.target.value)}
-                      placeholder="Ten san pham"
-                      className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      required
-                    />
-
-                    <select
-                      value={form.categoryId}
-                      onChange={(event) => actions.setFormField("categoryId", event.target.value)}
-                      className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
-                      required
-                    >
-                      <option value="">Chon danh muc</option>
-                      {categories.map((category) => (
-                        <option key={category.categoryId} value={category.categoryId}>
-                          {category.categoryName}
-                        </option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={form.productType}
-                      onChange={(event) => actions.setFormField("productType", event.target.value)}
-                      className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
-                    >
-                      <option value="Frame">Frame</option>
-                      <option value="Sunglasses">Sunglasses</option>
-                      <option value="Lens">Lens</option>
-                    </select>
-
-                    <input
-                      type="number"
-                      min="0"
-                      value={form.basePrice}
-                      onChange={(event) => actions.setFormField("basePrice", event.target.value)}
-                      placeholder="Gia co ban"
-                      className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                      required
-                    />
-
-                    <label className="flex items-center gap-3 rounded-xl border-2 border-gray-300 px-4 py-3 font-semibold text-gray-900">
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Ten san pham <span className="text-red-500">*</span></label>
                       <input
-                        type="checkbox"
-                        checked={form.prescriptionCompatible}
-                        onChange={(event) => actions.setFormField("prescriptionCompatible", event.target.checked)}
+                        type="text"
+                        value={form.productName}
+                        onChange={(event) => actions.setFormField("productName", event.target.value)}
+                        placeholder="VD: Gong kinh chu nhat co dien"
+                        className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        required
                       />
-                      Ho tro kinh thuoc
-                    </label>
+                    </div>
 
-                    <input
-                      type="text"
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">SKU goc <span className="text-red-500">*</span></label>
+                      <input
+                        type="text"
+                        value={form.sku}
+                        onChange={(event) => actions.setFormField("sku", event.target.value)}
+                        placeholder="VD: GK-001"
+                        className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        required
+                      />
+                      <p className="mt-1 text-xs text-gray-500">Moi mau se tu sinh SKU rieng tu SKU goc nay.</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-gray-700">Mo ta <span className="text-red-500">*</span></label>
+                    <textarea
                       value={form.description}
                       onChange={(event) => actions.setFormField("description", event.target.value)}
-                      placeholder="Mo ta"
-                      className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="Mo ta chi tiet ve san pham..."
+                      rows={4}
+                      className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      required
                     />
                   </div>
 
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      className="rounded-xl border-2 border-slate-900 bg-slate-900 px-6 py-3 font-bold text-white transition hover:bg-slate-800"
-                    >
-                      Tao san pham
-                    </button>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Danh muc <span className="text-red-500">*</span></label>
+                      <select
+                        value={form.categoryId}
+                        onChange={(event) => actions.setFormField("categoryId", event.target.value)}
+                        className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
+                        required
+                      >
+                        <option value="">Chon danh muc</option>
+                        {categories.map((category) => (
+                          <option key={category.categoryId} value={category.categoryId}>
+                            {category.categoryName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Loai san pham <span className="text-red-500">*</span></label>
+                      <select
+                        value={form.productType}
+                        onChange={(event) => actions.setFormField("productType", event.target.value)}
+                        className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
+                      >
+                        <option value="Frame">Frame</option>
+                        <option value="Sunglasses">Sunglasses</option>
+                        <option value="Lens">Lens</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Gia (VND) <span className="text-red-500">*</span></label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={form.basePrice}
+                        onChange={(event) => actions.setFormField("basePrice", event.target.value)}
+                        placeholder="1890000"
+                        className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        required
+                      />
+                    </div>
                   </div>
-                </form>
-              </section>
-            </div>
+
+                  <label className="flex items-center gap-3 rounded-xl border-2 border-gray-300 px-4 py-3 font-semibold text-gray-900">
+                    <input
+                      type="checkbox"
+                      checked={form.prescriptionCompatible}
+                      onChange={(event) => actions.setFormField("prescriptionCompatible", event.target.checked)}
+                    />
+                    Ho tro kinh thuoc
+                  </label>
+                </div>
+              </div>
+
+              <div className="border-t-2 border-gray-200 pt-6">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                    <Palette className="h-4 w-4 text-primary" />
+                  </div>
+                  Mau Sac & Ton Kho
+                </h3>
+
+                {draftVariants.length > 0 ? (
+                  <div className="mb-4 space-y-2">
+                    {draftVariants.map((draft, index) => (
+                      <div
+                        key={`${draft.sku}-${index}`}
+                        className="flex items-center gap-3 rounded-xl border-2 border-gray-200 bg-gray-50 p-3"
+                      >
+                        <div
+                          className="h-10 w-10 rounded-lg border-2 border-gray-300"
+                          style={{ backgroundColor: draft.colorCode }}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-bold text-gray-900">{draft.colorName}</p>
+                          <p className="text-sm text-gray-600">
+                            SKU: {draft.sku} | Ton kho: {draft.quantity} | Hinh anh: {draft.imageFiles.length}
+                          </p>
+                          {draft.size || draft.frameType ? (
+                            <p className="text-xs text-gray-500">
+                              {draft.size ? `Kich thuoc: ${draft.size}` : ""}{draft.size && draft.frameType ? " | " : ""}
+                              {draft.frameType ? `Frame type: ${draft.frameType}` : ""}
+                            </p>
+                          ) : null}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => actions.removeDraftVariant(index)}
+                          className="rounded-lg border-2 border-transparent p-2 transition hover:border-red-300 hover:bg-white"
+                        >
+                          <X className="h-4 w-4 text-red-600" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4">
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Mau sac</label>
+                      <select
+                        value={currentColorForm.colorName}
+                        onChange={(event) => handleColorSelect(event.target.value)}
+                        className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
+                      >
+                        <option value="">Chon mau</option>
+                        {COLOR_OPTIONS.map((color) => (
+                          <option key={color.name} value={color.name}>
+                            {color.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Ma mau</label>
+                      <input
+                        type="color"
+                        value={currentColorForm.colorCode}
+                        onChange={(event) => actions.setCurrentColorField("colorCode", event.target.value)}
+                        className="h-[52px] w-full cursor-pointer rounded-xl border-2 border-gray-300"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Ton kho</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={currentColorForm.quantity}
+                        onChange={(event) => actions.setCurrentColorField("quantity", event.target.value)}
+                        placeholder="0"
+                        className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Kich thuoc</label>
+                      <input
+                        type="text"
+                        value={currentColorForm.size}
+                        onChange={(event) => actions.setCurrentColorField("size", event.target.value)}
+                        placeholder="VD: 49-21-145"
+                        className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_auto]">
+                    <div>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Frame type / ghi chu variant</label>
+                      <input
+                        type="text"
+                        value={currentColorForm.frameType}
+                        onChange={(event) => actions.setCurrentColorField("frameType", event.target.value)}
+                        placeholder="VD: Acetate, Metal..."
+                        className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      />
+                    </div>
+
+                    <div className="self-end">
+                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-400 px-5 py-3 font-medium text-gray-700 transition hover:bg-white">
+                        <Upload className="h-5 w-5" />
+                        Tai len hinh anh
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={(event) => {
+                            actions.attachColorImages(event.target.files);
+                            event.target.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {currentColorForm.imagePreviews.length > 0 ? (
+                    <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                      {currentColorForm.imagePreviews.map((preview, index) => (
+                        <div key={`${preview}-${index}`} className="group relative">
+                          <img
+                            src={preview}
+                            alt={`Preview ${index + 1}`}
+                            className="h-24 w-full rounded-lg border-2 border-gray-300 object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => actions.removeColorImage(index)}
+                            className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white opacity-0 transition group-hover:opacity-100"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={actions.addDraftVariant}
+                    className="mt-4 w-full rounded-xl border-2 border-primary bg-primary px-4 py-3 text-base font-bold text-white transition hover:bg-primary/90"
+                  >
+                    + Them mau nay
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-6 flex items-center gap-3 border-t-2 border-gray-200 pt-6">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl border-2 border-primary bg-primary py-3 text-lg font-bold text-white transition hover:bg-primary/90 disabled:opacity-60"
+                  disabled={ui.isCreatingProduct}
+                >
+                  {ui.isCreatingProduct ? "Dang tao..." : "Them San Pham"}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeCreateModal}
+                  className="flex-1 rounded-xl border-2 border-gray-300 py-3 text-lg font-bold transition hover:bg-gray-50"
+                  disabled={ui.isCreatingProduct}
+                >
+                  Huy
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       ) : null}
@@ -651,6 +911,7 @@ export default function AdminProductsPage() {
           </form>
         </div>
       ) : null}
+
       {popupElement}
     </div>
   );

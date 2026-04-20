@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
+import { getProductById } from "@/services/adminService";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
   clearAdminCurrentProduct,
-  createAdminCategory,
   createAdminProduct,
   createAdminVariant,
   fetchAdminProductDetail,
@@ -22,11 +22,22 @@ const PRODUCT_TYPES = ["Frame", "Sunglasses", "Lens"];
 
 const DEFAULT_PRODUCT_FORM = {
   productName: "",
+  sku: "",
   categoryId: "",
   productType: PRODUCT_TYPES[0],
   basePrice: "",
   prescriptionCompatible: false,
   description: "",
+};
+
+const DEFAULT_CREATE_COLOR_FORM = {
+  colorName: "",
+  colorCode: "#000000",
+  quantity: "",
+  size: "",
+  frameType: "",
+  imageFiles: [],
+  imagePreviews: [],
 };
 
 const DEFAULT_VARIANT_FORM = {
@@ -40,6 +51,35 @@ const DEFAULT_VARIANT_FORM = {
   frameType: "",
 };
 
+function normalizeSkuSegment(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function revokeDraftPreviews(drafts) {
+  drafts.forEach((draft) => {
+    draft.imagePreviews?.forEach((preview) => URL.revokeObjectURL(preview));
+  });
+}
+
+function buildUniqueVariantSku(baseSku, colorName, existingDrafts) {
+  const normalizedBase = normalizeSkuSegment(baseSku) || "SKU";
+  const normalizedColor = normalizeSkuSegment(colorName) || "COLOR";
+  let candidate = `${normalizedBase}-${normalizedColor}`;
+  let suffix = 2;
+
+  while (existingDrafts.some((draft) => draft.sku === candidate)) {
+    candidate = `${normalizedBase}-${normalizedColor}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
 export function useAdminProductsPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -48,7 +88,11 @@ export function useAdminProductsPage() {
   const { popupAlert, popupConfirm, popupElement } = usePopupDialog();
 
   const [form, setForm] = useState(DEFAULT_PRODUCT_FORM);
-  const [newCategoryName, setNewCategoryName] = useState("");
+  const [currentColorForm, setCurrentColorForm] = useState(DEFAULT_CREATE_COLOR_FORM);
+  const [draftVariants, setDraftVariants] = useState([]);
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false);
+  const [productSummaries, setProductSummaries] = useState({});
+  const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const [isCreatingVariant, setIsCreatingVariant] = useState(false);
   const [variantForm, setVariantForm] = useState(DEFAULT_VARIANT_FORM);
@@ -61,26 +105,148 @@ export function useAdminProductsPage() {
     void dispatch(fetchAdminProducts());
   }, [auth.accessToken, auth.isReady, dispatch]);
 
-  async function createCategory(event) {
-    event.preventDefault();
+  useEffect(() => {
+    if (!auth.accessToken || admin.products.items.length === 0) {
+      setProductSummaries({});
+      setIsLoadingSummaries(false);
+      return undefined;
+    }
 
-    const categoryName = newCategoryName.trim();
-    if (!categoryName) {
-      await popupAlert("Vui long nhap ten danh muc.");
+    let isMounted = true;
+    setIsLoadingSummaries(true);
+
+    void Promise.all(
+      admin.products.items.map(async (product) => {
+        try {
+          const detail = await getProductById(product.productId, auth.accessToken);
+          const variants = detail?.variants ?? [];
+          const colors = Array.from(new Set(variants.map((variant) => variant.color).filter(Boolean)));
+          const totalStock = variants.reduce((sum, variant) => sum + Number(variant.quantity || 0), 0);
+
+          return [
+            String(product.productId),
+            {
+              primarySku: variants[0]?.sku || "-",
+              colors,
+              totalStock,
+              variantCount: variants.length,
+            },
+          ];
+        } catch {
+          return [
+            String(product.productId),
+            {
+              primarySku: "-",
+              colors: [],
+              totalStock: 0,
+              variantCount: 0,
+            },
+          ];
+        }
+      }),
+    ).then((entries) => {
+      if (!isMounted) {
+        return;
+      }
+
+      setProductSummaries(Object.fromEntries(entries));
+      setIsLoadingSummaries(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [admin.products.items, auth.accessToken]);
+
+  function resetCreateProductBuilder() {
+    revokeDraftPreviews([currentColorForm, ...draftVariants]);
+    setForm(DEFAULT_PRODUCT_FORM);
+    setCurrentColorForm(DEFAULT_CREATE_COLOR_FORM);
+    setDraftVariants([]);
+  }
+
+  function setCurrentColorField(field, value) {
+    setCurrentColorForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function attachColorImages(fileList) {
+    const files = Array.from(fileList ?? []);
+    if (files.length === 0) {
       return;
     }
 
-    try {
-      const created = await dispatch(createAdminCategory({ categoryName })).unwrap();
-      setNewCategoryName("");
-      await dispatch(fetchAdminProducts()).unwrap();
+    const previews = files.map((file) => URL.createObjectURL(file));
 
-      if (created?.categoryId) {
-        setForm((current) => ({ ...current, categoryId: String(created.categoryId) }));
+    setCurrentColorForm((current) => ({
+      ...current,
+      imageFiles: [...current.imageFiles, ...files],
+      imagePreviews: [...current.imagePreviews, ...previews],
+    }));
+  }
+
+  function removeColorImage(index) {
+    setCurrentColorForm((current) => {
+      const previewToRemove = current.imagePreviews[index];
+      if (previewToRemove) {
+        URL.revokeObjectURL(previewToRemove);
       }
-    } catch (error) {
-      await popupAlert(error || "Khong tao duoc danh muc.");
+
+      return {
+        ...current,
+        imageFiles: current.imageFiles.filter((_, fileIndex) => fileIndex !== index),
+        imagePreviews: current.imagePreviews.filter((_, previewIndex) => previewIndex !== index),
+      };
+    });
+  }
+
+  async function addDraftVariant() {
+    const quantity = Number(currentColorForm.quantity);
+
+    if (!form.sku.trim()) {
+      await popupAlert("Vui long nhap SKU goc trong phan thong tin co ban.");
+      return;
     }
+
+    if (!currentColorForm.colorName.trim()) {
+      await popupAlert("Vui long chon mau sac.");
+      return;
+    }
+
+    if (Number.isNaN(quantity) || quantity < 0) {
+      await popupAlert("Ton kho khong hop le.");
+      return;
+    }
+
+    if (currentColorForm.imageFiles.length === 0) {
+      await popupAlert("Vui long tai len it nhat 1 hinh anh cho mau nay.");
+      return;
+    }
+
+    const sku = buildUniqueVariantSku(form.sku, currentColorForm.colorName, draftVariants);
+
+    setDraftVariants((current) => [
+      ...current,
+      {
+        sku,
+        colorName: currentColorForm.colorName.trim(),
+        colorCode: currentColorForm.colorCode,
+        quantity,
+        size: currentColorForm.size.trim(),
+        frameType: currentColorForm.frameType.trim(),
+        imageFiles: currentColorForm.imageFiles,
+        imagePreviews: currentColorForm.imagePreviews,
+      },
+    ]);
+
+    setCurrentColorForm(DEFAULT_CREATE_COLOR_FORM);
+  }
+
+  function removeDraftVariant(index) {
+    setDraftVariants((current) => {
+      const removed = current[index];
+      removed?.imagePreviews?.forEach((preview) => URL.revokeObjectURL(preview));
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
   }
 
   async function createProduct(event) {
@@ -88,11 +254,23 @@ export function useAdminProductsPage() {
 
     if (!form.categoryId) {
       await popupAlert("Vui long chon danh muc.");
-      return;
+      return null;
     }
 
+    if (!form.sku.trim()) {
+      await popupAlert("Vui long nhap SKU goc.");
+      return null;
+    }
+
+    if (draftVariants.length === 0) {
+      await popupAlert("Vui long them it nhat 1 mau sac va ton kho.");
+      return null;
+    }
+
+    setIsCreatingProduct(true);
+
     try {
-      await dispatch(
+      const created = await dispatch(
         createAdminProduct({
           productName: form.productName.trim(),
           categoryId: Number(form.categoryId),
@@ -103,10 +281,45 @@ export function useAdminProductsPage() {
         }),
       ).unwrap();
 
-      setForm(DEFAULT_PRODUCT_FORM);
+      const productId = created?.productId;
+
+      if (!productId) {
+        throw new Error("Khong nhan duoc productId sau khi tao san pham.");
+      }
+
+      for (const draft of draftVariants) {
+        await dispatch(
+          createAdminVariant({
+            productId,
+            payload: {
+              sku: draft.sku,
+              price: Number(form.basePrice || 0),
+              quantity: draft.quantity,
+              color: draft.colorName || null,
+              size: draft.size || null,
+              frameType: draft.frameType || null,
+              isPreOrderAllowed: false,
+              expectedRestockDate: null,
+              preOrderNote: null,
+            },
+          }),
+        ).unwrap();
+      }
+
+      const imageFiles = draftVariants.flatMap((draft) => draft.imageFiles);
+      if (imageFiles.length > 0) {
+        await dispatch(uploadAdminProductImages({ productId, files: imageFiles })).unwrap();
+      }
+
       await dispatch(fetchAdminProducts()).unwrap();
+      resetCreateProductBuilder();
+      await popupAlert("Tao san pham thanh cong.");
+      return { productId };
     } catch (error) {
       await popupAlert(error || "Khong tao duoc san pham.");
+      return null;
+    } finally {
+      setIsCreatingProduct(false);
     }
   }
 
@@ -307,21 +520,29 @@ export function useAdminProductsPage() {
     categories: admin.products.categories,
     productDetail: admin.currentProduct.data,
     form,
-    newCategoryName,
+    currentColorForm,
+    draftVariants,
+    productSummaries,
     variantForm,
     ui: {
       error: admin.products.error ?? (!auth.accessToken && auth.isReady ? "Khong co access token." : null),
       isLoading: admin.products.status === "loading",
+      isLoadingSummaries,
       detailLoading: admin.currentProduct.status === "loading",
+      isCreatingProduct,
       isVariantModalOpen,
       isCreatingVariant,
     },
     actions: {
       setFormField: (field, value) => setForm((current) => ({ ...current, [field]: value })),
-      setNewCategoryName,
+      setCurrentColorField,
+      attachColorImages,
+      removeColorImage,
+      addDraftVariant,
+      removeDraftVariant,
+      resetCreateProductBuilder,
       setVariantField: (field, value) => setVariantForm((current) => ({ ...current, [field]: value })),
       retry: () => dispatch(fetchAdminProducts()),
-      createCategory,
       createProduct,
       openVariantModal,
       closeVariantModal,

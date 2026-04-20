@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
   getOrdersSummary,
@@ -10,23 +11,23 @@ import {
 
 function DateRangeForm({ value, onChange }) {
   return (
-    <div className="grid gap-3 md:grid-cols-3">
+    <div className={adminStyles.toolbarGrid}>
       <input
         type="date"
         value={value.startDate}
         onChange={(event) => onChange((current) => ({ ...current, startDate: event.target.value }))}
-        className="rounded-md border border-gray-300 px-3 py-2"
+        className={adminStyles.input}
       />
       <input
         type="date"
         value={value.endDate}
         onChange={(event) => onChange((current) => ({ ...current, endDate: event.target.value }))}
-        className="rounded-md border border-gray-300 px-3 py-2"
+        className={adminStyles.input}
       />
       <select
         value={value.groupBy}
         onChange={(event) => onChange((current) => ({ ...current, groupBy: event.target.value }))}
-        className="rounded-md border border-gray-300 px-3 py-2"
+        className={adminStyles.input}
       >
         <option value="day">day</option>
         <option value="week">week</option>
@@ -48,7 +49,7 @@ export default function AdminReportsPage() {
 
   const fetchReports = useCallback(async () => {
     if (!accessToken) {
-      setError("Không có access token.");
+      setError("Khong co access token.");
       return;
     }
 
@@ -73,7 +74,7 @@ export default function AdminReportsPage() {
       setPrescriptionsSummary(prescriptions);
       setPreOrdersSummary(preOrders);
     } catch (requestError) {
-      setError(requestError?.message || "Không tải được báo cáo.");
+      setError(requestError?.message || "Khong tai duoc bao cao.");
     } finally {
       setLoading(false);
     }
@@ -84,47 +85,39 @@ export default function AdminReportsPage() {
   }, [fetchReports]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Báo Cáo</h1>
-        <button
-          type="button"
-          onClick={fetchReports}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold"
-        >
-          Tải lại
+    <AdminPageShell
+      title="Bao Cao"
+      actions={
+        <button type="button" onClick={fetchReports} className={adminStyles.secondaryButton}>
+          Tai lai
         </button>
-      </div>
-
-      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
+      }
+    >
+      <AdminSection>
         <DateRangeForm value={filters} onChange={setFilters} />
+      </AdminSection>
+
+      <AdminErrorBanner message={error} />
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <AdminSection title="Orders Summary">
+          <pre className={adminStyles.prePanel}>{JSON.stringify(ordersSummary, null, 2)}</pre>
+        </AdminSection>
+
+        <AdminSection title="Revenues Summary">
+          <pre className={adminStyles.prePanel}>{JSON.stringify(revenuesSummary, null, 2)}</pre>
+        </AdminSection>
+
+        <AdminSection title="Prescriptions Summary">
+          <pre className={adminStyles.prePanel}>{JSON.stringify(prescriptionsSummary, null, 2)}</pre>
+        </AdminSection>
+
+        <AdminSection title="Pre-Orders Summary">
+          <pre className={adminStyles.prePanel}>{JSON.stringify(preOrdersSummary, null, 2)}</pre>
+        </AdminSection>
       </div>
 
-      {error ? <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{error}</p> : null}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-xl border border-gray-200 bg-white p-4">
-          <h2 className="mb-2 text-lg font-semibold">Orders Summary</h2>
-          <pre className="overflow-auto rounded bg-gray-50 p-3 text-xs">{JSON.stringify(ordersSummary, null, 2)}</pre>
-        </section>
-
-        <section className="rounded-xl border border-gray-200 bg-white p-4">
-          <h2 className="mb-2 text-lg font-semibold">Revenues Summary</h2>
-          <pre className="overflow-auto rounded bg-gray-50 p-3 text-xs">{JSON.stringify(revenuesSummary, null, 2)}</pre>
-        </section>
-
-        <section className="rounded-xl border border-gray-200 bg-white p-4">
-          <h2 className="mb-2 text-lg font-semibold">Prescriptions Summary</h2>
-          <pre className="overflow-auto rounded bg-gray-50 p-3 text-xs">{JSON.stringify(prescriptionsSummary, null, 2)}</pre>
-        </section>
-
-        <section className="rounded-xl border border-gray-200 bg-white p-4">
-          <h2 className="mb-2 text-lg font-semibold">Pre-Orders Summary</h2>
-          <pre className="overflow-auto rounded bg-gray-50 p-3 text-xs">{JSON.stringify(preOrdersSummary, null, 2)}</pre>
-        </section>
-      </div>
-
-      {loading ? <p className="mt-3 text-sm text-gray-500">Đang tải...</p> : null}
-    </div>
+      {loading ? <p className="text-sm font-medium text-slate-500">Dang tai...</p> : null}
+    </AdminPageShell>
   );
 }

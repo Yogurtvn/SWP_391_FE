@@ -1,3 +1,4 @@
+import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
 import { useAdminInventoryPage } from "@/hooks/admin/useAdminInventoryPage";
 
 function formatDateTime(value) {
@@ -12,71 +13,68 @@ export default function AdminInventoryPage() {
   const { inventories, receipts, receiptForm, ui, actions, popupElement } = useAdminInventoryPage();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Quan Ly Kho</h1>
-        <button
-          type="button"
-          onClick={actions.retry}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold"
-        >
+    <AdminPageShell
+      title="Quan Ly Kho"
+      actions={
+        <button type="button" onClick={actions.retry} className={adminStyles.secondaryButton}>
           Tai lai
         </button>
-      </div>
+      }
+    >
+      <AdminErrorBanner message={ui.error} />
 
-      {ui.error ? <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{ui.error}</p> : null}
+      <AdminSection title="Nhap kho theo phieu nhap">
+        <form onSubmit={actions.createReceipt} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <input
+              type="number"
+              min="1"
+              value={receiptForm.variantId}
+              onChange={(event) => actions.setReceiptField("variantId", event.target.value)}
+              placeholder="Variant ID"
+              className={adminStyles.input}
+              required
+            />
+            <input
+              type="number"
+              min="1"
+              value={receiptForm.quantityReceived}
+              onChange={(event) => actions.setReceiptField("quantityReceived", event.target.value)}
+              placeholder="So luong nhap"
+              className={adminStyles.input}
+              required
+            />
+            <input
+              value={receiptForm.note}
+              onChange={(event) => actions.setReceiptField("note", event.target.value)}
+              placeholder="Ghi chu"
+              className={adminStyles.input}
+            />
+          </div>
 
-      <form onSubmit={actions.createReceipt} className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold">Nhap kho theo phieu nhap</h2>
-        <div className="grid gap-3 md:grid-cols-3">
-          <input
-            type="number"
-            min="1"
-            value={receiptForm.variantId}
-            onChange={(event) => actions.setReceiptField("variantId", event.target.value)}
-            placeholder="Variant ID"
-            className="rounded-md border border-gray-300 px-3 py-2"
-            required
-          />
-          <input
-            type="number"
-            min="1"
-            value={receiptForm.quantityReceived}
-            onChange={(event) => actions.setReceiptField("quantityReceived", event.target.value)}
-            placeholder="So luong nhap"
-            className="rounded-md border border-gray-300 px-3 py-2"
-            required
-          />
-          <input
-            value={receiptForm.note}
-            onChange={(event) => actions.setReceiptField("note", event.target.value)}
-            placeholder="Ghi chu"
-            className="rounded-md border border-gray-300 px-3 py-2"
-          />
-        </div>
+          <button type="submit" className={adminStyles.primaryButton}>
+            Tao phieu nhap
+          </button>
+        </form>
+      </AdminSection>
 
-        <button type="submit" className="mt-3 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
-          Tao phieu nhap
-        </button>
-      </form>
-
-      <div className="mb-6 overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className={adminStyles.tableWrapper}>
+        <table className={adminStyles.table}>
+          <thead className={adminStyles.tableHead}>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">SKU</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Variant ID</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">So luong</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Pre-order</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Restock date</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Pre-order note</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Thao tac</th>
+              <th className={adminStyles.th}>SKU</th>
+              <th className={adminStyles.th}>Variant ID</th>
+              <th className={adminStyles.th}>So luong</th>
+              <th className={adminStyles.th}>Pre-order</th>
+              <th className={adminStyles.th}>Restock date</th>
+              <th className={adminStyles.th}>Pre-order note</th>
+              <th className={adminStyles.th}>Thao tac</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {!ui.isLoading && inventories.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-500">
+                <td colSpan={7} className={adminStyles.emptyState}>
                   Khong co du lieu.
                 </td>
               </tr>
@@ -84,25 +82,25 @@ export default function AdminInventoryPage() {
 
             {inventories.map((item) => (
               <tr key={item.variantId}>
-                <td className="px-4 py-3 text-sm text-gray-700">{item.sku || "-"}</td>
-                <td className="px-4 py-3 text-sm font-semibold text-gray-900">{item.variantId}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{item.quantity}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{item.isPreOrderAllowed ? "Bat" : "Tat"}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{formatDateTime(item.expectedRestockDate)}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{item.preOrderNote || "-"}</td>
-                <td className="px-4 py-3 text-sm">
-                  <div className="flex gap-2">
+                <td className={adminStyles.td}>{item.sku || "-"}</td>
+                <td className={`${adminStyles.td} font-semibold text-slate-950`}>{item.variantId}</td>
+                <td className={adminStyles.td}>{item.quantity}</td>
+                <td className={adminStyles.td}>{item.isPreOrderAllowed ? "Bat" : "Tat"}</td>
+                <td className={adminStyles.td}>{formatDateTime(item.expectedRestockDate)}</td>
+                <td className={adminStyles.td}>{item.preOrderNote || "-"}</td>
+                <td className={adminStyles.td}>
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() => actions.updateQuantity(item)}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
+                      className={adminStyles.smallButton}
                     >
                       Sua so luong
                     </button>
                     <button
                       type="button"
                       onClick={() => actions.editPreOrder(item)}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
+                      className={adminStyles.smallButton}
                     >
                       Sua pre-order
                     </button>
@@ -114,22 +112,21 @@ export default function AdminInventoryPage() {
         </table>
       </div>
 
-      <section className="rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Phieu nhap gan day</h2>
+      <AdminSection title="Phieu nhap gan day">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className={adminStyles.table}>
+            <thead className={adminStyles.tableHead}>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Receipt ID</th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Variant ID</th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">So luong nhap</th>
-                <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Ngay nhan</th>
+                <th className={adminStyles.th}>Receipt ID</th>
+                <th className={adminStyles.th}>Variant ID</th>
+                <th className={adminStyles.th}>So luong nhap</th>
+                <th className={adminStyles.th}>Ngay nhan</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-100">
               {!ui.isLoading && receipts.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">
+                  <td colSpan={4} className={adminStyles.emptyState}>
                     Khong co phieu nhap.
                   </td>
                 </tr>
@@ -137,18 +134,18 @@ export default function AdminInventoryPage() {
 
               {receipts.map((receipt) => (
                 <tr key={receipt.receiptId}>
-                  <td className="px-4 py-3 text-sm text-gray-700">{receipt.receiptId}</td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">{receipt.variantId}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{receipt.quantityReceived}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{formatDateTime(receipt.receivedDate)}</td>
+                  <td className={adminStyles.td}>{receipt.receiptId}</td>
+                  <td className={`${adminStyles.td} font-semibold text-slate-950`}>{receipt.variantId}</td>
+                  <td className={adminStyles.td}>{receipt.quantityReceived}</td>
+                  <td className={adminStyles.td}>{formatDateTime(receipt.receivedDate)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </section>
+      </AdminSection>
 
       {popupElement}
-    </div>
+    </AdminPageShell>
   );
 }

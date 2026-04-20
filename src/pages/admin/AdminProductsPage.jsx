@@ -1,3 +1,4 @@
+import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
 import { useAdminProductsPage } from "@/hooks/admin/useAdminProductsPage";
 
 function formatCurrency(value) {
@@ -18,122 +19,118 @@ export default function AdminProductsPage() {
   } = useAdminProductsPage();
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Quan Ly San Pham</h1>
-        <button
-          type="button"
-          onClick={actions.retry}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold"
-        >
+    <AdminPageShell
+      title="Quan Ly San Pham"
+      actions={
+        <button type="button" onClick={actions.retry} className={adminStyles.secondaryButton}>
           Tai lai
         </button>
-      </div>
+      }
+    >
+      <AdminErrorBanner message={ui.error} />
 
-      {ui.error ? <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{ui.error}</p> : null}
-
-      <form onSubmit={actions.createCategory} className="mb-4 rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Tao danh muc moi</h2>
-        <div className="flex flex-col gap-3 md:flex-row">
+      <AdminSection title="Tao danh muc moi">
+        <form onSubmit={actions.createCategory} className="flex flex-col gap-4 xl:flex-row">
           <input
             type="text"
             value={newCategoryName}
             onChange={(event) => actions.setNewCategoryName(event.target.value)}
             placeholder="Ten danh muc"
-            className="w-full rounded-md border border-gray-300 px-3 py-2"
+            className={`${adminStyles.input} flex-1`}
             required
           />
-          <button type="submit" className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white md:w-auto">
+          <button type="submit" className={`${adminStyles.primaryButton} xl:min-w-36`}>
             Tao danh muc
           </button>
-        </div>
-      </form>
+        </form>
+      </AdminSection>
 
-      <form onSubmit={actions.createProduct} className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold text-gray-900">Tao san pham moi</h2>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <input
-            type="text"
-            value={form.productName}
-            onChange={(event) => actions.setFormField("productName", event.target.value)}
-            placeholder="Ten san pham"
-            className="rounded-md border border-gray-300 px-3 py-2"
-            required
-          />
-
-          <select
-            value={form.categoryId}
-            onChange={(event) => actions.setFormField("categoryId", event.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2"
-            required
-          >
-            <option value="">Chon danh muc</option>
-            {categories.map((category) => (
-              <option key={category.categoryId} value={category.categoryId}>
-                {category.categoryName}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={form.productType}
-            onChange={(event) => actions.setFormField("productType", event.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2"
-          >
-            <option value="Frame">Frame</option>
-            <option value="Sunglasses">Sunglasses</option>
-            <option value="Lens">Lens</option>
-          </select>
-
-          <input
-            type="number"
-            min="0"
-            value={form.basePrice}
-            onChange={(event) => actions.setFormField("basePrice", event.target.value)}
-            placeholder="Gia co ban"
-            className="rounded-md border border-gray-300 px-3 py-2"
-            required
-          />
-
-          <label className="flex items-center gap-2 rounded-md border border-gray-300 px-3 py-2 text-sm">
+      <AdminSection title="Tao san pham moi">
+        <form onSubmit={actions.createProduct} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <input
-              type="checkbox"
-              checked={form.prescriptionCompatible}
-              onChange={(event) => actions.setFormField("prescriptionCompatible", event.target.checked)}
+              type="text"
+              value={form.productName}
+              onChange={(event) => actions.setFormField("productName", event.target.value)}
+              placeholder="Ten san pham"
+              className={adminStyles.input}
+              required
             />
-            Ho tro kinh thuoc
-          </label>
 
-          <input
-            type="text"
-            value={form.description}
-            onChange={(event) => actions.setFormField("description", event.target.value)}
-            placeholder="Mo ta"
-            className="rounded-md border border-gray-300 px-3 py-2"
-          />
-        </div>
+            <select
+              value={form.categoryId}
+              onChange={(event) => actions.setFormField("categoryId", event.target.value)}
+              className={adminStyles.input}
+              required
+            >
+              <option value="">Chon danh muc</option>
+              {categories.map((category) => (
+                <option key={category.categoryId} value={category.categoryId}>
+                  {category.categoryName}
+                </option>
+              ))}
+            </select>
 
-        <button type="submit" className="mt-3 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
-          Tao san pham
-        </button>
-      </form>
+            <select
+              value={form.productType}
+              onChange={(event) => actions.setFormField("productType", event.target.value)}
+              className={adminStyles.input}
+            >
+              <option value="Frame">Frame</option>
+              <option value="Sunglasses">Sunglasses</option>
+              <option value="Lens">Lens</option>
+            </select>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+            <input
+              type="number"
+              min="0"
+              value={form.basePrice}
+              onChange={(event) => actions.setFormField("basePrice", event.target.value)}
+              placeholder="Gia co ban"
+              className={adminStyles.input}
+              required
+            />
+
+            <label className={adminStyles.checkboxRow}>
+              <input
+                type="checkbox"
+                checked={form.prescriptionCompatible}
+                onChange={(event) => actions.setFormField("prescriptionCompatible", event.target.checked)}
+              />
+              Ho tro kinh thuoc
+            </label>
+
+            <input
+              type="text"
+              value={form.description}
+              onChange={(event) => actions.setFormField("description", event.target.value)}
+              placeholder="Mo ta"
+              className={adminStyles.input}
+            />
+          </div>
+
+          <button type="submit" className={adminStyles.primaryButton}>
+            Tao san pham
+          </button>
+        </form>
+      </AdminSection>
+
+      <div className={adminStyles.tableWrapper}>
+        <table className={adminStyles.table}>
+          <thead className={adminStyles.tableHead}>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">ID</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Ten</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Loai</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Gia</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Kha dung</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Thao tac</th>
+              <th className={adminStyles.th}>ID</th>
+              <th className={adminStyles.th}>Ten</th>
+              <th className={adminStyles.th}>Loai</th>
+              <th className={adminStyles.th}>Gia</th>
+              <th className={adminStyles.th}>Kha dung</th>
+              <th className={adminStyles.th}>Thao tac</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {!ui.isLoading && products.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
+                <td colSpan={6} className={adminStyles.emptyState}>
                   Khong co du lieu.
                 </td>
               </tr>
@@ -141,38 +138,34 @@ export default function AdminProductsPage() {
 
             {products.map((product) => (
               <tr key={product.productId}>
-                <td className="px-4 py-3 text-sm text-gray-700">{product.productId}</td>
-                <td className="px-4 py-3 text-sm font-semibold text-gray-900">{product.productName}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{product.productType}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{formatCurrency(product.basePrice)}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{product.isAvailable ? "Dang ban" : "Ngung ban"}</td>
-                <td className="px-4 py-3 text-sm">
+                <td className={adminStyles.td}>{product.productId}</td>
+                <td className={`${adminStyles.td} font-semibold text-slate-950`}>{product.productName}</td>
+                <td className={adminStyles.td}>{product.productType}</td>
+                <td className={adminStyles.td}>{formatCurrency(product.basePrice)}</td>
+                <td className={adminStyles.td}>{product.isAvailable ? "Dang ban" : "Ngung ban"}</td>
+                <td className={adminStyles.td}>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => actions.viewDetail(product)}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
-                    >
+                    <button type="button" onClick={() => actions.viewDetail(product)} className={adminStyles.smallButton}>
                       Chi tiet
                     </button>
                     <button
                       type="button"
                       onClick={() => actions.openVariantModal(product)}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
+                      className={adminStyles.smallButton}
                     >
                       Tao variant
                     </button>
                     <button
                       type="button"
                       onClick={() => actions.toggleProductStatus(product)}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
+                      className={adminStyles.smallButton}
                     >
                       {product.isAvailable ? "Ngung ban" : "Nhap kho"}
                     </button>
                     <button
                       type="button"
                       onClick={() => actions.deleteProduct(product)}
-                      className="rounded-md border border-red-300 px-2 py-1 text-xs font-semibold text-red-700"
+                      className={adminStyles.smallDangerButton}
                     >
                       Xoa
                     </button>
@@ -185,68 +178,65 @@ export default function AdminProductsPage() {
       </div>
 
       {productDetail ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="max-h-[90vh] w-full max-w-5xl overflow-auto rounded-xl bg-white p-5 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+          <div className="max-h-[90vh] w-full max-w-6xl overflow-auto rounded-[1.75rem] bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">{productDetail.productName}</h2>
-                <p className="mt-1 text-sm text-gray-600">
-                  {productDetail.productType} • {formatCurrency(productDetail.basePrice)}
+                <h2 className="text-2xl font-bold text-slate-950">{productDetail.productName}</h2>
+                <p className="mt-1 text-base text-slate-500">
+                  {productDetail.productType} - {formatCurrency(productDetail.basePrice)}
                 </p>
-                <p className="mt-1 text-sm text-gray-600">{productDetail.description || "Khong co mo ta."}</p>
-                <p className="mt-1 text-sm text-gray-600">
+                <p className="mt-2 text-base text-slate-600">{productDetail.description || "Khong co mo ta."}</p>
+                <p className="mt-2 text-sm font-medium text-slate-500">
                   Prescription compatible: {productDetail.prescriptionCompatible ? "Yes" : "No"}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={actions.clearDetail}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold"
-              >
+              <button type="button" onClick={actions.clearDetail} className={adminStyles.secondaryButton}>
                 Dong
               </button>
             </div>
 
-            {ui.detailLoading ? <p className="mt-4 text-sm text-gray-500">Dang tai chi tiet...</p> : null}
+            {ui.detailLoading ? <p className="mt-4 text-sm text-slate-500">Dang tai chi tiet...</p> : null}
 
-            <div className="mt-6 grid gap-6 lg:grid-cols-2">
-              <section className="rounded-xl border border-gray-200 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Anh san pham</h3>
-                  <label className="cursor-pointer rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
+            <div className="mt-6 grid gap-6 xl:grid-cols-2">
+              <AdminSection
+                title="Anh san pham"
+                className="border-slate-200 shadow-none"
+                bodyClassName="p-5"
+                actions={
+                  <label className={adminStyles.primaryButton}>
                     Upload anh
                     <input type="file" multiple accept="image/*" className="hidden" onChange={actions.uploadImages} />
                   </label>
-                </div>
-                <div className="grid gap-3 md:grid-cols-2">
+                }
+              >
+                <div className="grid gap-4 md:grid-cols-2">
                   {(productDetail.images ?? []).length === 0 ? (
-                    <p className="text-sm text-gray-500">Chua co anh.</p>
+                    <p className="text-sm text-slate-500">Chua co anh.</p>
                   ) : (
                     (productDetail.images ?? []).map((image) => (
-                      <div key={image.imageId} className="rounded-lg border border-gray-200 p-3">
+                      <div key={image.imageId} className="rounded-2xl border border-slate-200 p-4">
                         <img
                           src={image.imageUrl}
                           alt={`Product ${image.imageId}`}
-                          className="h-40 w-full rounded-md object-cover"
+                          className="h-44 w-full rounded-xl object-cover"
                         />
-                        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-gray-600">
-                          <span>
-                            #{image.imageId} • order {image.displayOrder}
-                          </span>
+                        <div className="mt-3 flex items-center justify-between gap-2 text-sm text-slate-500">
+                          <span>#{image.imageId} - order {image.displayOrder}</span>
                           <span>{image.isPrimary ? "Primary" : "Secondary"}</span>
                         </div>
-                        <div className="mt-3 flex gap-2">
+                        <div className="mt-4 flex flex-wrap gap-2">
                           <button
                             type="button"
                             onClick={() => actions.setPrimaryImage(image)}
-                            className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
+                            className={adminStyles.smallButton}
                           >
                             Dat anh chinh
                           </button>
                           <button
                             type="button"
                             onClick={() => actions.deleteImage(image)}
-                            className="rounded-md border border-red-300 px-2 py-1 text-xs font-semibold text-red-700"
+                            className={adminStyles.smallDangerButton}
                           >
                             Xoa anh
                           </button>
@@ -255,64 +245,63 @@ export default function AdminProductsPage() {
                     ))
                   )}
                 </div>
-              </section>
+              </AdminSection>
 
-              <section className="rounded-xl border border-gray-200 p-4">
-                <h3 className="mb-3 text-lg font-semibold text-gray-900">Variants</h3>
+              <AdminSection title="Variants" className="border-slate-200 shadow-none" bodyClassName="p-5">
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table className={adminStyles.table}>
+                    <thead className={adminStyles.tableHead}>
                       <tr>
-                        <th className="px-3 py-2 text-left text-xs font-bold uppercase text-gray-600">Variant ID</th>
-                        <th className="px-3 py-2 text-left text-xs font-bold uppercase text-gray-600">SKU</th>
-                        <th className="px-3 py-2 text-left text-xs font-bold uppercase text-gray-600">Gia</th>
-                        <th className="px-3 py-2 text-left text-xs font-bold uppercase text-gray-600">Color</th>
-                        <th className="px-3 py-2 text-left text-xs font-bold uppercase text-gray-600">Size</th>
+                        <th className={adminStyles.th}>Variant ID</th>
+                        <th className={adminStyles.th}>SKU</th>
+                        <th className={adminStyles.th}>Gia</th>
+                        <th className={adminStyles.th}>Color</th>
+                        <th className={adminStyles.th}>Size</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-slate-100">
                       {(productDetail.variants ?? []).length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-3 py-4 text-center text-sm text-gray-500">
+                          <td colSpan={5} className={adminStyles.emptyState}>
                             Chua co variant.
                           </td>
                         </tr>
                       ) : (
                         (productDetail.variants ?? []).map((variant) => (
                           <tr key={variant.variantId}>
-                            <td className="px-3 py-2 text-sm text-gray-700">{variant.variantId}</td>
-                            <td className="px-3 py-2 text-sm font-semibold text-gray-900">{variant.sku || "-"}</td>
-                            <td className="px-3 py-2 text-sm text-gray-700">{formatCurrency(variant.price)}</td>
-                            <td className="px-3 py-2 text-sm text-gray-700">{variant.color || "-"}</td>
-                            <td className="px-3 py-2 text-sm text-gray-700">{variant.size || "-"}</td>
+                            <td className={adminStyles.td}>{variant.variantId}</td>
+                            <td className={`${adminStyles.td} font-semibold text-slate-950`}>{variant.sku || "-"}</td>
+                            <td className={adminStyles.td}>{formatCurrency(variant.price)}</td>
+                            <td className={adminStyles.td}>{variant.color || "-"}</td>
+                            <td className={adminStyles.td}>{variant.size || "-"}</td>
                           </tr>
                         ))
                       )}
                     </tbody>
                   </table>
                 </div>
-                <p className="mt-3 text-xs text-amber-700">
+                <p className="mt-4 text-sm text-amber-700">
                   Phan sua product chua map duoc vi payload chi tiet hien tai cua BE chua tra categoryId.
                 </p>
-              </section>
+              </AdminSection>
             </div>
           </div>
         </div>
       ) : null}
 
       {ui.isVariantModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form onSubmit={actions.submitVariant} className="w-full max-w-2xl rounded-xl bg-white p-5 shadow-xl">
-            <h2 className="text-xl font-bold text-gray-900">Tao variant</h2>
-            <p className="mt-1 text-sm text-gray-600">San pham: {variantForm.productName}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+          <form onSubmit={actions.submitVariant} className="w-full max-w-3xl rounded-[1.75rem] bg-white p-6 shadow-2xl">
+            <h2 className="text-2xl font-bold text-slate-950">Tao variant</h2>
+            <p className="mt-1 text-base text-slate-500">San pham: {variantForm.productName}</p>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
               <input
                 name="sku"
                 value={variantForm.sku}
                 onChange={(event) => actions.setVariantField("sku", event.target.value)}
                 placeholder="SKU"
-                className="rounded-md border border-gray-300 px-3 py-2"
+                className={adminStyles.input}
                 required
               />
               <input
@@ -322,7 +311,7 @@ export default function AdminProductsPage() {
                 value={variantForm.price}
                 onChange={(event) => actions.setVariantField("price", event.target.value)}
                 placeholder="Gia"
-                className="rounded-md border border-gray-300 px-3 py-2"
+                className={adminStyles.input}
                 required
               />
               <input
@@ -332,7 +321,7 @@ export default function AdminProductsPage() {
                 value={variantForm.quantity}
                 onChange={(event) => actions.setVariantField("quantity", event.target.value)}
                 placeholder="So luong ton kho ban dau"
-                className="rounded-md border border-gray-300 px-3 py-2"
+                className={adminStyles.input}
                 required
               />
               <input
@@ -340,36 +329,36 @@ export default function AdminProductsPage() {
                 value={variantForm.color}
                 onChange={(event) => actions.setVariantField("color", event.target.value)}
                 placeholder="Mau sac"
-                className="rounded-md border border-gray-300 px-3 py-2"
+                className={adminStyles.input}
               />
               <input
                 name="size"
                 value={variantForm.size}
                 onChange={(event) => actions.setVariantField("size", event.target.value)}
                 placeholder="Kich thuoc"
-                className="rounded-md border border-gray-300 px-3 py-2"
+                className={adminStyles.input}
               />
               <input
                 name="frameType"
                 value={variantForm.frameType}
                 onChange={(event) => actions.setVariantField("frameType", event.target.value)}
                 placeholder="Frame type"
-                className="rounded-md border border-gray-300 px-3 py-2"
+                className={adminStyles.input}
               />
             </div>
 
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={actions.closeVariantModal}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold"
+                className={adminStyles.secondaryButton}
                 disabled={ui.isCreatingVariant}
               >
                 Huy
               </button>
               <button
                 type="submit"
-                className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className={adminStyles.primaryButton}
                 disabled={ui.isCreatingVariant}
               >
                 {ui.isCreatingVariant ? "Dang tao..." : "Tao variant"}
@@ -379,6 +368,6 @@ export default function AdminProductsPage() {
         </div>
       ) : null}
       {popupElement}
-    </div>
+    </AdminPageShell>
   );
 }

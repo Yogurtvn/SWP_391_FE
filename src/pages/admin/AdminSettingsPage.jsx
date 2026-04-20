@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
 import { selectAuthState } from "@/store/auth/authSlice";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
 import { createPolicy, deletePolicy, getPolicies, updatePolicy } from "@/services/adminService";
@@ -14,7 +15,7 @@ export default function AdminSettingsPage() {
 
   const fetchPolicies = useCallback(async () => {
     if (!accessToken) {
-      setError("Không có access token.");
+      setError("Khong co access token.");
       return;
     }
 
@@ -25,7 +26,7 @@ export default function AdminSettingsPage() {
       const result = await getPolicies({ page: 1, pageSize: 100 }, accessToken);
       setPolicies(result?.items ?? []);
     } catch (requestError) {
-      setError(requestError?.message || "Không tải được policies.");
+      setError(requestError?.message || "Khong tai duoc policies.");
     } finally {
       setLoading(false);
     }
@@ -50,25 +51,25 @@ export default function AdminSettingsPage() {
       setForm({ title: "", content: "" });
       fetchPolicies();
     } catch (requestError) {
-      await popupAlert(requestError?.message || "Không tạo được policy.");
+      await popupAlert(requestError?.message || "Khong tao duoc policy.");
     }
   }
 
   async function handleEdit(policy) {
-    const nextTitle = await popupPrompt("Sửa tiêu đề:", policy.title || "", {
-      title: "Chỉnh sửa policy",
-      okText: "Tiếp tục",
-      placeholder: "Tiêu đề",
+    const nextTitle = await popupPrompt("Sua tieu de:", policy.title || "", {
+      title: "Chinh sua policy",
+      okText: "Tiep tuc",
+      placeholder: "Tieu de",
     });
 
     if (nextTitle == null) {
       return;
     }
 
-    const nextContent = await popupPrompt("Sửa nội dung:", policy.content || "", {
-      title: "Chỉnh sửa policy",
-      okText: "Lưu",
-      placeholder: "Nội dung",
+    const nextContent = await popupPrompt("Sua noi dung:", policy.content || "", {
+      title: "Chinh sua policy",
+      okText: "Luu",
+      placeholder: "Noi dung",
     });
 
     if (nextContent == null) {
@@ -86,15 +87,15 @@ export default function AdminSettingsPage() {
       );
       fetchPolicies();
     } catch (requestError) {
-      await popupAlert(requestError?.message || "Không sửa được policy.");
+      await popupAlert(requestError?.message || "Khong sua duoc policy.");
     }
   }
 
   async function handleDelete(policyId) {
-    const isConfirmed = await popupConfirm("Bạn có chắc muốn xóa policy này?", {
-      title: "Xác nhận xóa",
-      okText: "Xóa",
-      cancelText: "Hủy",
+    const isConfirmed = await popupConfirm("Ban co chac muon xoa policy nay?", {
+      title: "Xac nhan xoa",
+      okText: "Xoa",
+      cancelText: "Huy",
     });
 
     if (!isConfirmed) {
@@ -105,86 +106,83 @@ export default function AdminSettingsPage() {
       await deletePolicy(policyId, accessToken);
       fetchPolicies();
     } catch (requestError) {
-      await popupAlert(requestError?.message || "Không xóa được policy.");
+      await popupAlert(requestError?.message || "Khong xoa duoc policy.");
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Cài Đặt Chính Sách</h1>
-        <button
-          type="button"
-          onClick={fetchPolicies}
-          className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold"
-        >
-          Tải lại
+    <AdminPageShell
+      title="Cai Dat Chinh Sach"
+      actions={
+        <button type="button" onClick={fetchPolicies} className={adminStyles.secondaryButton}>
+          Tai lai
         </button>
-      </div>
+      }
+    >
+      <AdminErrorBanner message={error} />
 
-      {error ? <p className="mb-4 rounded-lg bg-red-50 p-3 text-red-700">{error}</p> : null}
-
-      <form onSubmit={handleCreate} className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
-        <h2 className="mb-3 text-lg font-semibold">Tạo policy mới</h2>
-        <div className="grid gap-3">
+      <AdminSection title="Tao policy moi">
+        <form onSubmit={handleCreate} className="space-y-4">
           <input
             value={form.title}
             onChange={(event) => setForm((currentForm) => ({ ...currentForm, title: event.target.value }))}
-            placeholder="Tiêu đề"
-            className="rounded-md border border-gray-300 px-3 py-2"
+            placeholder="Tieu de"
+            className={adminStyles.input}
             required
           />
           <textarea
             value={form.content}
             onChange={(event) => setForm((currentForm) => ({ ...currentForm, content: event.target.value }))}
-            placeholder="Nội dung"
-            className="min-h-28 rounded-md border border-gray-300 px-3 py-2"
+            placeholder="Noi dung"
+            className={adminStyles.textarea}
             required
           />
-        </div>
 
-        <button type="submit" className="mt-3 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white">
-          Tạo policy
-        </button>
-      </form>
+          <button type="submit" className={adminStyles.primaryButton}>
+            Tao policy
+          </button>
+        </form>
+      </AdminSection>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+      <div className={adminStyles.tableWrapper}>
+        <table className={adminStyles.table}>
+          <thead className={adminStyles.tableHead}>
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">ID</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Tiêu đề</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Nội dung</th>
-              <th className="px-4 py-3 text-left text-xs font-bold uppercase text-gray-600">Thao tác</th>
+              <th className={adminStyles.th}>ID</th>
+              <th className={adminStyles.th}>Tieu de</th>
+              <th className={adminStyles.th}>Noi dung</th>
+              <th className={adminStyles.th}>Thao tac</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-slate-100">
             {!loading && policies.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">Không có dữ liệu.</td>
+                <td colSpan={4} className={adminStyles.emptyState}>
+                  Khong co du lieu.
+                </td>
               </tr>
             ) : null}
 
             {policies.map((policy) => (
               <tr key={policy.policyId}>
-                <td className="px-4 py-3 text-sm text-gray-700">{policy.policyId}</td>
-                <td className="px-4 py-3 text-sm font-semibold text-gray-900">{policy.title}</td>
-                <td className="px-4 py-3 text-sm text-gray-700">{policy.content}</td>
-                <td className="px-4 py-3 text-sm">
-                  <div className="flex gap-2">
+                <td className={adminStyles.td}>{policy.policyId}</td>
+                <td className={`${adminStyles.td} font-semibold text-slate-950`}>{policy.title}</td>
+                <td className={adminStyles.td}>{policy.content}</td>
+                <td className={adminStyles.td}>
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() => handleEdit(policy)}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
+                      className={adminStyles.smallButton}
                     >
-                      Sửa
+                      Sua
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(policy.policyId)}
-                      className="rounded-md border border-gray-300 px-2 py-1 text-xs font-semibold"
+                      className={adminStyles.smallDangerButton}
                     >
-                      Xóa
+                      Xoa
                     </button>
                   </div>
                 </td>
@@ -194,6 +192,6 @@ export default function AdminSettingsPage() {
         </table>
       </div>
       {popupElement}
-    </div>
+    </AdminPageShell>
   );
 }

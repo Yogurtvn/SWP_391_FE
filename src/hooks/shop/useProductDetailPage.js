@@ -258,7 +258,12 @@ export function useProductDetailPage() {
           },
         }),
       goBackToShop: () => navigate("/shop"),
-      goToPreOrder: () => navigate(`/preorder/${id}`),
+      goToPreOrder: () =>
+        navigate(`/preorder/${id}`, {
+          state: {
+            selectedVariantId: resolvedProduct?.selectedVariant?.variantId ?? null,
+          },
+        }),
     },
   };
 }

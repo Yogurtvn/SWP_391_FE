@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useLocation } from "react-router";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectAuthState } from "@/store/auth/authSlice";
 import { useCart } from "@/hooks/cart/useCart";
@@ -14,16 +15,18 @@ import {
 
 export function useCheckout() {
   const dispatch = useAppDispatch();
+  const location = useLocation();
   const auth = useAppSelector(selectAuthState);
   const order = useAppSelector(selectOrderState);
   const cart = useCart();
+  const requestedOrderType = normalizeOrderType(location.state?.orderType);
 
   const orderTypes = useMemo(
     () =>
       Array.from(
         new Set(
           cart.items
-            .map((item) => String(item?.orderType ?? "").trim())
+            .map((item) => normalizeOrderType(item?.orderType))
             .filter((value) => value.length > 0),
         ),
       ),
@@ -31,13 +34,25 @@ export function useCheckout() {
   );
 
   const checkoutItems = useMemo(
-    () => (orderTypes.length === 1 ? cart.items : []),
-    [cart.items, orderTypes.length],
+    () => {
+      if (requestedOrderType) {
+        return cart.items.filter((item) => normalizeOrderType(item?.orderType) === requestedOrderType);
+      }
+
+      return orderTypes.length === 1 ? cart.items : [];
+    },
+    [cart.items, orderTypes.length, requestedOrderType],
   );
 
   const blockedItems = useMemo(
-    () => (orderTypes.length <= 1 ? [] : cart.items),
-    [cart.items, orderTypes.length],
+    () => {
+      if (requestedOrderType) {
+        return [];
+      }
+
+      return orderTypes.length <= 1 ? [] : cart.items;
+    },
+    [cart.items, orderTypes.length, requestedOrderType],
   );
 
   const itemCount = useMemo(
@@ -51,7 +66,7 @@ export function useCheckout() {
   );
 
   const shippingFee = 0;
-  const checkoutOrderType = checkoutItems[0]?.orderType ?? null;
+  const checkoutOrderType = requestedOrderType || normalizeOrderType(checkoutItems[0]?.orderType);
 
   async function submitCheckout({ shippingInfo, paymentMethod }) {
     const payload = createCheckoutPayload({
@@ -98,4 +113,8 @@ export function useCheckout() {
     createDraftSummary,
     clearCheckout: () => dispatch(clearCheckoutState()),
   };
+}
+
+function normalizeOrderType(orderType) {
+  return String(orderType ?? "").trim().toLowerCase();
 }

@@ -1,209 +1,254 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Package, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
-function MyPreOrdersPage() {
-  const [preOrders, setPreOrders] = useState([]);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  useEffect(() => {
-    const orders = JSON.parse(localStorage.getItem("preOrders") || "[]");
-    setPreOrders(orders);
-  }, []);
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "Ch\u1EDD x\u1EED l\xFD":
-        return <Clock className="w-5 h-5 text-yellow-600" />;
-      case "\u0110ang t\xECm ki\u1EBFm":
-        return <AlertCircle className="w-5 h-5 text-blue-600" />;
-      case "\u0110\xE3 t\xECm th\u1EA5y":
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case "Kh\xF4ng t\xECm th\u1EA5y":
-        return <XCircle className="w-5 h-5 text-red-600" />;
-      default:
-        return <Package className="w-5 h-5 text-gray-600" />;
-    }
-  };
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Ch\u1EDD x\u1EED l\xFD":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      case "\u0110ang t\xECm ki\u1EBFm":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      case "\u0110\xE3 t\xECm th\u1EA5y":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "Kh\xF4ng t\xECm th\u1EA5y":
-        return "bg-red-100 text-red-800 border-red-300";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
-    }
-  };
-  return <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-8">
-        <h1 className="mb-3">Pre-orders của tôi</h1>
-        <p className="text-muted-foreground">
-          Theo dõi các yêu cầu đặt trước kính theo đơn của bạn
-        </p>
-      </div>
+import { AlertCircle, Clock, Eye, Package, RefreshCw } from "lucide-react";
+import { selectAuthState } from "@/store/auth/authSlice";
+import { clearOrderList, fetchOrderList, selectOrderState } from "@/store/order/orderSlice";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
-      {preOrders.length === 0 ? <div className="text-center py-16 bg-secondary rounded-lg">
-          <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <p className="text-lg mb-2">Chưa có pre-order nào</p>
-          <p className="text-muted-foreground mb-6">
-            Không tìm thấy kính phù hợp? Tạo yêu cầu đặt trước ngay
-          </p>
-          <Link
-    to="/pre-order"
-    className="inline-block px-6 py-3 bg-primary text-white rounded hover:bg-primary/90 transition-colors"
-  >
-            Tạo Pre-order
-          </Link>
-        </div> : <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 space-y-4">
-            {preOrders.map((order) => <button
-    key={order.id}
-    onClick={() => setSelectedOrder(order)}
-    className={`w-full p-4 border-2 rounded-lg text-left transition-all ${selectedOrder?.id === order.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
-  >
-                <div className="flex items-start gap-3 mb-3">
-                  {getStatusIcon(order.status)}
-                  <div className="flex-1">
-                    <p className="text-sm mb-1">ID: {order.id}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(order.createdAt).toLocaleDateString("vi-VN")}
-                    </p>
-                  </div>
-                </div>
-                <div
-    className={`text-xs px-2 py-1 rounded border inline-block ${getStatusColor(
-      order.status
-    )}`}
-  >
-                  {order.status}
-                </div>
-              </button>)}
-          </div>
-
-          <div className="lg:col-span-2">
-            {selectedOrder ? <div className="bg-white border-2 border-border rounded-lg overflow-hidden">
-                <div className="p-6 border-b border-border bg-secondary/30">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2>Chi tiết Pre-order</h2>
-                    <div
-    className={`text-sm px-3 py-1.5 rounded border ${getStatusColor(
-      selectedOrder.status
-    )}`}
-  >
-                      {selectedOrder.status}
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Ngày tạo: {new Date(selectedOrder.createdAt).toLocaleString("vi-VN")}
-                  </p>
-                </div>
-
-                <div className="p-6 border-b border-border">
-                  <h3 className="mb-4">Thông Tin Đơn Kính</h3>
-                  <div className="bg-secondary p-4 rounded-lg space-y-2 text-sm">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-muted-foreground mb-1">Mắt Phải (OD)</p>
-                        <p>SPH: {selectedOrder.prescription.odSph}</p>
-                        <p>CYL: {selectedOrder.prescription.odCyl || "\u2014"}</p>
-                        <p>AXIS: {selectedOrder.prescription.odAxis || "\u2014"}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-1">Mắt Trái (OS)</p>
-                        <p>SPH: {selectedOrder.prescription.osSph}</p>
-                        <p>CYL: {selectedOrder.prescription.osCyl || "\u2014"}</p>
-                        <p>AXIS: {selectedOrder.prescription.osAxis || "\u2014"}</p>
-                      </div>
-                    </div>
-                    <div className="border-t border-border pt-2">
-                      <p>Khoảng Cách Đồng Tử: {selectedOrder.prescription.pd} mm</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 border-b border-border">
-                  <h3 className="mb-4">Yêu Cầu Về Kính</h3>
-                  <div className="space-y-3 text-sm">
-                    <div>
-                      <p className="text-muted-foreground mb-1">Hình dạng:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedOrder.preferences.shape.map((shape) => <span
-    key={shape}
-    className="px-2 py-1 bg-primary/10 text-primary rounded text-xs"
-  >
-                            {shape}
-                          </span>)}
-                      </div>
-                    </div>
-                    {selectedOrder.preferences.color.length > 0 && <div>
-                        <p className="text-muted-foreground mb-1">Màu sắc:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedOrder.preferences.color.map((color) => <span
-    key={color}
-    className="px-2 py-1 bg-secondary text-foreground rounded text-xs"
-  >
-                              {color}
-                            </span>)}
-                        </div>
-                      </div>}
-                    {selectedOrder.preferences.material.length > 0 && <div>
-                        <p className="text-muted-foreground mb-1">Chất liệu:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedOrder.preferences.material.map((material) => <span
-    key={material}
-    className="px-2 py-1 bg-secondary text-foreground rounded text-xs"
-  >
-                              {material}
-                            </span>)}
-                        </div>
-                      </div>}
-                    {selectedOrder.preferences.frameType && <div>
-                        <p className="text-muted-foreground mb-1">Loại viền:</p>
-                        <p>
-                          {selectedOrder.preferences.frameType === "full" ? "G\u1ECDng \u0111\u1EA7y \u0111\u1EE7" : selectedOrder.preferences.frameType === "semi" ? "G\u1ECDng n\u1EEDa vi\u1EC1n" : "Kh\xF4ng g\u1ECDng"}
-                        </p>
-                      </div>}
-                    {selectedOrder.preferences.notes && <div>
-                        <p className="text-muted-foreground mb-1">Ghi chú:</p>
-                        <p className="bg-secondary p-3 rounded">
-                          {selectedOrder.preferences.notes}
-                        </p>
-                      </div>}
-                  </div>
-                </div>
-
-                {selectedOrder.matchedProducts && selectedOrder.matchedProducts.length > 0 && <div className="p-6 bg-green-50">
-                    <h3 className="mb-4 text-green-900">Sản Phẩm Được Gợi Ý</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {selectedOrder.matchedProducts.map((product) => <Link
-    key={product.id}
-    to={`/product/${product.id}`}
-    className="flex gap-3 p-3 bg-white rounded-lg border-2 border-green-200 hover:border-green-400 transition-colors"
-  >
-                          <img
-    src={product.image}
-    alt={product.name}
-    className="w-20 h-20 object-cover rounded"
-  />
-                          <div className="flex-1">
-                            <p className="mb-1 text-sm">{product.name}</p>
-                            <p className="text-primary">${product.price}</p>
-                          </div>
-                        </Link>)}
-                    </div>
-                  </div>}
-              </div> : <div className="bg-secondary rounded-lg p-12 text-center">
-                <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Chọn một pre-order để xem chi tiết
-                </p>
-              </div>}
-          </div>
-        </div>}
-    </div>;
-}
-export {
-  MyPreOrdersPage as default
+const PRE_ORDER_FILTERS = {
+  orderType: "preOrder",
+  page: 1,
+  pageSize: 50,
+  sortBy: "createdAt",
+  sortOrder: "desc",
 };
+
+export default function MyPreOrdersPage() {
+  const dispatch = useAppDispatch();
+  const auth = useAppSelector(selectAuthState);
+  const order = useAppSelector(selectOrderState);
+  const [selectedOrderId, setSelectedOrderId] = useState(null);
+
+  useEffect(() => {
+    if (!auth.isReady) {
+      return;
+    }
+
+    if (!auth.accessToken) {
+      dispatch(clearOrderList());
+      return;
+    }
+
+    void dispatch(fetchOrderList(PRE_ORDER_FILTERS));
+  }, [auth.accessToken, auth.isReady, dispatch]);
+
+  useEffect(() => {
+    if (!selectedOrderId && order.items.length > 0) {
+      setSelectedOrderId(order.items[0].orderId);
+    }
+  }, [order.items, selectedOrderId]);
+
+  const selectedOrder = useMemo(
+    () => order.items.find((item) => item.orderId === selectedOrderId) ?? order.items[0] ?? null,
+    [order.items, selectedOrderId],
+  );
+
+  const isLoading = order.listStatus === "loading";
+  const isEmpty = order.listStatus === "succeeded" && order.items.length === 0;
+
+  return (
+    <div className="min-h-screen bg-secondary/30 py-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="mb-3 text-3xl">Pre-orders của tôi</h1>
+            <p className="text-muted-foreground">
+              Theo dõi các đơn hàng có `orderType=preOrder` từ backend.
+            </p>
+          </div>
+
+          <Link
+            to="/shop"
+            className="rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
+          >
+            Tạo pre-order mới
+          </Link>
+        </div>
+
+        {order.listError ? (
+          <StatePanel
+            icon={AlertCircle}
+            title="Không thể tải danh sách pre-order"
+            description={order.listError}
+            action={{
+              label: "Tải lại",
+              onClick: () => dispatch(fetchOrderList(PRE_ORDER_FILTERS)),
+            }}
+          />
+        ) : isLoading ? (
+          <StatePanel
+            icon={RefreshCw}
+            title="Đang tải pre-orders"
+            description="FE đang gọi GET /api/orders?orderType=preOrder."
+            loading
+          />
+        ) : isEmpty ? (
+          <StatePanel
+            icon={Package}
+            title="Chưa có pre-order nào"
+            description="Hãy chọn sản phẩm có nút Đặt Trước để tạo đơn preorder thật qua cart và checkout."
+            link={{
+              label: "Xem sản phẩm",
+              to: "/shop",
+            }}
+          />
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <section className="space-y-4">
+              {order.items.map((item) => (
+                <button
+                  key={item.orderId}
+                  type="button"
+                  onClick={() => setSelectedOrderId(item.orderId)}
+                  className={`w-full rounded-2xl border bg-white p-5 text-left transition-colors ${
+                    selectedOrder?.orderId === item.orderId
+                      ? "border-primary shadow-sm"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <div className="mb-3 flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-semibold">Pre-order #{item.orderId}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{item.createdAtLabel}</p>
+                    </div>
+                    <StatusPill order={item} />
+                  </div>
+                  <p className="line-clamp-1 text-sm">{item.firstItemName}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {item.itemCount} sản phẩm · {formatCurrency(item.totalAmount)}
+                  </p>
+                </button>
+              ))}
+            </section>
+
+            <section className="rounded-[28px] border border-border bg-white p-6 shadow-sm">
+              {selectedOrder ? (
+                <>
+                  <div className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-border pb-5">
+                    <div>
+                      <p className="mb-1 text-sm text-muted-foreground">Mã đơn</p>
+                      <h2 className="text-2xl">#{selectedOrder.orderId}</h2>
+                    </div>
+                    <StatusPill order={selectedOrder} />
+                  </div>
+
+                  <div className="mb-6 grid gap-4 md:grid-cols-2">
+                    <InfoCard label="Người nhận" value={selectedOrder.receiverName} />
+                    <InfoCard label="Ngày tạo" value={selectedOrder.createdAtLabel} />
+                    <InfoCard label="Thanh toán" value={selectedOrder.paymentStatusLabel || "Chờ thanh toán"} />
+                    <InfoCard label="Tổng tiền" value={formatCurrency(selectedOrder.totalAmount)} accent />
+                  </div>
+
+                  <div className="mb-6 rounded-2xl bg-secondary/70 p-4">
+                    <p className="mb-3 font-semibold">Sản phẩm</p>
+                    <div className="flex gap-4">
+                      <img
+                        src={selectedOrder.firstItemImage}
+                        alt={selectedOrder.firstItemName}
+                        className="h-24 w-24 rounded-xl object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2">{selectedOrder.firstItemName}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{selectedOrder.firstItemSubtitle}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Số lượng: {selectedOrder.firstItemQuantity}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      to={`/orders/${selectedOrder.orderId}`}
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Xem chi tiết đơn
+                    </Link>
+                    <Link
+                      to={`/invoice/${selectedOrder.orderId}`}
+                      className="rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
+                    >
+                      Xem hóa đơn
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <div className="py-16 text-center text-muted-foreground">
+                  Chọn một pre-order để xem chi tiết.
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatePanel({ icon: Icon, title, description, action, link, loading = false }) {
+  return (
+    <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
+      {loading ? (
+        <div className="mx-auto mb-5 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+      ) : (
+        <Icon className="mx-auto mb-5 h-16 w-16 text-primary" />
+      )}
+      <h2 className="mb-3 text-2xl">{title}</h2>
+      <p className="mx-auto mb-8 max-w-2xl text-muted-foreground">{description}</p>
+      {action ? (
+        <button
+          type="button"
+          onClick={action.onClick}
+          className="rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
+        >
+          {action.label}
+        </button>
+      ) : null}
+      {link ? (
+        <Link
+          to={link.to}
+          className="rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
+        >
+          {link.label}
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function StatusPill({ order }) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs ${getStatusClass(order.statusKey)}`}>
+      <Clock className="h-3.5 w-3.5" />
+      {order.statusLabel}
+    </span>
+  );
+}
+
+function InfoCard({ label, value, accent = false }) {
+  return (
+    <div className="rounded-2xl border border-border p-4">
+      <p className="mb-1 text-sm text-muted-foreground">{label}</p>
+      <p className={accent ? "text-lg font-semibold text-primary" : "font-medium"}>{value}</p>
+    </div>
+  );
+}
+
+function getStatusClass(statusKey) {
+  switch (statusKey) {
+    case "delivered":
+      return "bg-green-100 text-green-700";
+    case "shipping":
+      return "bg-blue-100 text-blue-700";
+    case "cancelled":
+      return "bg-red-100 text-red-700";
+    default:
+      return "bg-orange-100 text-orange-700";
+  }
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(value ?? 0));
+}

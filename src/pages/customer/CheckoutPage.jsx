@@ -1,5 +1,6 @@
 ﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+import { useEffect, useMemo } from "react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -11,6 +12,13 @@ import {
   Wallet,
 } from "lucide-react";
 import { useCheckout } from "@/hooks/order/useCheckout";
+import {
+  calculateShippingFee,
+  getShippingDistricts,
+  getShippingErrorMessage,
+  getShippingProvinces,
+  getShippingWards,
+} from "@/services/shippingService";
 
 const INITIAL_SHIPPING_INFO = {
   fullName: "",
@@ -18,8 +26,11 @@ const INITIAL_SHIPPING_INFO = {
   phone: "",
   address: "",
   ward: "",
+  wardCode: "",
   district: "",
+  districtId: "",
   city: "",
+  provinceId: "",
 };
 
 export default function CheckoutPage() {
@@ -31,8 +42,6 @@ export default function CheckoutPage() {
     checkoutOrderType,
     itemCount,
     subtotal,
-    shippingFee,
-    total,
     cartStatus,
     checkoutStatus,
     checkoutError,
@@ -41,6 +50,19 @@ export default function CheckoutPage() {
   } = useCheckout();
 
   const [shippingInfo, setShippingInfo] = useState(INITIAL_SHIPPING_INFO);
+  const [shippingOptions, setShippingOptions] = useState({
+    provinces: [],
+    districts: [],
+    wards: [],
+  });
+  const [shippingStatus, setShippingStatus] = useState({
+    provinces: "idle",
+    districts: "idle",
+    wards: "idle",
+    fee: "idle",
+  });
+  const [shippingQuote, setShippingQuote] = useState(null);
+  const [shippingError, setShippingError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [localError, setLocalError] = useState("");
 
@@ -48,6 +70,202 @@ export default function CheckoutPage() {
   const checkoutDescription = getCheckoutDescription(checkoutOrderType, itemCount);
   const isLoadingCart = cartStatus === "loading" && checkoutItems.length === 0 && blockedItems.length === 0;
   const isSubmitting = checkoutStatus === "loading";
+  const shippingWeight = useMemo(() => Math.max(200, itemCount * 200), [itemCount]);
+  const shippingFee = Number(shippingQuote?.totalFee ?? 0);
+  const displayTotal = subtotal + shippingFee;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadProvinces() {
+      setShippingStatus((current) => ({ ...current, provinces: "loading" }));
+      setShippingError("");
+
+      try {
+        const provinces = await getShippingProvinces();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setShippingOptions((current) => ({ ...current, provinces }));
+        setShippingStatus((current) => ({ ...current, provinces: "succeeded" }));
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setShippingStatus((current) => ({ ...current, provinces: "failed" }));
+        setShippingError(getShippingErrorMessage(error, "Không thể tải danh sách tỉnh/thành."));
+      }
+    }
+
+    void loadProvinces();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!shippingInfo.provinceId) {
+      setShippingOptions((current) => ({ ...current, districts: [], wards: [] }));
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadDistricts() {
+      setShippingStatus((current) => ({ ...current, districts: "loading" }));
+      setShippingError("");
+
+      try {
+        const districts = await getShippingDistricts(shippingInfo.provinceId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setShippingOptions((current) => ({ ...current, districts, wards: [] }));
+        setShippingStatus((current) => ({ ...current, districts: "succeeded" }));
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setShippingStatus((current) => ({ ...current, districts: "failed" }));
+        setShippingError(getShippingErrorMessage(error, "Không thể tải danh sách quận/huyện."));
+      }
+    }
+
+    void loadDistricts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [shippingInfo.provinceId]);
+
+  useEffect(() => {
+    if (!shippingInfo.districtId) {
+      setShippingOptions((current) => ({ ...current, wards: [] }));
+      setShippingQuote(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadWards() {
+      setShippingStatus((current) => ({ ...current, wards: "loading" }));
+      setShippingError("");
+
+      try {
+        const wards = await getShippingWards(shippingInfo.districtId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setShippingOptions((current) => ({ ...current, wards }));
+        setShippingStatus((current) => ({ ...current, wards: "succeeded" }));
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setShippingStatus((current) => ({ ...current, wards: "failed" }));
+        setShippingError(getShippingErrorMessage(error, "Không thể tải danh sách phường/xã."));
+      }
+    }
+
+    void loadWards();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [shippingInfo.districtId]);
+
+  useEffect(() => {
+    if (!shippingInfo.districtId || !shippingInfo.wardCode) {
+      setShippingQuote(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadShippingFee() {
+      setShippingStatus((current) => ({ ...current, fee: "loading" }));
+      setShippingError("");
+
+      try {
+        const quote = await calculateShippingFee({
+          districtId: shippingInfo.districtId,
+          wardCode: shippingInfo.wardCode,
+          weight: shippingWeight,
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        setShippingQuote(quote);
+        setShippingStatus((current) => ({ ...current, fee: "succeeded" }));
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setShippingQuote(null);
+        setShippingStatus((current) => ({ ...current, fee: "failed" }));
+        setShippingError(getShippingErrorMessage(error, "Không thể tính phí vận chuyển."));
+      }
+    }
+
+    void loadShippingFee();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [shippingInfo.districtId, shippingInfo.wardCode, shippingWeight]);
+
+  function updateShippingInfo(patch) {
+    setShippingInfo((current) => ({
+      ...current,
+      ...patch,
+    }));
+  }
+
+  function handleProvinceChange(provinceId) {
+    const province = shippingOptions.provinces.find((item) => String(item.provinceId) === String(provinceId));
+
+    updateShippingInfo({
+      provinceId,
+      city: province?.provinceName ?? "",
+      districtId: "",
+      district: "",
+      wardCode: "",
+      ward: "",
+    });
+  }
+
+  function handleDistrictChange(districtId) {
+    const district = shippingOptions.districts.find((item) => String(item.districtId) === String(districtId));
+
+    updateShippingInfo({
+      districtId,
+      district: district?.districtName ?? "",
+      wardCode: "",
+      ward: "",
+    });
+  }
+
+  function handleWardChange(wardCode) {
+    const ward = shippingOptions.wards.find((item) => String(item.wardCode) === String(wardCode));
+
+    updateShippingInfo({
+      wardCode,
+      ward: ward?.wardName ?? "",
+    });
+  }
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -242,50 +460,81 @@ export default function CheckoutPage() {
                   label="Họ và tên"
                   required
                   value={shippingInfo.fullName}
-                  onChange={(value) => setShippingInfo((current) => ({ ...current, fullName: value }))}
+                  onChange={(value) => updateShippingInfo({ fullName: value })}
                   placeholder="Nguyễn Văn A"
                 />
                 <Field
                   label="Số điện thoại"
                   required
                   value={shippingInfo.phone}
-                  onChange={(value) => setShippingInfo((current) => ({ ...current, phone: value }))}
+                  onChange={(value) => updateShippingInfo({ phone: value })}
                   placeholder="0901 234 567"
                 />
                 <Field
                   label="Email"
                   type="email"
                   value={shippingInfo.email}
-                  onChange={(value) => setShippingInfo((current) => ({ ...current, email: value }))}
+                  onChange={(value) => updateShippingInfo({ email: value })}
                   placeholder="ban@email.com"
                 />
                 <Field
                   label="Địa chỉ"
                   required
                   value={shippingInfo.address}
-                  onChange={(value) => setShippingInfo((current) => ({ ...current, address: value }))}
+                  onChange={(value) => updateShippingInfo({ address: value })}
                   placeholder="Số nhà, tên đường"
                 />
-                <Field
-                  label="Phường / Xã"
-                  value={shippingInfo.ward}
-                  onChange={(value) => setShippingInfo((current) => ({ ...current, ward: value }))}
-                  placeholder="Phường 1"
+                <SelectField
+                  label="Tỉnh / Thành phố"
+                  required
+                  value={shippingInfo.provinceId}
+                  onChange={handleProvinceChange}
+                  disabled={shippingStatus.provinces === "loading"}
+                  placeholder={shippingStatus.provinces === "loading" ? "Đang tải tỉnh/thành..." : "Chọn tỉnh/thành"}
+                  options={shippingOptions.provinces.map((item) => ({
+                    value: item.provinceId,
+                    label: item.provinceName,
+                  }))}
                 />
-                <Field
+                <SelectField
                   label="Quận / Huyện"
-                  value={shippingInfo.district}
-                  onChange={(value) => setShippingInfo((current) => ({ ...current, district: value }))}
-                  placeholder="Quận 1"
+                  required
+                  value={shippingInfo.districtId}
+                  onChange={handleDistrictChange}
+                  disabled={!shippingInfo.provinceId || shippingStatus.districts === "loading"}
+                  placeholder={shippingStatus.districts === "loading" ? "Đang tải quận/huyện..." : "Chọn quận/huyện"}
+                  options={shippingOptions.districts.map((item) => ({
+                    value: item.districtId,
+                    label: item.districtName,
+                  }))}
+                />
+                <SelectField
+                  label="Phường / Xã"
+                  required
+                  value={shippingInfo.wardCode}
+                  onChange={handleWardChange}
+                  disabled={!shippingInfo.districtId || shippingStatus.wards === "loading"}
+                  placeholder={shippingStatus.wards === "loading" ? "Đang tải phường/xã..." : "Chọn phường/xã"}
+                  options={shippingOptions.wards.map((item) => ({
+                    value: item.wardCode,
+                    label: item.wardName,
+                  }))}
                 />
                 <div className="md:col-span-2">
-                  <Field
-                    label="Tỉnh / Thành phố"
-                    required
-                    value={shippingInfo.city}
-                    onChange={(value) => setShippingInfo((current) => ({ ...current, city: value }))}
-                    placeholder="TP. Hồ Chí Minh"
-                  />
+                  {shippingError ? (
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                      {shippingError}
+                    </div>
+                  ) : shippingQuote ? (
+                    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+                      Phí vận chuyển GHN: <strong>{formatCurrency(shippingFee)}</strong>
+                      {shippingQuote.expectedDeliveryTime ? ` · Dự kiến ${shippingQuote.expectedDeliveryTime}` : ""}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-border bg-secondary/60 p-4 text-sm text-muted-foreground">
+                      Chọn đủ tỉnh/thành, quận/huyện và phường/xã để hệ thống tính phí vận chuyển.
+                    </div>
+                  )}
                 </div>
               </div>
             </section>
@@ -370,11 +619,17 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Vận chuyển</span>
-                  <span className="text-muted-foreground">Shop xác nhận sau</span>
+                  <span className={shippingQuote ? "font-medium" : "text-muted-foreground"}>
+                    {shippingStatus.fee === "loading"
+                      ? "Đang tính..."
+                      : shippingQuote
+                        ? formatCurrency(shippingFee)
+                        : "Chưa chọn địa chỉ"}
+                  </span>
                 </div>
                 <div className="flex justify-between border-t border-border pt-3">
-                  <span className="text-lg">Tổng cộng</span>
-                  <span className="text-2xl text-primary">{formatCurrency(total)}</span>
+                  <span className="text-lg">Tổng tạm tính</span>
+                  <span className="text-2xl text-primary">{formatCurrency(displayTotal)}</span>
                 </div>
               </div>
 
@@ -398,8 +653,8 @@ export default function CheckoutPage() {
               <div className="mt-4 flex items-start gap-3 rounded-2xl bg-secondary/60 p-4 text-sm text-muted-foreground">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
                 <p>
-                  Backend hiện tại chưa tính phí giao hàng trong order total.
-                  Flow này đang dùng checkout API thật của backend, nên tổng tiền trên trang này sẽ khớp với đơn hàng tạo ra.
+                  Phí vận chuyển đang lấy từ API GHN của backend. Lưu ý checkout API hiện chưa nhận field shipping fee,
+                  nên PayOS/order total từ backend vẫn chỉ gồm tiền sản phẩm.
                 </p>
               </div>
             </div>
@@ -425,6 +680,31 @@ function Field({ label, value, onChange, placeholder, required = false, type = "
         placeholder={placeholder}
         className="w-full rounded-xl border border-border bg-background px-4 py-3 outline-none transition-colors focus:border-primary"
       />
+    </label>
+  );
+}
+
+function SelectField({ label, value, onChange, options, placeholder, required = false, disabled = false }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm text-foreground">
+        {label}
+        {required ? <span className="text-red-500"> *</span> : null}
+      </span>
+      <select
+        required={required}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
+        className="w-full rounded-xl border border-border bg-background px-4 py-3 outline-none transition-colors focus:border-primary disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        <option value="">{placeholder}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

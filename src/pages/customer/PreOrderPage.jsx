@@ -1,434 +1,447 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
-import { Check, AlertCircle, Package, Sparkles } from "lucide-react";
-import StepProgress from "@/components/common/StepProgress";
-const steps = [
-  { number: 1, label: "Th\xF4ng tin \u0111\u01A1n k\xEDnh" },
-  { number: 2, label: "Y\xEAu c\u1EA7u k\xEDnh" },
-  { number: 3, label: "Xem l\u1EA1i" }
-];
-function PreOrderPage() {
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
+import { AlertCircle, ArrowLeft, CalendarDays, Package, ShoppingCart, Truck } from "lucide-react";
+import { toast } from "sonner";
+import { useCart } from "@/hooks/cart/useCart";
+import { createCartItemView } from "@/services/cartService";
+import { getCatalogErrorMessage, getCatalogProductById } from "@/services/catalogService";
+
+const INITIAL_STATE = {
+  product: null,
+  status: "idle",
+  error: "",
+};
+
+export default function PreOrderPage() {
+  const { productId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [prescription, setPrescription] = useState({
-    odSph: "",
-    odCyl: "",
-    odAxis: "",
-    osSph: "",
-    osCyl: "",
-    osAxis: "",
-    pd: ""
-  });
-  const [errors, setErrors] = useState({});
-  const [preferences, setPreferences] = useState({
-    shape: [],
-    color: [],
-    material: [],
-    frameType: "",
-    notes: ""
-  });
-  const shapes = ["Ch\u1EEF nh\u1EADt", "Tr\xF2n", "M\u1EAFt m\xE8o", "Aviator", "Vu\xF4ng", "Oval"];
-  const colors = ["\u0110en", "N\xE2u", "Xanh", "\u0110\u1ECF", "Trong su\u1ED1t", "V\xE0ng kim"];
-  const materials = ["Acetate", "Kim lo\u1EA1i", "Titanium", "Nh\u1EF1a TR90", "G\u1ED7"];
-  const frameTypes = [
-    { value: "full", label: "G\u1ECDng \u0111\u1EA7y \u0111\u1EE7" },
-    { value: "semi", label: "G\u1ECDng n\u1EEDa vi\u1EC1n" },
-    { value: "rimless", label: "Kh\xF4ng g\u1ECDng" }
-  ];
-  const validatePrescription = () => {
-    const newErrors = {};
-    if (!prescription.odSph) {
-      newErrors.odSph = "B\u1EAFt bu\u1ED9c";
-    } else if (isNaN(parseFloat(prescription.odSph))) {
-      newErrors.odSph = "Ph\u1EA3i l\xE0 s\u1ED1";
-    }
-    if (!prescription.osSph) {
-      newErrors.osSph = "B\u1EAFt bu\u1ED9c";
-    } else if (isNaN(parseFloat(prescription.osSph))) {
-      newErrors.osSph = "Ph\u1EA3i l\xE0 s\u1ED1";
-    }
-    if (prescription.odCyl && isNaN(parseFloat(prescription.odCyl))) {
-      newErrors.odCyl = "Ph\u1EA3i l\xE0 s\u1ED1";
-    }
-    if (prescription.osCyl && isNaN(parseFloat(prescription.osCyl))) {
-      newErrors.osCyl = "Ph\u1EA3i l\xE0 s\u1ED1";
-    }
-    if (prescription.odAxis && (isNaN(parseInt(prescription.odAxis)) || parseInt(prescription.odAxis) < 0 || parseInt(prescription.odAxis) > 180)) {
-      newErrors.odAxis = "Ph\u1EA3i t\u1EEB 0-180";
-    }
-    if (prescription.osAxis && (isNaN(parseInt(prescription.osAxis)) || parseInt(prescription.osAxis) < 0 || parseInt(prescription.osAxis) > 180)) {
-      newErrors.osAxis = "Ph\u1EA3i t\u1EEB 0-180";
-    }
-    if (!prescription.pd) {
-      newErrors.pd = "B\u1EAFt bu\u1ED9c";
-    } else if (isNaN(parseFloat(prescription.pd))) {
-      newErrors.pd = "Ph\u1EA3i l\xE0 s\u1ED1";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-  const handleNext = () => {
-    if (currentStep === 1 && !validatePrescription()) {
+  const { addStandardItem, isCustomerSession, mutationStatus } = useCart();
+
+  const [state, setState] = useState(INITIAL_STATE);
+  const [selectedVariantId, setSelectedVariantId] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+
+  const numericProductId = parsePositiveInteger(productId);
+  const isSubmitting = mutationStatus === "loading";
+
+  useEffect(() => {
+    if (!numericProductId) {
+      setState(INITIAL_STATE);
+      setSelectedVariantId(null);
       return;
     }
-    if (currentStep === 2) {
-      if (preferences.shape.length === 0) {
-        return;
+
+    let isMounted = true;
+
+    async function loadProduct() {
+      setState({
+        product: null,
+        status: "loading",
+        error: "",
+      });
+
+      try {
+        const product = await getCatalogProductById(numericProductId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        const preOrderVariants = getPreOrderVariants(product);
+        const preferredVariant =
+          preOrderVariants.find((variant) => variant.variantId === Number(location.state?.selectedVariantId)) ||
+          preOrderVariants.find((variant) => Number(variant.quantity ?? 0) <= 0) ||
+          preOrderVariants[0] ||
+          null;
+
+        setState({
+          product,
+          status: "succeeded",
+          error: "",
+        });
+        setSelectedVariantId(preferredVariant?.variantId ?? null);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        setState({
+          product: null,
+          status: "failed",
+          error: getCatalogErrorMessage(error, "Không thể tải sản phẩm đặt trước."),
+        });
+        setSelectedVariantId(null);
       }
     }
-    if (currentStep < 3) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      const preOrder = {
-        id: `pre-${Date.now()}`,
-        prescription,
-        preferences,
-        status: "Ch\u1EDD x\u1EED l\xFD",
-        createdAt: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      const existingPreOrders = JSON.parse(localStorage.getItem("preOrders") || "[]");
-      existingPreOrders.push(preOrder);
-      localStorage.setItem("preOrders", JSON.stringify(existingPreOrders));
-      navigate("/profile/pre-orders");
+
+    void loadProduct();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [location.state?.selectedVariantId, numericProductId]);
+
+  const preOrderVariants = useMemo(() => getPreOrderVariants(state.product), [state.product]);
+  const selectedVariant = useMemo(
+    () => preOrderVariants.find((variant) => variant.variantId === Number(selectedVariantId)) ?? null,
+    [preOrderVariants, selectedVariantId],
+  );
+  const canCreatePreOrder = selectedVariant ? isPreOrderQuantity(selectedVariant, quantity) : false;
+
+  async function handleAddPreOrder() {
+    if (!isCustomerSession) {
+      toast.error("Vui lòng đăng nhập bằng tài khoản khách hàng để đặt trước.");
+      navigate("/login");
+      return;
     }
-  };
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+
+    if (!state.product || !selectedVariant) {
+      toast.error("Vui lòng chọn một biến thể hỗ trợ đặt trước.");
+      return;
     }
-  };
-  const toggleSelection = (array, value, setter) => {
-    if (array.includes(value)) {
-      setter(array.filter((item) => item !== value));
-    } else {
-      setter([...array, value]);
+
+    if (!isPreOrderQuantity(selectedVariant, quantity)) {
+      toast.error("Biến thể này vẫn còn đủ hàng cho số lượng đã chọn. Vui lòng mua ngay hoặc tăng số lượng vượt tồn kho.");
+      return;
     }
-  };
-  return <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
-          <Package className="w-8 h-8 text-primary" />
+
+    try {
+      await addStandardItem({
+        variantId: selectedVariant.variantId,
+        quantity,
+        orderType: "preOrder",
+        view: createCartItemView(state.product, selectedVariant),
+      });
+
+      toast.success("Đã thêm sản phẩm đặt trước vào giỏ hàng.");
+      navigate("/checkout", {
+        state: {
+          orderType: "preOrder",
+        },
+      });
+    } catch (error) {
+      toast.error(resolveErrorMessage(error, "Không thể tạo sản phẩm đặt trước."));
+    }
+  }
+
+  if (!numericProductId) {
+    return (
+      <StateCard
+        icon={Package}
+        title="Chọn sản phẩm để đặt trước"
+        description="Backend hiện xử lý pre-order theo product variant. Hãy chọn sản phẩm có nút Đặt Trước trong catalog."
+        primaryAction={{
+          label: "Xem sản phẩm",
+          to: "/shop",
+        }}
+      />
+    );
+  }
+
+  if (state.status === "loading") {
+    return (
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="rounded-[28px] border border-border bg-white p-12 text-center shadow-sm">
+          <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <p className="text-muted-foreground">Đang tải sản phẩm đặt trước...</p>
         </div>
-        <h1 className="mb-3">Đặt Trước Kính Theo Yêu Cầu</h1>
-        <p className="text-muted-foreground">
-          Không tìm thấy kính phù hợp? Đặt trước kính theo đơn và yêu cầu của bạn
-        </p>
       </div>
+    );
+  }
 
-      <StepProgress steps={steps} currentStep={currentStep} />
+  if (state.status === "failed") {
+    return (
+      <StateCard
+        icon={AlertCircle}
+        title="Không thể tải flow đặt trước"
+        description={state.error}
+        primaryAction={{
+          label: "Thử sản phẩm khác",
+          to: "/shop",
+        }}
+      />
+    );
+  }
 
-      {currentStep === 1 && <div className="max-w-4xl mx-auto">
-          <h2 className="mb-3 text-center">Thông Tin Đơn Kính</h2>
-          <p className="text-center text-muted-foreground mb-8">
-            Nhập đầy đủ thông số từ đơn kính của bạn
-          </p>
+  if (!state.product || preOrderVariants.length === 0) {
+    return (
+      <StateCard
+        icon={AlertCircle}
+        title="Sản phẩm chưa hỗ trợ đặt trước"
+        description="Không có biến thể nào của sản phẩm này đang bật preorder trong inventory."
+        primaryAction={{
+          label: "Quay lại sản phẩm",
+          to: numericProductId ? `/product/${numericProductId}` : "/shop",
+        }}
+        secondaryAction={{
+          label: "Xem sản phẩm khác",
+          to: "/shop",
+        }}
+      />
+    );
+  }
 
-          <div className="bg-secondary p-8 rounded-xl">
-            <div className="grid grid-cols-4 gap-4 mb-4">
-              <div />
-              <div className="text-center text-sm">SPH</div>
-              <div className="text-center text-sm">CYL</div>
-              <div className="text-center text-sm">AXIS</div>
+  return (
+    <div className="min-h-screen bg-secondary/30 py-12">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <Link
+          to={`/product/${state.product.productId}`}
+          className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Quay lại sản phẩm
+        </Link>
+
+        <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr]">
+          <section className="overflow-hidden rounded-[30px] border border-border bg-white shadow-sm">
+            <div className="relative aspect-[4/3] bg-secondary">
+              <img
+                src={state.product.image}
+                alt={state.product.name}
+                className="h-full w-full object-cover"
+              />
+              <span className="absolute left-5 top-5 rounded-full bg-orange-600 px-4 py-2 text-sm text-white shadow">
+                Đặt trước
+              </span>
             </div>
 
-            <div className="grid grid-cols-4 gap-4 mb-4">
-              <div className="flex items-center">
-                <span className="text-sm">OD (Mắt phải)</span>
+            <div className="p-6">
+              <p className="mb-2 text-sm text-muted-foreground">{state.product.productTypeLabel}</p>
+              <h1 className="mb-3 text-3xl">{state.product.name}</h1>
+              <p className="mb-5 leading-7 text-muted-foreground">{state.product.description}</p>
+
+              <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm leading-6 text-orange-900">
+                Flow này dùng API thật của backend: chỉ tạo preorder khi số lượng đặt lớn hơn tồn kho và variant bật
+                `IsPreOrderAllowed`, sau đó checkout bằng `POST /api/orders/checkout`.
               </div>
-              <div>
+            </div>
+          </section>
+
+          <aside className="h-fit rounded-[30px] border border-border bg-white p-6 shadow-sm">
+            <div className="mb-6">
+              <h2 className="mb-2 text-2xl">Chọn biến thể đặt trước</h2>
+              <p className="text-sm text-muted-foreground">
+                Chỉ hiển thị các biến thể được bật preorder trong inventory.
+              </p>
+            </div>
+
+            <div className="mb-6 space-y-3">
+              {preOrderVariants.map((variant) => {
+                const isSelected = variant.variantId === selectedVariantId;
+
+                return (
+                  <button
+                    key={variant.variantId}
+                    type="button"
+                    onClick={() => setSelectedVariantId(variant.variantId)}
+                    className={`w-full rounded-2xl border p-4 text-left transition-colors ${
+                      isSelected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="mb-3 flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-semibold">{variant.sku || `Variant #${variant.variantId}`}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {[variant.color, variant.size, variant.frameType].filter(Boolean).join(" / ") || "Mặc định"}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">
+                        {Number(variant.quantity ?? 0) > 0 ? `Preorder nếu > ${Number(variant.quantity ?? 0)}` : "Hết hàng"}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                      <span>{formatCurrency(variant.price)}</span>
+                      <span>Tồn kho hiện tại: {Number(variant.quantity ?? 0)}</span>
+                      {variant.expectedRestockDate ? (
+                        <span className="inline-flex items-center gap-1">
+                          <CalendarDays className="h-4 w-4" />
+                          Dự kiến: {formatDate(variant.expectedRestockDate)}
+                        </span>
+                      ) : null}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mb-6 rounded-2xl bg-secondary/70 p-4">
+              <label className="mb-2 block text-sm text-muted-foreground">Số lượng</label>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                  className="h-10 w-10 rounded-xl border border-border bg-white text-lg"
+                >
+                  -
+                </button>
                 <input
-    type="text"
-    placeholder="0.00"
-    value={prescription.odSph}
-    onChange={(e) => {
-      setPrescription({ ...prescription, odSph: e.target.value });
-      setErrors({ ...errors, odSph: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.odSph ? "border-destructive" : "border-border"}`}
-  />
-                {errors.odSph && <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.odSph}
-                  </p>}
-              </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0.00"
-    value={prescription.odCyl}
-    onChange={(e) => {
-      setPrescription({ ...prescription, odCyl: e.target.value });
-      setErrors({ ...errors, odCyl: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.odCyl ? "border-destructive" : "border-border"}`}
-  />
-              </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0"
-    value={prescription.odAxis}
-    onChange={(e) => {
-      setPrescription({ ...prescription, odAxis: e.target.value });
-      setErrors({ ...errors, odAxis: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.odAxis ? "border-destructive" : "border-border"}`}
-  />
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={quantity}
+                  onChange={(event) => setQuantity(clampQuantity(event.target.value))}
+                  className="h-10 w-24 rounded-xl border border-border bg-white px-3 text-center outline-none focus:border-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => setQuantity((current) => Math.min(99, current + 1))}
+                  className="h-10 w-10 rounded-xl border border-border bg-white text-lg"
+                >
+                  +
+                </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-4 mb-6">
-              <div className="flex items-center">
-                <span className="text-sm">OS (Mắt trái)</span>
+            <div className="mb-6 rounded-2xl border border-border p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <Truck className="h-5 w-5 text-primary" />
+                <p className="font-semibold">Tóm tắt</p>
               </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0.00"
-    value={prescription.osSph}
-    onChange={(e) => {
-      setPrescription({ ...prescription, osSph: e.target.value });
-      setErrors({ ...errors, osSph: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.osSph ? "border-destructive" : "border-border"}`}
-  />
-                {errors.osSph && <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.osSph}
-                  </p>}
-              </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0.00"
-    value={prescription.osCyl}
-    onChange={(e) => {
-      setPrescription({ ...prescription, osCyl: e.target.value });
-      setErrors({ ...errors, osCyl: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.osCyl ? "border-destructive" : "border-border"}`}
-  />
-              </div>
-              <div>
-                <input
-    type="text"
-    placeholder="0"
-    value={prescription.osAxis}
-    onChange={(e) => {
-      setPrescription({ ...prescription, osAxis: e.target.value });
-      setErrors({ ...errors, osAxis: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary text-center ${errors.osAxis ? "border-destructive" : "border-border"}`}
-  />
+              <div className="space-y-2 text-sm">
+                <Row label="Đơn giá" value={formatCurrency(selectedVariant?.price ?? state.product.price)} />
+                <Row label="Số lượng" value={quantity} />
+                <Row
+                  label="Tạm tính"
+                  value={formatCurrency(Number(selectedVariant?.price ?? state.product.price) * quantity)}
+                  accent
+                />
               </div>
             </div>
 
-            <div className="border-t border-border pt-6">
-              <div className="max-w-xs">
-                <label className="text-sm mb-2 block">Khoảng Cách Đồng Tử (PD)</label>
-                <input
-    type="text"
-    placeholder="63"
-    value={prescription.pd}
-    onChange={(e) => {
-      setPrescription({ ...prescription, pd: e.target.value });
-      setErrors({ ...errors, pd: void 0 });
-    }}
-    className={`w-full px-4 py-3 bg-white border rounded-lg focus:outline-none focus:border-primary ${errors.pd ? "border-destructive" : "border-border"}`}
-  />
-                {errors.pd && <p className="text-xs text-destructive mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" />
-                    {errors.pd}
-                  </p>}
+            {selectedVariant && !canCreatePreOrder ? (
+              <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
+                Biến thể này còn {Number(selectedVariant.quantity ?? 0)} sản phẩm. Theo requirement, preorder chỉ áp dụng
+                khi hết hàng hoặc số lượng đặt lớn hơn tồn kho. Với số lượng hiện tại, hãy dùng luồng mua hàng có sẵn.
               </div>
-            </div>
-          </div>
-        </div>}
+            ) : null}
 
-      {currentStep === 2 && <div className="max-w-4xl mx-auto">
-          <h2 className="mb-3 text-center">Yêu Cầu Về Kính</h2>
-          <p className="text-center text-muted-foreground mb-8">
-            Chọn các đặc điểm kính bạn mong muốn
-          </p>
-
-          <div className="space-y-8">
-            <div>
-              <label className="block mb-4">
-                Hình dạng gọng <span className="text-destructive">*</span>
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                {shapes.map((shape) => <button
-    key={shape}
-    onClick={() => toggleSelection(
-      preferences.shape,
-      shape,
-      (arr) => setPreferences({ ...preferences, shape: arr })
-    )}
-    className={`p-4 border-2 rounded-lg transition-all ${preferences.shape.includes(shape) ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
-  >
-                    {preferences.shape.includes(shape) && <Check className="w-5 h-5 text-primary mb-2" />}
-                    <p className="text-sm">{shape}</p>
-                  </button>)}
-              </div>
-            </div>
-
-            <div>
-              <label className="block mb-4">Màu sắc ưa thích</label>
-              <div className="grid grid-cols-3 gap-3">
-                {colors.map((color) => <button
-    key={color}
-    onClick={() => toggleSelection(
-      preferences.color,
-      color,
-      (arr) => setPreferences({ ...preferences, color: arr })
-    )}
-    className={`p-4 border-2 rounded-lg transition-all ${preferences.color.includes(color) ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
-  >
-                    {preferences.color.includes(color) && <Check className="w-5 h-5 text-primary mb-2" />}
-                    <p className="text-sm">{color}</p>
-                  </button>)}
-              </div>
-            </div>
-
-            <div>
-              <label className="block mb-4">Chất liệu</label>
-              <div className="grid grid-cols-3 gap-3">
-                {materials.map((material) => <button
-    key={material}
-    onClick={() => toggleSelection(
-      preferences.material,
-      material,
-      (arr) => setPreferences({ ...preferences, material: arr })
-    )}
-    className={`p-4 border-2 rounded-lg transition-all ${preferences.material.includes(material) ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
-  >
-                    {preferences.material.includes(material) && <Check className="w-5 h-5 text-primary mb-2" />}
-                    <p className="text-sm">{material}</p>
-                  </button>)}
-              </div>
-            </div>
-
-            <div>
-              <label className="block mb-4">Loại viền</label>
-              <div className="grid grid-cols-3 gap-3">
-                {frameTypes.map((type) => <button
-    key={type.value}
-    onClick={() => setPreferences({ ...preferences, frameType: type.value })}
-    className={`p-4 border-2 rounded-lg transition-all ${preferences.frameType === type.value ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"}`}
-  >
-                    {preferences.frameType === type.value && <Check className="w-5 h-5 text-primary mb-2" />}
-                    <p className="text-sm">{type.label}</p>
-                  </button>)}
-              </div>
-            </div>
-
-            <div>
-              <label className="block mb-3">Ghi chú thêm (không bắt buộc)</label>
-              <textarea
-    value={preferences.notes}
-    onChange={(e) => setPreferences({ ...preferences, notes: e.target.value })}
-    placeholder="Nhập các yêu cầu đặc biệt của bạn..."
-    rows={4}
-    className="w-full px-4 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
-  />
-            </div>
-          </div>
-        </div>}
-
-      {currentStep === 3 && <div className="max-w-3xl mx-auto">
-          <h2 className="mb-3 text-center">Xem Lại Yêu Cầu</h2>
-          <p className="text-center text-muted-foreground mb-8">
-            Kiểm tra lại thông tin trước khi gửi yêu cầu
-          </p>
-
-          <div className="bg-white border-2 border-border rounded-xl overflow-hidden">
-            <div className="p-6 border-b border-border bg-secondary/30">
-              <h3 className="mb-4">Thông Tin Đơn Kính</h3>
-              <div className="bg-white p-4 rounded-lg space-y-2 text-sm">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-muted-foreground mb-1">Mắt Phải (OD)</p>
-                    <p>SPH: {prescription.odSph || "\u2014"}</p>
-                    <p>CYL: {prescription.odCyl || "\u2014"}</p>
-                    <p>AXIS: {prescription.odAxis || "\u2014"}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground mb-1">Mắt Trái (OS)</p>
-                    <p>SPH: {prescription.osSph || "\u2014"}</p>
-                    <p>CYL: {prescription.osCyl || "\u2014"}</p>
-                    <p>AXIS: {prescription.osAxis || "\u2014"}</p>
-                  </div>
-                </div>
-                <div className="border-t border-border pt-2">
-                  <p>Khoảng Cách Đồng Tử: {prescription.pd || "\u2014"} mm</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 border-b border-border">
-              <h3 className="mb-4">Yêu Cầu Về Kính</h3>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-muted-foreground mb-1">Hình dạng:</p>
-                  <p>{preferences.shape.join(", ") || "Ch\u01B0a ch\u1ECDn"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground mb-1">Màu sắc:</p>
-                  <p>{preferences.color.join(", ") || "Kh\xF4ng c\xF3"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground mb-1">Chất liệu:</p>
-                  <p>{preferences.material.join(", ") || "Kh\xF4ng c\xF3"}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground mb-1">Loại viền:</p>
-                  <p>
-                    {preferences.frameType === "full" ? "G\u1ECDng \u0111\u1EA7y \u0111\u1EE7" : preferences.frameType === "semi" ? "G\u1ECDng n\u1EEDa vi\u1EC1n" : preferences.frameType === "rimless" ? "Kh\xF4ng g\u1ECDng" : "Kh\xF4ng c\xF3"}
-                  </p>
-                </div>
-                {preferences.notes && <div>
-                    <p className="text-muted-foreground mb-1">Ghi chú:</p>
-                    <p>{preferences.notes}</p>
-                  </div>}
-              </div>
-            </div>
-
-            <div className="p-6 bg-blue-50 border-t-4 border-blue-400">
-              <div className="flex gap-3">
-                <Sparkles className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                <div className="text-sm text-blue-900">
-                  <p className="mb-2">
-                    <strong>Lưu ý:</strong> Sau khi gửi yêu cầu, chúng tôi sẽ tìm kiếm các mẫu
-                    kính phù hợp và liên hệ với bạn trong vòng 2-3 ngày làm việc.
-                  </p>
-                  <p>
-                    Bạn có thể theo dõi trạng thái yêu cầu tại trang{" "}
-                    <strong>Tài khoản &gt; Pre-orders</strong>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>}
-
-      <div className="flex items-center justify-between max-w-3xl mx-auto mt-12">
-        <button
-    onClick={handleBack}
-    disabled={currentStep === 1}
-    className="px-6 py-3 border border-border rounded hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-  >
-          Quay lại
-        </button>
-        <button
-    onClick={handleNext}
-    disabled={currentStep === 2 && preferences.shape.length === 0}
-    className="px-8 py-3 bg-primary text-white rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-  >
-          {currentStep === 3 ? "G\u1EEDi y\xEAu c\u1EA7u" : "Ti\u1EBFp t\u1EE5c"}
-        </button>
+            <button
+              type="button"
+              onClick={handleAddPreOrder}
+              disabled={isSubmitting || !selectedVariant || !canCreatePreOrder}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-4 text-white transition-colors hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSubmitting ? (
+                <>
+                  <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                  Đang tạo preorder...
+                </>
+              ) : (
+                <>
+                  <ShoppingCart className="h-5 w-5" />
+                  Thêm vào giỏ và checkout
+                </>
+              )}
+            </button>
+          </aside>
+        </div>
       </div>
-    </div>;
+    </div>
+  );
 }
-export {
-  PreOrderPage as default
-};
+
+function StateCard({ icon: Icon, title, description, primaryAction, secondaryAction }) {
+  return (
+    <div className="min-h-screen bg-secondary/30 py-12">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
+          <Icon className="mx-auto mb-5 h-16 w-16 text-primary" />
+          <h1 className="mb-3 text-3xl">{title}</h1>
+          <p className="mx-auto mb-8 max-w-2xl text-muted-foreground leading-7">{description}</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              to={primaryAction.to}
+              className="rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
+            >
+              {primaryAction.label}
+            </Link>
+            {secondaryAction ? (
+              <Link
+                to={secondaryAction.to}
+                className="rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
+              >
+                {secondaryAction.label}
+              </Link>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value, accent = false }) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={accent ? "text-lg font-semibold text-primary" : "font-medium"}>{value}</span>
+    </div>
+  );
+}
+
+function getPreOrderVariants(product) {
+  return Array.isArray(product?.variants)
+    ? product.variants.filter((variant) => Boolean(variant?.isPreOrderAllowed))
+    : [];
+}
+
+function isPreOrderQuantity(variant, quantity) {
+  const availableQuantity = Number(variant?.quantity ?? 0);
+  const requestedQuantity = Number(quantity ?? 0);
+
+  return Boolean(variant?.isPreOrderAllowed) && requestedQuantity > Math.max(0, availableQuantity);
+}
+
+function clampQuantity(value) {
+  const parsedValue = Number.parseInt(String(value ?? ""), 10);
+
+  if (!Number.isFinite(parsedValue) || parsedValue < 1) {
+    return 1;
+  }
+
+  return Math.min(parsedValue, 99);
+}
+
+function parsePositiveInteger(value) {
+  const parsedValue = Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
+}
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(value ?? 0));
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "Chưa cập nhật";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Chưa cập nhật";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+}
+
+function resolveErrorMessage(error, fallbackMessage) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error;
+  }
+
+  return fallbackMessage;
+}

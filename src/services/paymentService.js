@@ -2,6 +2,10 @@ import { apiGet, apiPost } from "@/services/apiClient";
 
 const PAYMENTS_BASE_PATH = "/api/payments";
 
+export async function createPayment(token, payload) {
+  return apiPost(PAYMENTS_BASE_PATH, payload, { token });
+}
+
 export async function getPaymentByPayOsOrderCode(token, orderCode) {
   return apiGet(`${PAYMENTS_BASE_PATH}/payos/order-codes/${orderCode}`, { token });
 }

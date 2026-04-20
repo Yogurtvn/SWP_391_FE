@@ -7,10 +7,19 @@ import {
   ShieldAlert,
   ShoppingBag,
 } from "lucide-react";
+import { useState } from "react";
 import { usePayOsCallback } from "@/hooks/order/usePayOsCallback";
+import { createPayment } from "@/services/paymentService";
+import { selectAuthState } from "@/store/auth/authSlice";
+import { useAppSelector } from "@/store/hooks";
 
 export default function PaymentFailedPage() {
   const location = useLocation();
+  const auth = useAppSelector(selectAuthState);
+  const [retryState, setRetryState] = useState({
+    status: "idle",
+    error: null,
+  });
   const fallbackOrderSummary =
     location.state?.orderSummary ??
     (location.search ? createPayOsFallbackOrderSummary() : createFallbackOrderSummary());
@@ -28,6 +37,51 @@ export default function PaymentFailedPage() {
     getDefaultFailureMessage(callback);
   const orderCreated = Boolean(location.state?.orderCreated ?? resolvedOrderSummary.orderCreated);
   const canTrackOrder = Number(resolvedOrderSummary.orderId ?? 0) > 0;
+  const canRetryPayment =
+    orderCreated
+    && canTrackOrder
+    && normalizePaymentMethod(resolvedOrderSummary.paymentMethod) === "payos"
+    && Number(resolvedOrderSummary.total ?? 0) > 0;
+  const isRetrying = retryState.status === "loading";
+
+  async function handleRetryPayment() {
+    if (!canRetryPayment || isRetrying) {
+      return;
+    }
+
+    if (!auth.accessToken) {
+      setRetryState({
+        status: "failed",
+        error: "Vui lòng đăng nhập lại để mở thanh toán PayOS cho đơn đã tạo.",
+      });
+      return;
+    }
+
+    setRetryState({
+      status: "loading",
+      error: null,
+    });
+
+    try {
+      const payment = await createPayment(auth.accessToken, {
+        orderId: Number(resolvedOrderSummary.orderId),
+        amount: Number(resolvedOrderSummary.total),
+        paymentMethod: "payos",
+      });
+      const payUrl = payment?.payUrl || payment?.deeplink || payment?.qrCodeUrl;
+
+      if (!payUrl) {
+        throw new Error("Backend chưa trả về liên kết thanh toán PayOS mới cho đơn này.");
+      }
+
+      window.location.assign(payUrl);
+    } catch (error) {
+      setRetryState({
+        status: "failed",
+        error: resolveErrorMessage(error, "Không thể mở lại thanh toán PayOS cho đơn đã tạo."),
+      });
+    }
+  }
 
   if (authRequired) {
     return (
@@ -123,19 +177,41 @@ export default function PaymentFailedPage() {
                 <p className="mb-2 text-sm text-muted-foreground">Bạn có thể làm gì tiếp theo?</p>
                 <div className="space-y-3 text-sm text-foreground/90">
                   <p>Kiểm tra lại thông tin giao hàng và phương thức thanh toán.</p>
-                  <p>Quay lại checkout để thử lại.</p>
+                  <p>
+                    {canRetryPayment
+                      ? "Mở lại thanh toán PayOS cho đơn đã tạo, không cần tạo lại cart."
+                      : "Quay lại checkout để thử lại."}
+                  </p>
                   <p>Hoặc mở giỏ hàng để điều chỉnh sản phẩm.</p>
                 </div>
               </div>
 
+              {retryState.error ? (
+                <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+                  {retryState.error}
+                </div>
+              ) : null}
+
               <div className="space-y-3">
-                <Link
-                  to="/checkout"
-                  className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
-                >
-                  Thử lại thanh toán
-                  <RefreshCcw className="h-4 w-4" />
-                </Link>
+                {canRetryPayment ? (
+                  <button
+                    type="button"
+                    onClick={handleRetryPayment}
+                    disabled={isRetrying}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isRetrying ? "Đang mở lại PayOS..." : "Thử lại thanh toán PayOS"}
+                    <RefreshCcw className={`h-4 w-4 ${isRetrying ? "animate-spin" : ""}`} />
+                  </button>
+                ) : (
+                  <Link
+                    to="/checkout"
+                    className="flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
+                  >
+                    Thử lại thanh toán
+                    <RefreshCcw className="h-4 w-4" />
+                  </Link>
+                )}
                 <Link
                   to="/cart"
                   className="flex items-center justify-center gap-2 rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary"
@@ -257,6 +333,22 @@ function formatCurrency(value) {
     style: "currency",
     currency: "VND",
   }).format(Number(value ?? 0));
+}
+
+function normalizePaymentMethod(paymentMethod) {
+  return String(paymentMethod ?? "").trim().toLowerCase();
+}
+
+function resolveErrorMessage(error, fallbackMessage) {
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim().length > 0) {
+    return error;
+  }
+
+  return fallbackMessage;
 }
 
 

@@ -73,6 +73,7 @@ export default function CheckoutPage() {
   const shippingWeight = useMemo(() => Math.max(200, itemCount * 200), [itemCount]);
   const shippingFee = Number(shippingQuote?.totalFee ?? 0);
   const displayTotal = subtotal + shippingFee;
+  const isCalculatingShippingFee = shippingStatus.fee === "loading";
 
   useEffect(() => {
     let isMounted = true;
@@ -271,10 +272,21 @@ export default function CheckoutPage() {
     event.preventDefault();
     setLocalError("");
 
+    if (isCalculatingShippingFee) {
+      setLocalError("Hệ thống đang tính phí vận chuyển. Vui lòng chờ vài giây rồi thử lại.");
+      return;
+    }
+
+    if (!shippingQuote) {
+      setLocalError("Vui lòng chọn đầy đủ tỉnh/thành, quận/huyện, phường/xã để tính phí vận chuyển trước khi đặt hàng.");
+      return;
+    }
+
     try {
       const { result, orderSummary } = await submitCheckout({
         shippingInfo,
         paymentMethod,
+        shippingFee,
       });
 
       if (paymentMethod === "payos") {
@@ -309,7 +321,7 @@ export default function CheckoutPage() {
 
       navigate("/checkout/failure", {
         state: {
-          orderSummary: createDraftSummary({ shippingInfo, paymentMethod }),
+          orderSummary: createDraftSummary({ shippingInfo, paymentMethod, shippingFee }),
           orderCreated: false,
           errorMessage,
         },
@@ -635,7 +647,7 @@ export default function CheckoutPage() {
 
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isCalculatingShippingFee}
                 className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-4 text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting ? (
@@ -643,6 +655,8 @@ export default function CheckoutPage() {
                     <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
                     Đang xử lý đơn hàng...
                   </>
+                ) : isCalculatingShippingFee ? (
+                  "Đang tính phí vận chuyển..."
                 ) : paymentMethod === "payos" ? (
                   "Tiếp tục với PayOS"
                 ) : (
@@ -653,8 +667,7 @@ export default function CheckoutPage() {
               <div className="mt-4 flex items-start gap-3 rounded-2xl bg-secondary/60 p-4 text-sm text-muted-foreground">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
                 <p>
-                  Phí vận chuyển đang lấy từ API GHN của backend. Lưu ý checkout API hiện chưa nhận field shipping fee,
-                  nên PayOS/order total từ backend vẫn chỉ gồm tiền sản phẩm.
+                  Phí vận chuyển đang lấy từ API GHN của backend và được gửi kèm checkout để PayOS thu đúng tổng tiền.
                 </p>
               </div>
             </div>

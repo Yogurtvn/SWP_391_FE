@@ -11,8 +11,6 @@ function CartDrawer({ open, onOpenChange }) {
   const isLoading = status === "loading" && items.length === 0;
   const isMutating = mutationStatus === "loading";
   const subtotal = getTotal();
-  const shipping = subtotal > 5e5 ? 0 : 3e4;
-  const total = subtotal + shipping;
 
   async function handleUpdateQuantity(cartItemId, change) {
     const item = items.find((currentItem) => currentItem.cartItemId === cartItemId);
@@ -63,22 +61,6 @@ function CartDrawer({ open, onOpenChange }) {
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {!isCustomerSession ? <GuestCartState onOpenChange={onOpenChange} /> : isLoading ? <LoadingState /> : items.length === 0 ? <EmptyCartState onOpenChange={onOpenChange} /> : <div className="space-y-4">
-              {subtotal < 5e5 && <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-                  <p className="text-xs text-amber-900 mb-2">
-                    Them{" "}
-                    <span className="font-semibold">
-                      {formatCurrency(5e5 - subtotal)}
-                    </span>{" "}
-                    nữa để được miễn phí vận chuyển!
-                  </p>
-                  <div className="w-full bg-amber-200 rounded-full h-1.5">
-                    <div
-                      className="bg-amber-600 h-1.5 rounded-full transition-all"
-                      style={{ width: `${Math.min(subtotal / 5e5 * 100, 100)}%` }}
-                    />
-                  </div>
-                </div>}
-
               {items.map((item) => <div key={item.cartItemId} className="flex gap-4 p-4 bg-secondary rounded-lg">
                   <div className="w-20 h-20 bg-white rounded-lg overflow-hidden shrink-0">
                     <img
@@ -150,12 +132,12 @@ function CartDrawer({ open, onOpenChange }) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Vận chuyển</span>
-                {shipping === 0 ? <span className="text-green-600 font-medium">Miễn phí</span> : <span>{formatCurrency(shipping)}</span>}
+                <span className="text-muted-foreground">Tính ở checkout</span>
               </div>
               <div className="border-t border-border pt-2 flex justify-between items-center">
                 <span className="font-semibold">Tổng cộng</span>
                 <span className="text-xl font-bold text-primary">
-                  {formatCurrency(total)}
+                  {formatCurrency(subtotal)}
                 </span>
               </div>
             </div>

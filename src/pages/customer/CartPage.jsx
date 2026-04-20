@@ -15,9 +15,8 @@ function CartPage() {
   const isLoading = status === "loading" && items.length === 0;
   const isMutating = mutationStatus === "loading";
   const subtotal = getTotal();
-  const shipping = subtotal > 5e5 ? 0 : 3e4;
   const discount = appliedCoupon ? subtotal * appliedCoupon.discount / 100 : 0;
-  const total = subtotal + shipping - discount;
+  const total = subtotal - discount;
 
   async function handleUpdateQuantity(cartItemId, change) {
     const item = items.find((currentItem) => currentItem.cartItemId === cartItemId);
@@ -107,21 +106,6 @@ function CartPage() {
             </Link>
           </div> : <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
-              {subtotal < 5e5 && <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-                  <Truck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-amber-900">
-                      Thêm <span className="font-semibold">{formatCurrency(5e5 - subtotal)}</span> nữa để được miễn phí vận chuyển!
-                    </p>
-                    <div className="w-full bg-amber-200 rounded-full h-2 mt-2">
-                      <div
-                        className="bg-amber-600 h-2 rounded-full transition-all"
-                        style={{ width: `${Math.min(subtotal / 5e5 * 100, 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>}
-
               <div className="space-y-4">
                 {items.map((item) => <div
                     key={item.cartItemId}
@@ -256,7 +240,7 @@ function CartPage() {
                     </div>}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Vận chuyển</span>
-                    {shipping === 0 ? <span className="text-green-600 font-medium">Miễn phí</span> : <span>{formatCurrency(shipping)}</span>}
+                    <span className="text-muted-foreground">Tính ở checkout</span>
                   </div>
                   <div className="border-t border-border pt-3">
                     <div className="flex justify-between items-center">
@@ -285,8 +269,8 @@ function CartPage() {
                   <div className="flex items-start gap-3 text-sm">
                     <Truck className="w-5 h-5 text-blue-600 shrink-0" />
                     <div>
-                      <p className="font-medium">Miễn phí vận chuyển</p>
-                      <p className="text-muted-foreground text-xs">Đơn hàng từ 500.000đ</p>
+                      <p className="font-medium">Phí vận chuyển GHN</p>
+                      <p className="text-muted-foreground text-xs">Được tính ở checkout theo địa chỉ giao hàng</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3 text-sm">

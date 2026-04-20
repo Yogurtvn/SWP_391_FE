@@ -20,7 +20,7 @@ export async function getOrderById(token, orderId) {
   return apiGet(`${ORDERS_BASE_PATH}/${orderId}`, { token });
 }
 
-export function createCheckoutPayload({ cartItems, shippingInfo, paymentMethod }) {
+export function createCheckoutPayload({ cartItems, shippingInfo, paymentMethod, shippingFee = 0 }) {
   return {
     cartItemIds: (Array.isArray(cartItems) ? cartItems : [])
       .map((item) => Number(item?.cartItemId))
@@ -28,20 +28,22 @@ export function createCheckoutPayload({ cartItems, shippingInfo, paymentMethod }
     receiverName: normalizeText(shippingInfo?.fullName) ?? "",
     receiverPhone: normalizeText(shippingInfo?.phone) ?? "",
     shippingAddress: composeShippingAddress(shippingInfo),
+    shippingFee: normalizeMoney(shippingFee),
     paymentMethod: normalizePaymentMethod(paymentMethod),
   };
 }
 
-export function buildOrderSummary({ checkoutResult, cartItems, shippingInfo, paymentMethod }) {
+export function buildOrderSummary({ checkoutResult, cartItems, shippingInfo, paymentMethod, shippingFee = 0 }) {
   const resolvedPaymentMethod = normalizePaymentMethod(paymentMethod);
   const itemCount = (Array.isArray(cartItems) ? cartItems : []).reduce(
     (count, item) => count + Number(item?.quantity ?? 0),
     0,
   );
-  const fallbackTotal = (Array.isArray(cartItems) ? cartItems : []).reduce(
+  const fallbackSubtotal = (Array.isArray(cartItems) ? cartItems : []).reduce(
     (total, item) => total + Number(item?.totalPrice ?? 0),
     0,
   );
+  const fallbackTotal = fallbackSubtotal + normalizeMoney(shippingFee);
   const createdAt = new Date();
 
   return {
@@ -421,6 +423,14 @@ function normalizePaymentMethod(paymentMethod) {
 function normalizeText(value) {
   const normalizedValue = String(value ?? "").trim();
   return normalizedValue.length > 0 ? normalizedValue : null;
+}
+
+function normalizeMoney(value) {
+  const normalizedValue = Number(value ?? 0);
+
+  return Number.isFinite(normalizedValue) && normalizedValue > 0
+    ? Math.round(normalizedValue * 100) / 100
+    : 0;
 }
 
 

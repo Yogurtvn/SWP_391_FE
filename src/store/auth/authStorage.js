@@ -12,10 +12,28 @@ export function loadStoredAuth() {
   };
 }
 
+export function getStoredAccessToken() {
+  return readStorageText(STORAGE_KEYS.accessToken);
+}
+
+export function getStoredRefreshToken() {
+  return readStorageText(STORAGE_KEYS.refreshToken);
+}
+
 export function persistStoredAuth(authState) {
   writeStorageText(STORAGE_KEYS.accessToken, authState.accessToken);
   writeStorageText(STORAGE_KEYS.refreshToken, authState.refreshToken);
   writeStoredUser(authState.user);
+}
+
+export function updateStoredAccessToken(accessToken) {
+  writeStorageText(STORAGE_KEYS.accessToken, accessToken);
+}
+
+export function clearStoredAuth() {
+  writeStorageText(STORAGE_KEYS.accessToken, null);
+  writeStorageText(STORAGE_KEYS.refreshToken, null);
+  writeStoredUser(null);
 }
 
 function readStoredUser() {

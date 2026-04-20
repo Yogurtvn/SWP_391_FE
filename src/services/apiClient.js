@@ -1,6 +1,21 @@
+import {
+  clearStoredAuth,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  updateStoredAccessToken,
+} from "@/store/auth/authStorage";
+
 const DEFAULT_API_BASE_URL = "http://localhost:5188";
 
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL).replace(/\/+$/, "");
+
+let refreshAccessTokenPromise = null;
+
+function notifyAuthExpired() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth:expired"));
+  }
+}
 
 export class ApiError extends Error {
   constructor(message, status, errorCode, details) {
@@ -33,18 +48,35 @@ export async function apiRequest(path, options = {}) {
     token,
     body,
     headers: customHeaders,
+    _retryAfterRefresh = false,
     ...fetchOptions
   } = options;
 
   const headers = createHeaders(customHeaders, token);
   const requestBody = createRequestBody(body, headers);
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  let response = await fetch(`${API_BASE_URL}${path}`, {
     ...fetchOptions,
     method,
     headers,
     body: requestBody,
   });
+
+  if (response.status === 401 && shouldRetryAfterRefresh(path, _retryAfterRefresh)) {
+    const refreshedAccessToken = await refreshAccessToken();
+
+    if (refreshedAccessToken) {
+      const retryHeaders = createHeaders(customHeaders, refreshedAccessToken);
+      const retryBody = createRequestBody(body, retryHeaders);
+
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        ...fetchOptions,
+        method,
+        headers: retryHeaders,
+        body: retryBody,
+      });
+    }
+  }
 
   const payload = await readResponseBody(response);
 
@@ -57,16 +89,21 @@ export async function apiRequest(path, options = {}) {
 
 function createHeaders(customHeaders, token) {
   const headers = new Headers(customHeaders);
+  const resolvedToken = resolveAccessToken(token);
 
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
   }
 
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
+  if (resolvedToken) {
+    headers.set("Authorization", `Bearer ${resolvedToken}`);
   }
 
   return headers;
+}
+
+function resolveAccessToken(providedToken) {
+  return getStoredAccessToken() || providedToken || null;
 }
 
 function createRequestBody(body, headers) {
@@ -131,6 +168,74 @@ function createApiError(response, payload) {
   }
 
   return new ApiError(response.statusText || "Request failed.", response.status);
+}
+
+function shouldRetryAfterRefresh(path, hasRetried) {
+  if (hasRetried) {
+    return false;
+  }
+
+  if (!getStoredRefreshToken()) {
+    return false;
+  }
+
+  return !(
+    path.startsWith("/api/auth/login") ||
+    path.startsWith("/api/auth/google-login") ||
+    path.startsWith("/api/auth/register") ||
+    path.startsWith("/api/auth/logout") ||
+    path.startsWith("/api/auth/refresh-tokens")
+  );
+}
+
+async function refreshAccessToken() {
+  if (!getStoredRefreshToken()) {
+    return null;
+  }
+
+  if (!refreshAccessTokenPromise) {
+    refreshAccessTokenPromise = requestNewAccessToken()
+      .catch(() => {
+        clearStoredAuth();
+        notifyAuthExpired();
+        return null;
+      })
+      .finally(() => {
+        refreshAccessTokenPromise = null;
+      });
+  }
+
+  return refreshAccessTokenPromise;
+}
+
+async function requestNewAccessToken() {
+  const refreshToken = getStoredRefreshToken();
+
+  if (!refreshToken) {
+    return null;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/auth/refresh-tokens`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  const payload = await readResponseBody(response);
+
+  if (!response.ok) {
+    throw createApiError(response, payload);
+  }
+
+  if (!payload?.accessToken) {
+    throw new ApiError("Khong nhan duoc access token moi.", response.status || 401);
+  }
+
+  updateStoredAccessToken(payload.accessToken);
+  return payload.accessToken;
 }
 
 function getApiErrorMessage(payload, fallbackMessage) {

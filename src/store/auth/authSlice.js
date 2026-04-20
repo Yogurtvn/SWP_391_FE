@@ -86,6 +86,11 @@ const authSlice = createSlice({
     clearAuthError(state) {
       state.error = null;
     },
+    resetAuthState(state) {
+      clearSession(state);
+      state.isReady = true;
+      state.status = "idle";
+    },
     mergeCurrentUserProfile(state, action) {
       if (!state.user) {
         return;
@@ -159,7 +164,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearAuthError, mergeCurrentUserProfile } = authSlice.actions;
+export const { clearAuthError, resetAuthState, mergeCurrentUserProfile } = authSlice.actions;
 
 export const selectAuthState = (state) => state.auth;
 

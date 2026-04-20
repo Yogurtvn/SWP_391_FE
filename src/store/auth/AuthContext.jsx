@@ -6,6 +6,7 @@ import {
   loginWithGoogle as loginWithGoogleAction,
   logout as logoutAction,
   register as registerAction,
+  resetAuthState,
   selectAuthState,
 } from "@/store/auth/authSlice";
 
@@ -20,6 +21,15 @@ export function AuthProvider({ children }) {
 
     hasInitialized.current = true;
     void dispatch(initializeAuth());
+  }, [dispatch]);
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      dispatch(resetAuthState());
+    };
+
+    window.addEventListener("auth:expired", handleAuthExpired);
+    return () => window.removeEventListener("auth:expired", handleAuthExpired);
   }, [dispatch]);
 
   return <>{children}</>;

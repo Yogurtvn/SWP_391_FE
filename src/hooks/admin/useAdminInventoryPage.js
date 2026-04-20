@@ -20,7 +20,7 @@ export function useAdminInventoryPage() {
   const dispatch = useAppDispatch();
   const auth = useAppSelector(selectAuthState);
   const admin = useAppSelector(selectAdminState);
-  const { popupAlert, popupPrompt, popupElement } = usePopupDialog();
+  const { popupAlert, popupForm, popupElement } = usePopupDialog();
   const [receiptForm, setReceiptForm] = useState(DEFAULT_RECEIPT_FORM);
 
   useEffect(() => {
@@ -32,21 +32,36 @@ export function useAdminInventoryPage() {
   }, [auth.accessToken, auth.isReady, dispatch]);
 
   async function updateQuantity(item) {
-    const rawQuantity = await popupPrompt("Nhap so luong moi:", String(item.quantity ?? 0), {
-      title: "Sua so luong",
+    const formValues = await popupForm({
+      title: "Sua so luong ton kho",
+      message: `SKU: ${item.sku || "-"} | Variant ID: ${item.variantId}`,
       okText: "Luu",
-      placeholder: "So luong",
+      fields: [
+        {
+          name: "quantity",
+          label: "So luong",
+          type: "number",
+          required: true,
+          min: 0,
+          validate: (value) => {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed) || parsed < 0) {
+              return "So luong khong hop le.";
+            }
+            return "";
+          },
+        },
+      ],
+      initialValues: {
+        quantity: String(item.quantity ?? 0),
+      },
     });
 
-    if (rawQuantity == null || rawQuantity === "") {
+    if (!formValues) {
       return;
     }
 
-    const quantity = Number(rawQuantity);
-    if (Number.isNaN(quantity) || quantity < 0) {
-      await popupAlert("So luong khong hop le.");
-      return;
-    }
+    const quantity = Number(formValues.quantity);
 
     try {
       await dispatch(
@@ -67,51 +82,56 @@ export function useAdminInventoryPage() {
   }
 
   async function editPreOrder(item) {
-    const rawAllow = await popupPrompt(
-      "Cho phep pre-order? Nhap true hoac false:",
-      String(Boolean(item.isPreOrderAllowed)),
-      { title: "Pre-order", okText: "Tiep tuc" },
-    );
-
-    if (rawAllow == null || rawAllow === "") {
-      return;
-    }
-
-    const normalizedAllow = rawAllow.trim().toLowerCase();
-    if (!["true", "false"].includes(normalizedAllow)) {
-      await popupAlert("Chi nhap true hoac false.");
-      return;
-    }
-
-    const restockDateText = await popupPrompt(
-      "Nhap ngay du kien restock (YYYY-MM-DD), de trong neu khong co:",
-      item.expectedRestockDate ? new Date(item.expectedRestockDate).toISOString().slice(0, 10) : "",
-      { title: "Expected restock date", okText: "Tiep tuc" },
-    );
-
-    if (restockDateText == null) {
-      return;
-    }
-
-    const note = await popupPrompt("Nhap ghi chu pre-order:", item.preOrderNote || "", {
-      title: "Pre-order note",
+    const formValues = await popupForm({
+      title: "Cap nhat pre-order",
+      message: `SKU: ${item.sku || "-"} | Variant ID: ${item.variantId}`,
       okText: "Cap nhat",
+      fields: [
+        {
+          name: "isPreOrderAllowed",
+          label: "Cho phep pre-order",
+          type: "select",
+          required: true,
+          options: [
+            { value: "true", label: "Bat" },
+            { value: "false", label: "Tat" },
+          ],
+        },
+        {
+          name: "expectedRestockDate",
+          label: "Ngay du kien co hang",
+          type: "date",
+        },
+        {
+          name: "preOrderNote",
+          label: "Ghi chu pre-order",
+          type: "textarea",
+          placeholder: "Them ghi chu cho khach hang hoac kho...",
+        },
+      ],
+      initialValues: {
+        isPreOrderAllowed: String(Boolean(item.isPreOrderAllowed)),
+        expectedRestockDate: item.expectedRestockDate ? new Date(item.expectedRestockDate).toISOString().slice(0, 10) : "",
+        preOrderNote: item.preOrderNote || "",
+      },
     });
 
-    if (note == null) {
+    if (!formValues) {
       return;
     }
 
-    const expectedRestockDate = restockDateText ? new Date(`${restockDateText}T00:00:00`).toISOString() : null;
+    const expectedRestockDate = formValues.expectedRestockDate
+      ? new Date(`${formValues.expectedRestockDate}T00:00:00`).toISOString()
+      : null;
 
     try {
       await dispatch(
         saveAdminPreOrder({
           variantId: item.variantId,
           payload: {
-            isPreOrderAllowed: normalizedAllow === "true",
+            isPreOrderAllowed: formValues.isPreOrderAllowed === "true",
             expectedRestockDate,
-            preOrderNote: note.trim() || null,
+            preOrderNote: formValues.preOrderNote.trim() || null,
           },
         }),
       ).unwrap();

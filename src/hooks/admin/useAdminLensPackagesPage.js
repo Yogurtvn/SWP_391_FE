@@ -22,7 +22,7 @@ export function useAdminLensPackagesPage() {
   const dispatch = useAppDispatch();
   const auth = useAppSelector(selectAuthState);
   const admin = useAppSelector(selectAdminState);
-  const { popupAlert, popupConfirm, popupPrompt, popupElement } = usePopupDialog();
+  const { popupAlert, popupConfirm, popupForm, popupElement } = usePopupDialog();
   const [form, setForm] = useState(DEFAULT_LENS_FORM);
 
   useEffect(() => {
@@ -54,36 +54,46 @@ export function useAdminLensPackagesPage() {
   }
 
   async function editLens(item) {
-    const lensName = await popupPrompt("Nhap ten lens moi:", item.lensName || "", {
+    const formValues = await popupForm({
       title: "Sua lens type",
-      okText: "Luu",
-    });
-
-    if (!lensName) {
-      return;
-    }
-
-    const rawPrice = await popupPrompt("Nhap gia moi:", String(item.price ?? 0), {
-      title: "Gia lens type",
-      okText: "Tiep tuc",
-    });
-
-    if (rawPrice == null || rawPrice === "") {
-      return;
-    }
-
-    const price = Number(rawPrice);
-    if (Number.isNaN(price) || price < 0) {
-      await popupAlert("Gia khong hop le.");
-      return;
-    }
-
-    const description = await popupPrompt("Nhap mo ta:", item.description || "", {
-      title: "Mo ta lens type",
+      message: `Lens code: ${item.lensCode}`,
       okText: "Cap nhat",
+      fields: [
+        {
+          name: "lensName",
+          label: "Ten lens",
+          type: "text",
+          required: true,
+        },
+        {
+          name: "price",
+          label: "Gia",
+          type: "number",
+          required: true,
+          min: 0,
+          validate: (value) => {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed) || parsed < 0) {
+              return "Gia khong hop le.";
+            }
+            return "";
+          },
+        },
+        {
+          name: "description",
+          label: "Mo ta",
+          type: "textarea",
+          placeholder: "Mo ta goi trong kinh...",
+        },
+      ],
+      initialValues: {
+        lensName: item.lensName || "",
+        price: String(item.price ?? 0),
+        description: item.description || "",
+      },
     });
 
-    if (description == null) {
+    if (!formValues) {
       return;
     }
 
@@ -93,9 +103,9 @@ export function useAdminLensPackagesPage() {
           lensTypeId: item.lensTypeId,
           payload: {
             lensCode: item.lensCode,
-            lensName: lensName.trim(),
-            price,
-            description: description.trim() || null,
+            lensName: formValues.lensName.trim(),
+            price: Number(formValues.price),
+            description: formValues.description.trim() || null,
             isActive: Boolean(item.isActive),
           },
         }),

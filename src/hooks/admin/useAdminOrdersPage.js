@@ -42,7 +42,7 @@ export function useAdminOrdersPage() {
   const navigate = useNavigate();
   const auth = useAppSelector(selectAuthState);
   const admin = useAppSelector(selectAdminState);
-  const { popupAlert, popupPrompt, popupElement } = usePopupDialog();
+  const { popupAlert, popupForm, popupElement } = usePopupDialog();
 
   const [filters, setFilters] = useState({
     page: 1,
@@ -128,13 +128,32 @@ export function useAdminOrdersPage() {
   }
 
   async function updateOrderStatus(orderId) {
-    const nextStatus = await popupPrompt(
-      `Nhap trang thai moi (${ADMIN_ORDER_STATUSES.join(", ")}):`,
-      currentOrder?.orderStatus || selectedOrderSummary?.orderStatus || "",
-      { title: "Doi trang thai don", okText: "Cap nhat" },
-    );
+    const formValues = await popupForm({
+      title: "Doi trang thai don",
+      message: "Chon trang thai hop le va them ghi chu neu can.",
+      okText: "Cap nhat",
+      fields: [
+        {
+          name: "orderStatus",
+          label: "Trang thai don",
+          type: "select",
+          required: true,
+          options: ADMIN_ORDER_STATUSES.map((status) => ({ value: status, label: status })),
+        },
+        {
+          name: "note",
+          label: "Ghi chu",
+          type: "textarea",
+          placeholder: "Them ghi chu cho lich su cap nhat...",
+        },
+      ],
+      initialValues: {
+        orderStatus: currentOrder?.orderStatus || selectedOrderSummary?.orderStatus || ADMIN_ORDER_STATUSES[0],
+        note: "",
+      },
+    });
 
-    if (!nextStatus) {
+    if (!formValues) {
       return;
     }
 
@@ -142,7 +161,10 @@ export function useAdminOrdersPage() {
       await dispatch(
         patchAdminOrderStatus({
           orderId,
-          payload: { orderStatus: nextStatus, note: "Updated by admin" },
+          payload: {
+            orderStatus: formValues.orderStatus,
+            note: formValues.note?.trim() || "Updated by admin",
+          },
         }),
       ).unwrap();
 
@@ -157,13 +179,32 @@ export function useAdminOrdersPage() {
   }
 
   async function updateShippingStatus(orderId) {
-    const nextStatus = await popupPrompt(
-      `Nhap trang thai van chuyen (${ADMIN_SHIPPING_STATUSES.join(", ")}):`,
-      currentOrder?.shippingStatus || selectedOrderSummary?.shippingStatus || "",
-      { title: "Doi trang thai van chuyen", okText: "Cap nhat" },
-    );
+    const formValues = await popupForm({
+      title: "Doi trang thai van chuyen",
+      message: "Chon trang thai van chuyen hop le.",
+      okText: "Cap nhat",
+      fields: [
+        {
+          name: "shippingStatus",
+          label: "Trang thai van chuyen",
+          type: "select",
+          required: true,
+          options: ADMIN_SHIPPING_STATUSES.map((status) => ({ value: status, label: status })),
+        },
+        {
+          name: "note",
+          label: "Ghi chu",
+          type: "textarea",
+          placeholder: "Them ghi chu giao hang...",
+        },
+      ],
+      initialValues: {
+        shippingStatus: currentOrder?.shippingStatus || selectedOrderSummary?.shippingStatus || ADMIN_SHIPPING_STATUSES[0],
+        note: "",
+      },
+    });
 
-    if (!nextStatus) {
+    if (!formValues) {
       return;
     }
 
@@ -171,7 +212,10 @@ export function useAdminOrdersPage() {
       await dispatch(
         patchAdminShippingStatus({
           orderId,
-          payload: { shippingStatus: nextStatus, note: "Updated by admin" },
+          payload: {
+            shippingStatus: formValues.shippingStatus,
+            note: formValues.note?.trim() || "Updated by admin",
+          },
         }),
       ).unwrap();
 

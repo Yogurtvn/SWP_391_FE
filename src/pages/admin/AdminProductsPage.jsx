@@ -78,6 +78,7 @@ export default function AdminProductsPage() {
     productDetail,
     form,
     editForm,
+    editVariants,
     currentColorForm,
     draftVariants,
     productSummaries,
@@ -445,11 +446,13 @@ export default function AdminProductsPage() {
 
       {ui.isEditModalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-3xl rounded-2xl border-2 border-gray-300 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b-2 border-gray-300 p-6">
+          <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-2xl border-2 border-gray-300 bg-white shadow-2xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b-2 border-gray-300 bg-white p-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Chinh Sua San Pham</h2>
-                <p className="mt-1 text-sm text-gray-500">Cap nhat thong tin co ban cua san pham.</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Chinh sua thong tin, hinh anh va variant trong cung mot modal.
+                </p>
               </div>
               <button
                 type="button"
@@ -462,105 +465,313 @@ export default function AdminProductsPage() {
             </div>
 
             <form onSubmit={actions.submitEditProduct} className="p-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 block text-sm font-bold text-gray-700">
-                    Ten san pham <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.productName}
-                    onChange={(event) => actions.setEditFormField("productName", event.target.value)}
-                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    required
-                  />
-                </div>
+              {ui.detailLoading && !productDetail ? (
+                <p className="text-sm text-gray-500">Dang tai du lieu san pham...</p>
+              ) : (
+                <>
+                  <div className="mb-6">
+                    <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                        <ImageIcon className="h-4 w-4 text-primary" />
+                      </div>
+                      Thong Tin Co Ban
+                    </h3>
 
-                <div>
-                  <label className="mb-2 block text-sm font-bold text-gray-700">
-                    Danh muc <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={editForm.categoryId}
-                    onChange={(event) => actions.setEditFormField("categoryId", event.target.value)}
-                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
-                    required
-                  >
-                    <option value="">Chon danh muc</option>
-                    {categories.map((category) => (
-                      <option key={category.categoryId} value={category.categoryId}>
-                        {category.categoryName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <div className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-sm font-bold text-gray-700">
+                            Ten san pham <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={editForm.productName}
+                            onChange={(event) => actions.setEditFormField("productName", event.target.value)}
+                            className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            required
+                          />
+                        </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-bold text-gray-700">
-                    Loai san pham <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={editForm.productType}
-                    onChange={(event) => actions.setEditFormField("productType", event.target.value)}
-                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
-                  >
-                    <option value="Frame">Frame</option>
-                    <option value="Sunglasses">Sunglasses</option>
-                    <option value="Lens">Lens</option>
-                  </select>
-                </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-bold text-gray-700">
+                            Danh muc <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={editForm.categoryId}
+                            onChange={(event) => actions.setEditFormField("categoryId", event.target.value)}
+                            className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
+                            required
+                          >
+                            <option value="">Chon danh muc</option>
+                            {categories.map((category) => (
+                              <option key={category.categoryId} value={category.categoryId}>
+                                {category.categoryName}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
 
-                <div>
-                  <label className="mb-2 block text-sm font-bold text-gray-700">
-                    Gia (VND) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={editForm.basePrice}
-                    onChange={(event) => actions.setEditFormField("basePrice", event.target.value)}
-                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                    required
-                  />
-                </div>
-              </div>
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <div>
+                          <label className="mb-2 block text-sm font-bold text-gray-700">
+                            Loai san pham <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            value={editForm.productType}
+                            onChange={(event) => actions.setEditFormField("productType", event.target.value)}
+                            className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
+                          >
+                            <option value="Frame">Frame</option>
+                            <option value="Sunglasses">Sunglasses</option>
+                            <option value="Lens">Lens</option>
+                          </select>
+                        </div>
 
-              <div className="mt-4">
-                <label className="mb-2 block text-sm font-bold text-gray-700">Mo ta</label>
-                <textarea
-                  value={editForm.description}
-                  onChange={(event) => actions.setEditFormField("description", event.target.value)}
-                  rows={4}
-                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-bold text-gray-700">
+                            Gia (VND) <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editForm.basePrice}
+                            onChange={(event) => actions.setEditFormField("basePrice", event.target.value)}
+                            className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            required
+                          />
+                        </div>
 
-              <label className="mt-4 flex items-center gap-3 rounded-xl border-2 border-gray-300 px-4 py-3 font-semibold text-gray-900">
-                <input
-                  type="checkbox"
-                  checked={editForm.prescriptionCompatible}
-                  onChange={(event) => actions.setEditFormField("prescriptionCompatible", event.target.checked)}
-                />
-                Ho tro kinh thuoc
-              </label>
+                        <label className="flex items-center gap-3 rounded-xl border-2 border-gray-300 px-4 py-3 font-semibold text-gray-900">
+                          <input
+                            type="checkbox"
+                            checked={editForm.prescriptionCompatible}
+                            onChange={(event) => actions.setEditFormField("prescriptionCompatible", event.target.checked)}
+                          />
+                          Ho tro kinh thuoc
+                        </label>
+                      </div>
 
-              <div className="mt-6 flex items-center gap-3 border-t-2 border-gray-200 pt-6">
-                <button
-                  type="submit"
-                  className="flex-1 rounded-xl border-2 border-primary bg-primary py-3 text-lg font-bold text-white transition hover:bg-primary/90 disabled:opacity-60"
-                  disabled={ui.isUpdatingProduct}
-                >
-                  {ui.isUpdatingProduct ? "Dang cap nhat..." : "Luu Thay Doi"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => actions.closeEditModal()}
-                  className="flex-1 rounded-xl border-2 border-gray-300 py-3 text-lg font-bold transition hover:bg-gray-50"
-                  disabled={ui.isUpdatingProduct}
-                >
-                  Huy
-                </button>
-              </div>
+                      <div>
+                        <label className="mb-2 block text-sm font-bold text-gray-700">Mo ta</label>
+                        <textarea
+                          value={editForm.description}
+                          onChange={(event) => actions.setEditFormField("description", event.target.value)}
+                          rows={4}
+                          className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-t-2 border-gray-200 pt-6">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                          <ImageIcon className="h-4 w-4 text-primary" />
+                        </div>
+                        Hinh Anh San Pham
+                      </h3>
+
+                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-400 px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50">
+                        <Upload className="h-5 w-5" />
+                        Tai len hinh anh
+                        <input type="file" multiple accept="image/*" className="hidden" onChange={actions.uploadImages} />
+                      </label>
+                    </div>
+
+                    {(productDetail?.images ?? []).length === 0 ? (
+                      <div className="rounded-xl border-2 border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
+                        San pham chua co hinh anh.
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                        {(productDetail?.images ?? []).map((image) => (
+                          <div key={image.imageId} className="rounded-2xl border-2 border-gray-200 bg-gray-50 p-4">
+                            <img
+                              src={image.imageUrl}
+                              alt={`Product ${image.imageId}`}
+                              className="h-52 w-full rounded-xl object-cover"
+                            />
+                            <div className="mt-3 flex items-center justify-between gap-3 text-sm text-gray-500">
+                              <span>#{image.imageId} - order {image.displayOrder}</span>
+                              <span className={image.isPrimary ? "font-bold text-primary" : ""}>
+                                {image.isPrimary ? "Anh chinh" : "Anh phu"}
+                              </span>
+                            </div>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => actions.setPrimaryImage(image)}
+                                className="rounded-xl border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-50"
+                              >
+                                Dat anh chinh
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => actions.deleteImage(image)}
+                                className="rounded-xl border-2 border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50"
+                              >
+                                Xoa anh
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t-2 border-gray-200 pt-6">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                          <Palette className="h-4 w-4 text-primary" />
+                        </div>
+                        Variant Va Ton Kho
+                      </h3>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          actions.openVariantModal({
+                            productId: editForm.productId,
+                            productName: editForm.productName,
+                            basePrice: editForm.basePrice,
+                          })
+                        }
+                        className="inline-flex items-center gap-2 rounded-xl border-2 border-primary bg-primary px-5 py-3 font-bold text-white transition hover:bg-primary/90"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Them variant
+                      </button>
+                    </div>
+
+                    {editVariants.length === 0 ? (
+                      <div className="rounded-xl border-2 border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
+                        San pham chua co variant.
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {editVariants.map((variant) => {
+                          const isSaving = ui.savingVariantIds.includes(variant.variantId);
+                          const isDeleting = ui.deletingVariantIds.includes(variant.variantId);
+
+                          return (
+                            <div key={variant.variantId} className="rounded-2xl border-2 border-gray-200 bg-gray-50 p-4">
+                              <div className="mb-4 flex items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-base font-bold text-gray-900">Variant #{variant.variantId}</p>
+                                  <p className="text-sm text-gray-500">Cap nhat SKU, mau, kich thuoc, gia va ton kho.</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => actions.saveEditVariant(variant.variantId)}
+                                    className="rounded-xl border-2 border-primary bg-primary px-4 py-2 text-sm font-bold text-white transition hover:bg-primary/90 disabled:opacity-60"
+                                    disabled={isSaving || isDeleting}
+                                  >
+                                    {isSaving ? "Dang luu..." : "Luu variant"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => actions.deleteEditVariant(variant.variantId)}
+                                    className="rounded-xl border-2 border-red-300 bg-white px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
+                                    disabled={isSaving || isDeleting}
+                                  >
+                                    {isDeleting ? "Dang xoa..." : "Xoa variant"}
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                <div>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">SKU</label>
+                                  <input
+                                    type="text"
+                                    value={variant.sku}
+                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "sku", event.target.value)}
+                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Mau sac</label>
+                                  <input
+                                    type="text"
+                                    value={variant.color}
+                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "color", event.target.value)}
+                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Kich thuoc</label>
+                                  <input
+                                    type="text"
+                                    value={variant.size}
+                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "size", event.target.value)}
+                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Frame type</label>
+                                  <input
+                                    type="text"
+                                    value={variant.frameType}
+                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "frameType", event.target.value)}
+                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Gia</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={variant.price}
+                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "price", event.target.value)}
+                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Ton kho</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={variant.quantity}
+                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "quantity", event.target.value)}
+                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex items-center gap-3 border-t-2 border-gray-200 pt-6">
+                    <button
+                      type="submit"
+                      className="flex-1 rounded-xl border-2 border-primary bg-primary py-3 text-lg font-bold text-white transition hover:bg-primary/90 disabled:opacity-60"
+                      disabled={ui.isUpdatingProduct}
+                    >
+                      {ui.isUpdatingProduct ? "Dang cap nhat..." : "Luu thong tin san pham"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => actions.closeEditModal()}
+                      className="flex-1 rounded-xl border-2 border-gray-300 py-3 text-lg font-bold transition hover:bg-gray-50"
+                      disabled={ui.isUpdatingProduct}
+                    >
+                      Dong
+                    </button>
+                  </div>
+                </>
+              )}
             </form>
           </div>
         </div>
@@ -868,7 +1079,7 @@ export default function AdminProductsPage() {
         </div>
       ) : null}
 
-      {productDetail ? (
+      {ui.isDetailModalOpen && productDetail ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
           <div className="max-h-[90vh] w-full max-w-6xl overflow-auto rounded-[1.75rem] bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">

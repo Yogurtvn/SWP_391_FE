@@ -5,6 +5,7 @@ import {
   createProduct,
   createProductVariant,
   createStockReceipt,
+  deleteVariant,
   deleteLensType,
   deleteProduct,
   deleteProductImage,
@@ -28,6 +29,7 @@ import {
   updateProduct,
   updateProductImageMetadata,
   updateProductStatus,
+  updateVariant,
   updateShippingStatus,
   uploadProductImages,
 } from "@/services/adminService";
@@ -444,6 +446,38 @@ export const createAdminVariant = createAsyncThunk(
       return await createProductVariant(productId, payload, token);
     } catch (error) {
       return rejectWithValue(getErrorMessage(error, "Khong tao duoc variant."));
+    }
+  },
+);
+
+export const updateAdminVariant = createAsyncThunk(
+  "admin/updateVariant",
+  async ({ variantId, payload }, { getState, rejectWithValue }) => {
+    const token = getAdminToken(getState, rejectWithValue);
+    if (typeof token !== "string") {
+      return token;
+    }
+
+    try {
+      return await updateVariant(variantId, payload, token);
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc variant."));
+    }
+  },
+);
+
+export const removeAdminVariant = createAsyncThunk(
+  "admin/removeVariant",
+  async (variantId, { getState, rejectWithValue }) => {
+    const token = getAdminToken(getState, rejectWithValue);
+    if (typeof token !== "string") {
+      return token;
+    }
+
+    try {
+      return await deleteVariant(variantId, token);
+    } catch (error) {
+      return rejectWithValue(getErrorMessage(error, "Khong xoa duoc variant."));
     }
   },
 );

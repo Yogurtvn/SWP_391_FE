@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
-import { getProductById } from "@/services/adminService";
+import { getProductById, getVariantById } from "@/services/adminService";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
   clearAdminCurrentProduct,
   createAdminProduct,
-  updateAdminProduct,
   createAdminVariant,
   fetchAdminProductDetail,
   fetchAdminProducts,
   removeAdminProduct,
   removeAdminProductImage,
+  removeAdminVariant,
   selectAdminState,
   setAdminPrimaryProductImage,
   toggleAdminProductStatus,
+  updateAdminProduct,
+  updateAdminVariant,
   uploadAdminProductImages,
 } from "@/store/admin/adminSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -62,6 +64,21 @@ const DEFAULT_EDIT_PRODUCT_FORM = {
   description: "",
 };
 
+function createEmptyEditVariant(variantId = null) {
+  return {
+    variantId,
+    sku: "",
+    price: "",
+    quantity: "0",
+    color: "",
+    size: "",
+    frameType: "",
+    isPreOrderAllowed: false,
+    expectedRestockDate: "",
+    preOrderNote: "",
+  };
+}
+
 function normalizeSkuSegment(value) {
   return String(value || "")
     .trim()
@@ -103,6 +120,23 @@ function buildEditProductForm(detail) {
   };
 }
 
+function buildEditVariantForm(variant, fallbackPrice = 0) {
+  const form = createEmptyEditVariant(variant?.variantId ?? null);
+
+  return {
+    ...form,
+    sku: variant?.sku ?? "",
+    price: String(variant?.price ?? fallbackPrice ?? ""),
+    quantity: String(variant?.quantity ?? 0),
+    color: variant?.color ?? "",
+    size: variant?.size ?? "",
+    frameType: variant?.frameType ?? "",
+    isPreOrderAllowed: Boolean(variant?.isPreOrderAllowed),
+    expectedRestockDate: variant?.expectedRestockDate ? String(variant.expectedRestockDate).slice(0, 10) : "",
+    preOrderNote: variant?.preOrderNote ?? "",
+  };
+}
+
 export function useAdminProductsPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
@@ -116,6 +150,7 @@ export function useAdminProductsPage() {
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [productSummaries, setProductSummaries] = useState({});
   const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
   const [isCreatingVariant, setIsCreatingVariant] = useState(false);
   const [variantForm, setVariantForm] = useState(DEFAULT_VARIANT_FORM);
@@ -123,6 +158,9 @@ export function useAdminProductsPage() {
   const [isLoadingEditProduct, setIsLoadingEditProduct] = useState(false);
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
   const [editForm, setEditForm] = useState(DEFAULT_EDIT_PRODUCT_FORM);
+  const [editVariants, setEditVariants] = useState([]);
+  const [savingVariantIds, setSavingVariantIds] = useState([]);
+  const [deletingVariantIds, setDeletingVariantIds] = useState([]);
 
   useEffect(() => {
     if (!auth.isReady || !auth.accessToken) {
@@ -192,8 +230,55 @@ export function useAdminProductsPage() {
     setDraftVariants([]);
   }
 
+  function resetEditModalState() {
+    setEditForm(DEFAULT_EDIT_PRODUCT_FORM);
+    setEditVariants([]);
+    setSavingVariantIds([]);
+    setDeletingVariantIds([]);
+  }
+
+  function clearCurrentProductIfUnused(nextDetailOpen, nextEditOpen) {
+    if (!nextDetailOpen && !nextEditOpen) {
+      dispatch(clearAdminCurrentProduct());
+    }
+  }
+
+  async function loadProductForEditing(productId, syncVariants = true) {
+    const detail = await dispatch(fetchAdminProductDetail(productId)).unwrap();
+
+    if (!syncVariants || !auth.accessToken) {
+      return detail;
+    }
+
+    const variants = await Promise.all(
+      (detail?.variants ?? []).map(async (variant) => {
+        try {
+          return await getVariantById(variant.variantId, auth.accessToken);
+        } catch {
+          return variant;
+        }
+      }),
+    );
+
+    setEditVariants(variants.map((variant) => buildEditVariantForm(variant, detail?.basePrice ?? 0)));
+    return detail;
+  }
+
   function setCurrentColorField(field, value) {
     setCurrentColorForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function setEditVariantField(variantId, field, value) {
+    setEditVariants((current) =>
+      current.map((variant) =>
+        variant.variantId === variantId
+          ? {
+              ...variant,
+              [field]: value,
+            }
+          : variant,
+      ),
+    );
   }
 
   function attachColorImages(fileList) {
@@ -377,7 +462,8 @@ export function useAdminProductsPage() {
     setIsLoadingEditProduct(true);
 
     try {
-      const detail = await getProductById(product.productId, auth.accessToken);
+      const detail = await loadProductForEditing(product.productId, true);
+      setIsDetailModalOpen(false);
       setEditForm(buildEditProductForm(detail));
       setIsEditModalOpen(true);
     } catch (error) {
@@ -387,13 +473,15 @@ export function useAdminProductsPage() {
     }
   }
 
-  function closeEditModal(forceClose = false) {
-    if (isUpdatingProduct && !forceClose) {
+  function closeEditModal() {
+    if (isUpdatingProduct) {
       return;
     }
 
+    const nextDetailOpen = isDetailModalOpen;
     setIsEditModalOpen(false);
-    setEditForm(DEFAULT_EDIT_PRODUCT_FORM);
+    resetEditModalState();
+    clearCurrentProductIfUnused(nextDetailOpen, false);
   }
 
   async function submitEditProduct(event) {
@@ -427,12 +515,8 @@ export function useAdminProductsPage() {
       ).unwrap();
 
       await dispatch(fetchAdminProducts()).unwrap();
-
-      if (admin.currentProduct.data?.productId === editForm.productId) {
-        await dispatch(fetchAdminProductDetail(editForm.productId)).unwrap();
-      }
-
-      closeEditModal(true);
+      const refreshedDetail = await loadProductForEditing(editForm.productId, true);
+      setEditForm(buildEditProductForm(refreshedDetail));
       await popupAlert("Cap nhat san pham thanh cong.");
       return true;
     } catch (error) {
@@ -440,6 +524,88 @@ export function useAdminProductsPage() {
       return false;
     } finally {
       setIsUpdatingProduct(false);
+    }
+  }
+
+  async function saveEditVariant(variantId) {
+    const variant = editVariants.find((item) => item.variantId === variantId);
+
+    if (!variant) {
+      return;
+    }
+
+    const normalizedSku = variant.sku.trim();
+    const price = Number(variant.price);
+    const quantity = Number(variant.quantity);
+
+    if (!normalizedSku) {
+      await popupAlert("SKU variant khong duoc de trong.");
+      return;
+    }
+
+    if (Number.isNaN(price) || price < 0 || Number.isNaN(quantity) || quantity < 0) {
+      await popupAlert("Gia hoac so luong variant khong hop le.");
+      return;
+    }
+
+    setSavingVariantIds((current) => [...current, variantId]);
+
+    try {
+      await dispatch(
+        updateAdminVariant({
+          variantId,
+          payload: {
+            sku: normalizedSku,
+            price,
+            quantity,
+            color: variant.color.trim() || null,
+            size: variant.size.trim() || null,
+            frameType: variant.frameType.trim() || null,
+            isPreOrderAllowed: variant.isPreOrderAllowed,
+            expectedRestockDate: variant.isPreOrderAllowed && variant.expectedRestockDate ? variant.expectedRestockDate : null,
+            preOrderNote: variant.isPreOrderAllowed ? variant.preOrderNote.trim() || null : null,
+          },
+        }),
+      ).unwrap();
+
+      if (editForm.productId) {
+        await dispatch(fetchAdminProducts()).unwrap();
+        await loadProductForEditing(editForm.productId, true);
+      }
+
+      await popupAlert("Cap nhat variant thanh cong.");
+    } catch (error) {
+      await popupAlert(error || "Khong cap nhat duoc variant.");
+    } finally {
+      setSavingVariantIds((current) => current.filter((item) => item !== variantId));
+    }
+  }
+
+  async function deleteEditVariant(variantId) {
+    const isConfirmed = await popupConfirm("Ban co chac muon xoa variant nay?", {
+      title: "Xoa variant",
+      okText: "Xoa",
+    });
+
+    if (!isConfirmed) {
+      return;
+    }
+
+    setDeletingVariantIds((current) => [...current, variantId]);
+
+    try {
+      await dispatch(removeAdminVariant(variantId)).unwrap();
+
+      if (editForm.productId) {
+        await dispatch(fetchAdminProducts()).unwrap();
+        await loadProductForEditing(editForm.productId, true);
+      }
+
+      await popupAlert("Da xoa variant.");
+    } catch (error) {
+      await popupAlert(error || "Khong xoa duoc variant.");
+    } finally {
+      setDeletingVariantIds((current) => current.filter((item) => item !== variantId));
     }
   }
 
@@ -490,8 +656,8 @@ export function useAdminProductsPage() {
       setVariantForm(DEFAULT_VARIANT_FORM);
       await dispatch(fetchAdminProducts()).unwrap();
 
-      if (admin.currentProduct.data?.productId === variantForm.productId) {
-        await dispatch(fetchAdminProductDetail(variantForm.productId)).unwrap();
+      if (admin.currentProduct.data?.productId === variantForm.productId || editForm.productId === variantForm.productId) {
+        await loadProductForEditing(variantForm.productId, isEditModalOpen);
       }
     } catch (error) {
       await popupAlert(error || "Khong tao duoc variant.");
@@ -503,9 +669,16 @@ export function useAdminProductsPage() {
   async function viewDetail(product) {
     try {
       await dispatch(fetchAdminProductDetail(product.productId)).unwrap();
+      setIsDetailModalOpen(true);
     } catch (error) {
       await popupAlert(error || "Khong tai duoc chi tiet san pham.");
     }
+  }
+
+  function closeDetail() {
+    const nextEditOpen = isEditModalOpen;
+    setIsDetailModalOpen(false);
+    clearCurrentProductIfUnused(false, nextEditOpen);
   }
 
   async function toggleProductStatus(product) {
@@ -524,8 +697,8 @@ export function useAdminProductsPage() {
       );
       await dispatch(fetchAdminProducts()).unwrap();
 
-      if (admin.currentProduct.data?.productId === product.productId) {
-        await dispatch(fetchAdminProductDetail(product.productId)).unwrap();
+      if (admin.currentProduct.data?.productId === product.productId || editForm.productId === product.productId) {
+        await loadProductForEditing(product.productId, isEditModalOpen);
       }
     } catch (error) {
       const errorMessage = String(error || "");
@@ -558,9 +731,14 @@ export function useAdminProductsPage() {
 
     try {
       await dispatch(removeAdminProduct(product.productId)).unwrap();
-      if (admin.currentProduct.data?.productId === product.productId) {
+
+      if (admin.currentProduct.data?.productId === product.productId || editForm.productId === product.productId) {
+        setIsEditModalOpen(false);
+        setIsDetailModalOpen(false);
+        resetEditModalState();
         dispatch(clearAdminCurrentProduct());
       }
+
       await dispatch(fetchAdminProducts()).unwrap();
     } catch (error) {
       await popupAlert(error || "Khong xoa duoc san pham.");
@@ -569,7 +747,7 @@ export function useAdminProductsPage() {
 
   async function uploadImages(event) {
     const files = event.target.files;
-    const productId = admin.currentProduct.data?.productId;
+    const productId = admin.currentProduct.data?.productId ?? editForm.productId;
 
     if (!files?.length || !productId) {
       return;
@@ -577,7 +755,7 @@ export function useAdminProductsPage() {
 
     try {
       await dispatch(uploadAdminProductImages({ productId, files })).unwrap();
-      await dispatch(fetchAdminProductDetail(productId)).unwrap();
+      await loadProductForEditing(productId, isEditModalOpen);
     } catch (error) {
       await popupAlert(error || "Khong upload duoc anh san pham.");
     } finally {
@@ -586,7 +764,7 @@ export function useAdminProductsPage() {
   }
 
   async function setPrimaryImage(image) {
-    const productId = admin.currentProduct.data?.productId;
+    const productId = admin.currentProduct.data?.productId ?? editForm.productId;
 
     if (!productId) {
       return;
@@ -603,14 +781,14 @@ export function useAdminProductsPage() {
           },
         }),
       ).unwrap();
-      await dispatch(fetchAdminProductDetail(productId)).unwrap();
+      await loadProductForEditing(productId, isEditModalOpen);
     } catch (error) {
       await popupAlert(error || "Khong cap nhat duoc anh chinh.");
     }
   }
 
   async function deleteImage(image) {
-    const productId = admin.currentProduct.data?.productId;
+    const productId = admin.currentProduct.data?.productId ?? editForm.productId;
 
     if (!productId) {
       return;
@@ -618,7 +796,7 @@ export function useAdminProductsPage() {
 
     try {
       await dispatch(removeAdminProductImage({ productId, imageId: image.imageId })).unwrap();
-      await dispatch(fetchAdminProductDetail(productId)).unwrap();
+      await loadProductForEditing(productId, isEditModalOpen);
     } catch (error) {
       await popupAlert(error || "Khong xoa duoc anh.");
     }
@@ -630,6 +808,7 @@ export function useAdminProductsPage() {
     productDetail: admin.currentProduct.data,
     form,
     editForm,
+    editVariants,
     currentColorForm,
     draftVariants,
     productSummaries,
@@ -639,16 +818,20 @@ export function useAdminProductsPage() {
       isLoading: admin.products.status === "loading",
       isLoadingSummaries,
       detailLoading: admin.currentProduct.status === "loading",
+      isDetailModalOpen,
       isCreatingProduct,
       isEditModalOpen,
       isLoadingEditProduct,
       isUpdatingProduct,
       isVariantModalOpen,
       isCreatingVariant,
+      savingVariantIds,
+      deletingVariantIds,
     },
     actions: {
       setFormField: (field, value) => setForm((current) => ({ ...current, [field]: value })),
       setEditFormField: (field, value) => setEditForm((current) => ({ ...current, [field]: value })),
+      setEditVariantField,
       setCurrentColorField,
       attachColorImages,
       removeColorImage,
@@ -661,16 +844,19 @@ export function useAdminProductsPage() {
       openEditModal,
       closeEditModal,
       submitEditProduct,
+      saveEditVariant,
+      deleteEditVariant,
       openVariantModal,
       closeVariantModal,
       submitVariant,
       viewDetail,
+      closeDetail,
       toggleProductStatus,
       deleteProduct,
       uploadImages,
       setPrimaryImage,
       deleteImage,
-      clearDetail: () => dispatch(clearAdminCurrentProduct()),
+      clearDetail: closeDetail,
     },
     popupElement,
   };

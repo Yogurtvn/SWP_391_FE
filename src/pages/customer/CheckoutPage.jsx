@@ -617,6 +617,14 @@ export default function CheckoutPage() {
                         {item.size ? ` / ${item.size}` : ""}
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">{getCartItemTypeLabel(item)}</p>
+                      {item.orderType === "preOrder" && item.expectedRestockDate ? (
+                        <p className="mt-1 text-sm text-orange-700">
+                          Dự kiến có hàng: {formatDate(item.expectedRestockDate)}
+                        </p>
+                      ) : null}
+                      {item.orderType === "preOrder" && item.preOrderNote ? (
+                        <p className="mt-1 text-sm text-orange-700">{item.preOrderNote}</p>
+                      ) : null}
                       <p className="mt-1 text-sm text-muted-foreground">SL {item.quantity}</p>
                       <p className="mt-2 text-sm text-primary">{formatCurrency(item.totalPrice)}</p>
                     </div>
@@ -667,7 +675,9 @@ export default function CheckoutPage() {
               <div className="mt-4 flex items-start gap-3 rounded-2xl bg-secondary/60 p-4 text-sm text-muted-foreground">
                 <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
                 <p>
-                  Phí vận chuyển đang lấy từ API GHN của backend và được gửi kèm checkout để PayOS thu đúng tổng tiền.
+                  {checkoutOrderType === "preorder"
+                    ? "Đơn đặt trước sẽ ở trạng thái chờ hàng. Hệ thống sẽ gửi email khi sản phẩm về kho."
+                    : "Phí vận chuyển đang lấy từ API GHN của backend và được gửi kèm checkout để PayOS thu đúng tổng tiền."}
                 </p>
               </div>
             </div>
@@ -823,6 +833,24 @@ function formatCurrency(value) {
     style: "currency",
     currency: "VND",
   }).format(Number(value ?? 0));
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "Chưa cập nhật";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Chưa cập nhật";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 }
 
 function resolveErrorMessage(error, fallbackMessage) {

@@ -231,6 +231,13 @@ export default function OrderTrackingPage() {
                           SKU {item.sku || "Dang cap nhat"} - Mau {item.selectedColor}
                         </p>
                         <p className="mt-1 text-sm text-muted-foreground">So luong {item.quantity}</p>
+                        {order.orderType === "preOrder" ? (
+                          <div className="mt-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-900">
+                            <p>Don dat truoc dang cho hang ve kho.</p>
+                            {item.expectedRestockDate ? <p>Du kien co hang: {formatDate(item.expectedRestockDate)}</p> : null}
+                            {item.preOrderNote ? <p>{item.preOrderNote}</p> : null}
+                          </div>
+                        ) : null}
                       </div>
                       <p className="text-primary">{formatCurrency(item.lineTotal)}</p>
                     </div>
@@ -633,4 +640,18 @@ function formatCurrency(value) {
     style: "currency",
     currency: "VND",
   }).format(Number(value ?? 0));
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "chua cap nhat";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 }

@@ -238,6 +238,17 @@ function CartPage() {
                                   <p>✓ Tròng: {item.prescriptionDetails?.lensType}</p>
                                   <p>✓ Theo toa</p>
                                 </> : item.orderType === "preOrder" ? <p className="text-blue-600">• Đặt trước</p> : <p className="text-amber-600">• Hàng sẵn</p>}
+                              {!item.hasPrescription && (
+                                <p>
+                                  Tồn kho: {Number(item.stockQuantity ?? 0)}
+                                  {item.orderType === "preOrder" && item.expectedRestockDate
+                                    ? ` · Dự kiến ${formatDate(item.expectedRestockDate)}`
+                                    : ""}
+                                </p>
+                              )}
+                              {item.orderType === "preOrder" && item.preOrderNote ? (
+                                <p className="text-blue-700">{item.preOrderNote}</p>
+                              ) : null}
                             </div>
                           </div>
                           <div className="text-right">
@@ -539,6 +550,20 @@ function formatCurrency(value) {
     style: "currency",
     currency: "VND"
   }).format(Number(value ?? 0));
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "chưa cập nhật";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  }).format(date);
 }
 
 function resolveErrorMessage(error, fallbackMessage) {

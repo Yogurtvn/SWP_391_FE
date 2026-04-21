@@ -21,11 +21,12 @@ export async function getOrderById(token, orderId) {
   return apiGet(`${ORDERS_BASE_PATH}/${orderId}`, { token });
 }
 
-export function createCheckoutPayload({ cartItems, shippingInfo, paymentMethod, shippingFee = 0 }) {
+export function createCheckoutPayload({ cartItems, orderType, shippingInfo, paymentMethod, shippingFee = 0 }) {
   return {
     cartItemIds: (Array.isArray(cartItems) ? cartItems : [])
       .map((item) => Number(item?.cartItemId))
       .filter((cartItemId) => Number.isFinite(cartItemId) && cartItemId > 0),
+    orderType: toApiOrderType(orderType),
     receiverName: normalizeText(shippingInfo?.fullName) ?? "",
     receiverPhone: normalizeText(shippingInfo?.phone) ?? "",
     shippingAddress: composeShippingAddress(shippingInfo),
@@ -34,8 +35,9 @@ export function createCheckoutPayload({ cartItems, shippingInfo, paymentMethod, 
   };
 }
 
-export function buildOrderSummary({ checkoutResult, cartItems, shippingInfo, paymentMethod, shippingFee = 0 }) {
+export function buildOrderSummary({ checkoutResult, cartItems, orderType, shippingInfo, paymentMethod, shippingFee = 0 }) {
   const resolvedPaymentMethod = normalizePaymentMethod(paymentMethod);
+  const resolvedOrderType = checkoutResult?.orderType ?? toApiOrderType(orderType);
   const itemCount = (Array.isArray(cartItems) ? cartItems : []).reduce(
     (count, item) => count + Number(item?.quantity ?? 0),
     0,
@@ -50,6 +52,8 @@ export function buildOrderSummary({ checkoutResult, cartItems, shippingInfo, pay
   return {
     orderId: Number(checkoutResult?.orderId ?? 0),
     orderCreated: Boolean(checkoutResult?.orderId),
+    orderType: resolvedOrderType,
+    orderTypeLabel: getOrderTypeLabel(resolvedOrderType),
     orderStatus: checkoutResult?.orderStatus ?? "pending",
     orderStatusLabel: getOrderStatusLabel(checkoutResult?.orderStatus ?? "pending"),
     paymentMethod: resolvedPaymentMethod,
@@ -76,6 +80,11 @@ export function normalizeOrderDetail(order) {
         sku: item?.sku?.trim() || "",
         selectedColor: normalizeText(item?.selectedColor) ?? normalizeText(item?.variantColor) ?? "Mặc định",
         quantity: Number(item?.quantity ?? 0),
+        stockQuantity: Number(item?.stockQuantity ?? 0),
+        isReadyAvailable: Boolean(item?.isReadyAvailable),
+        isPreOrderAllowed: Boolean(item?.isPreOrderAllowed),
+        expectedRestockDate: item?.expectedRestockDate ?? null,
+        preOrderNote: normalizeText(item?.preOrderNote) ?? "",
         unitPrice: Number(item?.unitPrice ?? 0),
         lineTotal: Number(item?.lineTotal ?? 0),
         lensTypeId: Number(item?.lensTypeId ?? 0),
@@ -459,6 +468,22 @@ function normalizePaymentMethod(paymentMethod) {
   }
 
   return "cod";
+}
+
+function toApiOrderType(orderType) {
+  const normalizedOrderType = String(orderType ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+
+  switch (normalizedOrderType) {
+    case "preorder":
+      return "preOrder";
+    case "prescription":
+      return "prescription";
+    default:
+      return "ready";
+  }
 }
 
 function normalizeText(value) {

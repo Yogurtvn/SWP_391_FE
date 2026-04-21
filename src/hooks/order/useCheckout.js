@@ -26,7 +26,7 @@ export function useCheckout() {
       Array.from(
         new Set(
           cart.items
-            .map((item) => normalizeOrderType(item?.orderType))
+            .map(resolveCheckoutOrderType)
             .filter((value) => value.length > 0),
         ),
       ),
@@ -36,7 +36,7 @@ export function useCheckout() {
   const checkoutItems = useMemo(
     () => {
       if (requestedOrderType) {
-        return cart.items.filter((item) => normalizeOrderType(item?.orderType) === requestedOrderType);
+        return cart.items.filter((item) => resolveCheckoutOrderType(item) === requestedOrderType);
       }
 
       return orderTypes.length === 1 ? cart.items : [];
@@ -66,11 +66,12 @@ export function useCheckout() {
   );
 
   const shippingFee = 0;
-  const checkoutOrderType = requestedOrderType || normalizeOrderType(checkoutItems[0]?.orderType);
+  const checkoutOrderType = requestedOrderType || resolveCheckoutOrderType(checkoutItems[0]);
 
   async function submitCheckout({ shippingInfo, paymentMethod, shippingFee = 0 }) {
     const payload = createCheckoutPayload({
       cartItems: checkoutItems,
+      orderType: checkoutOrderType,
       shippingInfo,
       paymentMethod,
       shippingFee,
@@ -83,6 +84,7 @@ export function useCheckout() {
       orderSummary: buildOrderSummary({
         checkoutResult: result,
         cartItems: checkoutItems,
+        orderType: checkoutOrderType,
         shippingInfo,
         paymentMethod,
         shippingFee,
@@ -94,6 +96,7 @@ export function useCheckout() {
     return buildOrderSummary({
       checkoutResult: null,
       cartItems: checkoutItems,
+      orderType: checkoutOrderType,
       shippingInfo,
       paymentMethod,
       shippingFee,
@@ -119,5 +122,59 @@ export function useCheckout() {
 }
 
 function normalizeOrderType(orderType) {
-  return String(orderType ?? "").trim().toLowerCase();
+  const normalizedOrderType = String(orderType ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+
+  if (normalizedOrderType === "preorder") {
+    return "preorder";
+  }
+
+  if (normalizedOrderType === "prescription") {
+    return "prescription";
+  }
+
+  return normalizedOrderType === "ready" ? "ready" : "";
+}
+
+function resolveCheckoutOrderType(item) {
+  if (!item) {
+    return "";
+  }
+
+  if (item.hasPrescription || item.itemType === "prescriptionConfigured") {
+    return "prescription";
+  }
+
+  const explicitOrderType = normalizeOrderType(item.orderType);
+
+  if (explicitOrderType === "preorder") {
+    return "preorder";
+  }
+
+  if (explicitOrderType === "prescription") {
+    return "prescription";
+  }
+
+  if (isPreOrderCandidate(item)) {
+    return "preorder";
+  }
+
+  return "ready";
+}
+
+function isPreOrderCandidate(item) {
+  if (!item?.isPreOrderAllowed) {
+    return false;
+  }
+
+  if (item.isReadyAvailable === false) {
+    return true;
+  }
+
+  const stockQuantity = Number(item.stockQuantity ?? item.quantity ?? 0);
+  const quantity = Number(item.quantity ?? 0);
+
+  return Number.isFinite(stockQuantity) && Number.isFinite(quantity) && quantity > stockQuantity;
 }

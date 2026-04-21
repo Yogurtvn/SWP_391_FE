@@ -109,9 +109,14 @@ function normalizeCatalogListItem(item) {
   const productType = normalizeProductType(item?.productType);
   const price = normalizePrice(item?.basePrice);
   const image = resolveAssetUrl(item?.thumbnailUrl) ?? DEFAULT_IMAGE_URL;
-  const isAvailable = Boolean(item?.isAvailable);
-  const canPreOrder = Boolean(item?.isPreOrderAllowed);
-  const availabilityStatus = resolveAvailabilityStatus(isAvailable, canPreOrder);
+  const variants = Array.isArray(item?.variants) ? item.variants.map(normalizeVariant) : [];
+  const isReadyAvailable = variants.length > 0
+    ? variants.some((variant) => variant.isReadyAvailable)
+    : Boolean(item?.isReadyAvailable ?? item?.isAvailable);
+  const canPreOrder = variants.length > 0
+    ? variants.some((variant) => variant.isPreOrderAllowed)
+    : Boolean(item?.isPreOrderAllowed);
+  const availabilityStatus = resolveAvailabilityStatus(isReadyAvailable, canPreOrder);
 
   return {
     id: String(item?.productId ?? ""),
@@ -122,9 +127,11 @@ function normalizeCatalogListItem(item) {
     subtitle: getProductTypeLabel(productType),
     colors: [],
     inStock: availabilityStatus === "available",
+    isReadyAvailable,
     isPreOrderAllowed: canPreOrder,
     canPreOrder,
     availabilityStatus,
+    variants,
     productType,
     productTypeLabel: getProductTypeLabel(productType),
     product: createCartProduct({
@@ -135,6 +142,7 @@ function normalizeCatalogListItem(item) {
       productType,
       inStock: availabilityStatus === "available",
       allowPreOrder: canPreOrder,
+      variants,
     }),
   };
 }
@@ -147,8 +155,8 @@ function normalizeCatalogDetail(item) {
         .filter(Boolean)
     : [];
   const variants = Array.isArray(item?.variants) ? item.variants.map(normalizeVariant) : [];
-  const firstAvailableVariant = variants.find((variant) => variant.quantity > 0);
-  const firstPreOrderVariant = variants.find((variant) => variant.isPreOrderAllowed);
+  const firstAvailableVariant = variants.find((variant) => variant.isReadyAvailable);
+  const firstPreOrderVariant = variants.find((variant) => !variant.isReadyAvailable && variant.isPreOrderAllowed);
   const activeVariant = firstAvailableVariant ?? firstPreOrderVariant ?? variants[0] ?? null;
   const availabilityStatus = resolveDetailAvailabilityStatus(variants);
   const canPreOrder = variants.some((variant) => variant.isPreOrderAllowed);
@@ -174,6 +182,7 @@ function normalizeCatalogDetail(item) {
     selectedVariant: activeVariant,
     availabilityStatus,
     inStock: availabilityStatus === "available",
+    isReadyAvailable: Boolean(activeVariant?.isReadyAvailable),
     isPreOrderAllowed: Boolean(activeVariant?.isPreOrderAllowed),
     canPreOrder,
     product: createCartProduct({
@@ -186,6 +195,7 @@ function normalizeCatalogDetail(item) {
       allowPreOrder: canPreOrder,
       prescriptionCompatible: Boolean(item?.prescriptionCompatible),
       images: images.length > 0 ? images : [DEFAULT_IMAGE_URL],
+      variants,
     }),
   };
 }
@@ -199,8 +209,10 @@ function normalizeVariant(variant) {
     frameType: normalizeText(variant?.frameType),
     price: normalizePrice(variant?.price),
     quantity: Number(variant?.quantity ?? 0),
+    isReadyAvailable: Boolean(variant?.isReadyAvailable ?? Number(variant?.quantity ?? 0) > 0),
     isPreOrderAllowed: Boolean(variant?.isPreOrderAllowed),
     expectedRestockDate: variant?.expectedRestockDate ?? null,
+    preOrderNote: normalizeText(variant?.preOrderNote),
   };
 }
 
@@ -221,6 +233,7 @@ function createCartProduct({
   allowPreOrder,
   prescriptionCompatible = false,
   images,
+  variants,
 }) {
   return {
     id: String(id ?? ""),
@@ -233,6 +246,7 @@ function createCartProduct({
     inStock: Boolean(inStock),
     allowPreOrder: Boolean(allowPreOrder),
     prescriptionCompatible,
+    variants: Array.isArray(variants) ? variants : [],
   };
 }
 
@@ -293,11 +307,11 @@ function resolveAvailabilityStatus(isAvailable, isPreOrderAllowed) {
 }
 
 function resolveDetailAvailabilityStatus(variants) {
-  if (variants.some((variant) => variant.quantity > 0)) {
+  if (variants.some((variant) => variant.isReadyAvailable)) {
     return "available";
   }
 
-  if (variants.some((variant) => variant.isPreOrderAllowed)) {
+  if (variants.some((variant) => !variant.isReadyAvailable && variant.isPreOrderAllowed)) {
     return "preorder";
   }
 

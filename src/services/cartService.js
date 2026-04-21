@@ -159,23 +159,47 @@ export function getCartErrorMessage(error, fallbackMessage) {
 function normalizeCartItem(item, { cachedView, variantDetail }) {
   const normalizedView = cachedView ?? {};
   const image = normalizedView.image || PLACEHOLDER_IMAGE_URL;
-  const name = normalizedView.name || `Sản phẩm #${item?.variantId ?? "N/A"}`;
-  const color = normalizedView.selectedColor || variantDetail?.color || "Mặc định";
-  const size = normalizedView.size || variantDetail?.size || "";
-  const sku = normalizedView.sku || variantDetail?.sku || "";
+  const name = normalizeText(item?.productName) ?? normalizedView.name ?? `Sản phẩm #${item?.variantId ?? "N/A"}`;
+  const color =
+    normalizeText(item?.selectedColor) ??
+    normalizeText(item?.variantColor) ??
+    normalizedView.selectedColor ??
+    variantDetail?.color ??
+    "Mặc định";
+  const size = normalizeText(item?.variantSize) ?? normalizedView.size ?? variantDetail?.size ?? "";
+  const sku = normalizeText(item?.sku) ?? normalizedView.sku ?? variantDetail?.sku ?? "";
   const quantity = Number(item?.quantity ?? 0);
+  const stockQuantity = Number(item?.stockQuantity ?? variantDetail?.quantity ?? 0);
+  const isReadyAvailable = Boolean(item?.isReadyAvailable ?? stockQuantity >= quantity);
+  const isPreOrderAllowed = Boolean(item?.isPreOrderAllowed ?? variantDetail?.isPreOrderAllowed);
   const unitPrice = normalizePrice(item?.unitPrice);
   const totalPrice = normalizePrice(item?.totalPrice);
   const lensPriceTotal = normalizePrice(item?.prescription?.lensPrice);
   const lensPricePerUnit = quantity > 0 ? lensPriceTotal / quantity : lensPriceTotal;
+  const orderType = resolveCartItemOrderType({
+    rawOrderType: item?.orderType,
+    hasPrescription: Boolean(item?.prescription),
+    isReadyAvailable,
+    isPreOrderAllowed,
+  });
 
   return {
     id: `cart-${item?.cartItemId ?? item?.variantId ?? Date.now()}`,
     cartItemId: item?.cartItemId ?? 0,
     variantId: item?.variantId ?? 0,
     itemType: item?.itemType || "standard",
-    orderType: item?.orderType || "ready",
+    orderType,
     quantity,
+    stockQuantity,
+    isReadyAvailable,
+    isPreOrderAllowed,
+    expectedRestockDate: item?.expectedRestockDate ?? variantDetail?.expectedRestockDate ?? null,
+    preOrderNote: normalizeText(item?.preOrderNote) ?? variantDetail?.preOrderNote ?? null,
+    availabilityStatus: resolveCartItemAvailabilityStatus({
+      orderType,
+      isReadyAvailable,
+      isPreOrderAllowed,
+    }),
     unitPrice,
     totalPrice,
     framePrice: unitPrice,
@@ -203,8 +227,8 @@ function normalizeCartItem(item, { cachedView, variantDetail }) {
         }
       : null,
     product: {
-      id: String(normalizedView.productId ?? item?.variantId ?? ""),
-      productId: normalizedView.productId ?? null,
+      id: String(item?.productId ?? normalizedView.productId ?? item?.variantId ?? ""),
+      productId: item?.productId ?? normalizedView.productId ?? null,
       name,
       image,
       images: [image],
@@ -222,7 +246,43 @@ function normalizeVariantDetail(variant) {
     price: normalizePrice(variant?.price),
     quantity: Number(variant?.quantity ?? 0),
     isPreOrderAllowed: Boolean(variant?.isPreOrderAllowed),
+    isReadyAvailable: Boolean(variant?.isReadyAvailable ?? Number(variant?.quantity ?? 0) > 0),
+    expectedRestockDate: variant?.expectedRestockDate ?? null,
+    preOrderNote: normalizeText(variant?.preOrderNote),
   };
+}
+
+function resolveCartItemOrderType({ rawOrderType, hasPrescription, isReadyAvailable, isPreOrderAllowed }) {
+  if (hasPrescription) {
+    return "prescription";
+  }
+
+  const normalizedOrderType = String(rawOrderType ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+
+  if (normalizedOrderType === "preorder") {
+    return "preOrder";
+  }
+
+  if (normalizedOrderType === "prescription") {
+    return "prescription";
+  }
+
+  if (!isReadyAvailable && isPreOrderAllowed) {
+    return "preOrder";
+  }
+
+  return "ready";
+}
+
+function resolveCartItemAvailabilityStatus({ orderType, isReadyAvailable, isPreOrderAllowed }) {
+  if (orderType === "preOrder" || (!isReadyAvailable && isPreOrderAllowed)) {
+    return "preorder";
+  }
+
+  return isReadyAvailable ? "available" : "unavailable";
 }
 
 function normalizePrice(value) {

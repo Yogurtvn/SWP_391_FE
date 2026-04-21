@@ -111,6 +111,9 @@ export default function OrderSuccessPage() {
                 <h2 className="mb-4 text-lg">Cập nhật tiếp theo</h2>
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <p>Trạng thái hiện tại: {resolvedOrderSummary.orderStatusLabel}.</p>
+                  {resolvedOrderSummary.orderType === "preOrder" ? (
+                    <p>Đây là đơn đặt trước. Bạn sẽ nhận email khi sản phẩm về kho.</p>
+                  ) : null}
                   <p>Thanh toán: {resolvedOrderSummary.paymentStatusLabel}.</p>
                   <p>Bạn có thể mở chi tiết đơn hàng để theo dõi các mốc xử lý tiếp theo.</p>
                 </div>

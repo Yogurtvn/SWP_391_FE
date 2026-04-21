@@ -110,7 +110,6 @@ export default function PreOrderPage() {
       await addStandardItem({
         variantId: selectedVariant.variantId,
         quantity,
-        orderType: "preOrder",
         view: createCartItemView(state.product, selectedVariant),
       });
 
@@ -261,6 +260,11 @@ export default function PreOrderPage() {
                         </span>
                       ) : null}
                     </div>
+                    {variant.preOrderNote ? (
+                      <p className="mt-3 rounded-xl bg-orange-50 px-3 py-2 text-sm text-orange-800">
+                        {variant.preOrderNote}
+                      </p>
+                    ) : null}
                   </button>
                 );
               })}

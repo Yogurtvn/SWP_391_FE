@@ -54,11 +54,16 @@ export const addStandardCartItem = createAsyncThunk(
     const nextViewCache = mergeCartViewCache(cart.viewCache, payload?.view);
 
     try {
-      await createStandardCartItem(auth.accessToken, {
+      const requestBody = {
         variantId: payload.variantId,
         quantity: payload.quantity ?? 1,
-        orderType: payload.orderType ?? "ready",
-      });
+      };
+
+      if (payload.orderType) {
+        requestBody.orderType = payload.orderType;
+      }
+
+      await createStandardCartItem(auth.accessToken, requestBody);
 
       return await loadCartSnapshot(auth.accessToken, nextViewCache);
     } catch (error) {

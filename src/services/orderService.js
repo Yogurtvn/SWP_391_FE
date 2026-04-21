@@ -1,5 +1,6 @@
 ﻿import { getCatalogProductById } from "@/services/catalogService";
 import { ApiError, apiGet, apiPost } from "@/services/apiClient";
+import { getPrescriptionStatusLabel } from "@/services/prescriptionService";
 
 const ORDERS_BASE_PATH = "/api/orders";
 const DEFAULT_ORDER_PAGE_SIZE = 50;
@@ -77,6 +78,10 @@ export function normalizeOrderDetail(order) {
         quantity: Number(item?.quantity ?? 0),
         unitPrice: Number(item?.unitPrice ?? 0),
         lineTotal: Number(item?.lineTotal ?? 0),
+        lensTypeId: Number(item?.lensTypeId ?? 0),
+        lensPrice: Number(item?.lensPrice ?? 0),
+        prescriptionId: Number(item?.prescriptionId ?? item?.prescription?.prescriptionId ?? 0),
+        prescription: normalizeOrderPrescription(item?.prescription),
       }))
     : [];
 
@@ -311,6 +316,42 @@ export function formatDateTime(value) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function normalizeOrderPrescription(prescription) {
+  if (!prescription) {
+    return null;
+  }
+
+  return {
+    prescriptionId: Number(prescription?.prescriptionId ?? 0),
+    lensTypeId: Number(prescription?.lensTypeId ?? 0),
+    lensTypeCode: normalizeText(prescription?.lensTypeCode) ?? "",
+    lensMaterial: normalizeText(prescription?.lensMaterial) ?? "",
+    coatings: Array.isArray(prescription?.coatings) ? prescription.coatings.filter(Boolean) : [],
+    lensBasePrice: Number(prescription?.lensBasePrice ?? 0),
+    materialPrice: Number(prescription?.materialPrice ?? 0),
+    coatingPrice: Number(prescription?.coatingPrice ?? 0),
+    totalLensPrice: Number(prescription?.totalLensPrice ?? 0),
+    rightEye: normalizePrescriptionEye(prescription?.rightEye),
+    leftEye: normalizePrescriptionEye(prescription?.leftEye),
+    pd: Number(prescription?.pd ?? 0),
+    prescriptionImageUrl: normalizeText(prescription?.prescriptionImageUrl) ?? "",
+    prescriptionStatus: prescription?.prescriptionStatus ?? "",
+    prescriptionStatusLabel: getPrescriptionStatusLabel(prescription?.prescriptionStatus),
+    notes: normalizeText(prescription?.notes) ?? "",
+    staffId: Number(prescription?.staffId ?? 0),
+    verifiedAt: prescription?.verifiedAt ?? null,
+    createdAt: prescription?.createdAt ?? null,
+  };
+}
+
+function normalizePrescriptionEye(eye) {
+  return {
+    sph: Number(eye?.sph ?? 0),
+    cyl: Number(eye?.cyl ?? 0),
+    axis: Number(eye?.axis ?? 0),
+  };
 }
 
 function composeShippingAddress(shippingInfo) {

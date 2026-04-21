@@ -17,6 +17,14 @@ export async function createPrescriptionCartItem(token, payload) {
   return apiPost(`${CARTS_BASE_PATH}/me/prescription-items`, payload, { token });
 }
 
+export async function updatePrescriptionCartItem(token, cartItemId, payload) {
+  return apiRequest(`${CARTS_BASE_PATH}/me/prescription-items/${cartItemId}`, {
+    method: "PUT",
+    token,
+    body: payload,
+  });
+}
+
 export async function updateStandardCartItem(token, cartItemId, payload) {
   return apiRequest(`${CARTS_BASE_PATH}/me/items/${cartItemId}`, {
     method: "PUT",
@@ -181,7 +189,10 @@ function normalizeCartItem(item, { cachedView, variantDetail }) {
     hasPrescription: Boolean(item?.prescription),
     prescriptionDetails: item?.prescription
       ? {
+          lensTypeId: Number(item.prescription.lensTypeId ?? 0),
           lensType: item.prescription.lensName || item.prescription.lensCode || "Theo toa",
+          lensCode: item.prescription.lensCode || "",
+          lensName: item.prescription.lensName || "",
           lensMaterial: item.prescription.lensMaterial || "",
           coatings: Array.isArray(item.prescription.coatings) ? item.prescription.coatings : [],
           rightEye: item.prescription.rightEye ?? null,

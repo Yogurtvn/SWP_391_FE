@@ -8,7 +8,6 @@ import {
 } from "@/store/order/orderSlice";
 
 const DEFAULT_ORDER_FILTERS = {
-  orderType: "ready",
   page: 1,
   pageSize: 50,
   sortBy: "createdAt",
@@ -22,6 +21,7 @@ export function useOrdersPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterOrderType, setFilterOrderType] = useState("all");
 
   useEffect(() => {
     if (!auth.isReady) {
@@ -38,6 +38,10 @@ export function useOrdersPage() {
 
   const filteredOrders = useMemo(() => {
     return order.items.filter((item) => {
+      if (filterOrderType !== "all" && normalizeOrderType(item.orderType) !== normalizeOrderType(filterOrderType)) {
+        return false;
+      }
+
       if (filterStatus !== "all" && item.statusKey !== filterStatus) {
         return false;
       }
@@ -48,7 +52,7 @@ export function useOrdersPage() {
 
       return String(item.orderId).includes(searchQuery.trim());
     });
-  }, [filterStatus, order.items, searchQuery]);
+  }, [filterOrderType, filterStatus, order.items, searchQuery]);
 
   return {
     isAuthenticated: Boolean(auth.accessToken),
@@ -60,6 +64,7 @@ export function useOrdersPage() {
     filters: {
       searchQuery,
       filterStatus,
+      filterOrderType,
     },
     ui: {
       isLoading: order.listStatus === "loading",
@@ -69,9 +74,14 @@ export function useOrdersPage() {
     actions: {
       setSearchQuery,
       setFilterStatus,
+      setFilterOrderType,
       retry: () => {
         void dispatch(fetchOrderList(DEFAULT_ORDER_FILTERS));
       },
     },
   };
+}
+
+function normalizeOrderType(orderType) {
+  return String(orderType ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "");
 }

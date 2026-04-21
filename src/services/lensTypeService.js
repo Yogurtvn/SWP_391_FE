@@ -2,10 +2,11 @@
 
 const LENS_TYPES_BASE_PATH = "/api/lens-types";
 
-export async function getLensTypes({ page = 1, pageSize = 50, sortBy = "lensName", sortOrder = "asc" } = {}) {
+export async function getLensTypes({ page = 1, pageSize = 50, isActive = true, sortBy = "lensName", sortOrder = "asc" } = {}) {
   const params = new URLSearchParams();
   params.set("page", String(page));
   params.set("pageSize", String(pageSize));
+  params.set("isActive", String(isActive));
   params.set("sortBy", String(sortBy));
   params.set("sortOrder", String(sortOrder));
 

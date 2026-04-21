@@ -1,16 +1,34 @@
 ﻿import { useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Heart, Minus, Plus, Shield, ShoppingBag, Tag, Trash2, Truck } from "lucide-react";
+import { Edit3, Heart, Minus, Plus, Shield, ShoppingBag, Tag, Trash2, Truck, X } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/cart/useCart";
 
+const EMPTY_PRESCRIPTION_EDIT_FORM = {
+  lensTypeId: "",
+  lensMaterial: "",
+  coatings: "",
+  rightSph: "",
+  rightCyl: "0",
+  rightAxis: "0",
+  leftSph: "",
+  leftCyl: "0",
+  leftAxis: "0",
+  pd: "",
+  prescriptionImageUrl: "",
+  notes: "",
+};
+
 function CartPage() {
   const navigate = useNavigate();
-  const { getTotal, isCustomerSession, items, mutationStatus, removeItem, status, updateQuantity } = useCart();
+  const { getTotal, isCustomerSession, items, mutationStatus, removeItem, status, updatePrescriptionItem, updateQuantity } = useCart();
 
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [savedItems, setSavedItems] = useState([]);
+  const [prescriptionEditItem, setPrescriptionEditItem] = useState(null);
+  const [prescriptionEditForm, setPrescriptionEditForm] = useState(EMPTY_PRESCRIPTION_EDIT_FORM);
+  const [prescriptionEditError, setPrescriptionEditError] = useState("");
 
   const isLoading = status === "loading" && items.length === 0;
   const isMutating = mutationStatus === "loading";
@@ -22,6 +40,11 @@ function CartPage() {
     const item = items.find((currentItem) => currentItem.cartItemId === cartItemId);
 
     if (!item) {
+      return;
+    }
+
+    if (item.hasPrescription) {
+      toast.error("San pham theo toa chi ho tro so luong 1. Hay sua thong tin toa neu can.");
       return;
     }
 
@@ -65,6 +88,86 @@ function CartPage() {
       toast.success("Đã xóa sản phẩm khỏi giỏ hàng");
     } catch (error) {
       toast.error(resolveErrorMessage(error, "Không thể xóa sản phẩm khỏi giỏ hàng."));
+    }
+  }
+
+  function openPrescriptionEditor(item) {
+    const detail = item.prescriptionDetails ?? {};
+    const rightEye = detail.rightEye ?? {};
+    const leftEye = detail.leftEye ?? {};
+
+    setPrescriptionEditItem(item);
+    setPrescriptionEditForm({
+      lensTypeId: String(detail.lensTypeId ?? ""),
+      lensMaterial: detail.lensMaterial ?? "",
+      coatings: Array.isArray(detail.coatings) ? detail.coatings.join(", ") : "",
+      rightSph: String(rightEye.sph ?? ""),
+      rightCyl: String(rightEye.cyl ?? "0"),
+      rightAxis: String(rightEye.axis ?? "0"),
+      leftSph: String(leftEye.sph ?? ""),
+      leftCyl: String(leftEye.cyl ?? "0"),
+      leftAxis: String(leftEye.axis ?? "0"),
+      pd: String(detail.pd ?? ""),
+      prescriptionImageUrl: detail.prescriptionImageUrl ?? "",
+      notes: detail.notes ?? "",
+    });
+    setPrescriptionEditError("");
+  }
+
+  function closePrescriptionEditor() {
+    setPrescriptionEditItem(null);
+    setPrescriptionEditForm(EMPTY_PRESCRIPTION_EDIT_FORM);
+    setPrescriptionEditError("");
+  }
+
+  function updatePrescriptionEditField(field, value) {
+    setPrescriptionEditForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+    setPrescriptionEditError("");
+  }
+
+  async function handlePrescriptionEditSubmit(event) {
+    event.preventDefault();
+
+    if (!prescriptionEditItem) {
+      return;
+    }
+
+    const validationMessage = validatePrescriptionEditForm(prescriptionEditForm);
+
+    if (validationMessage) {
+      setPrescriptionEditError(validationMessage);
+      return;
+    }
+
+    try {
+      await updatePrescriptionItem({
+        cartItemId: prescriptionEditItem.cartItemId,
+        variantId: prescriptionEditItem.variantId,
+        lensTypeId: Number(prescriptionEditForm.lensTypeId),
+        lensMaterial: normalizeOptionalField(prescriptionEditForm.lensMaterial),
+        coatings: parseCoatings(prescriptionEditForm.coatings),
+        rightEye: {
+          sph: parseDecimal(prescriptionEditForm.rightSph),
+          cyl: parseDecimal(prescriptionEditForm.rightCyl),
+          axis: parseInteger(prescriptionEditForm.rightAxis),
+        },
+        leftEye: {
+          sph: parseDecimal(prescriptionEditForm.leftSph),
+          cyl: parseDecimal(prescriptionEditForm.leftCyl),
+          axis: parseInteger(prescriptionEditForm.leftAxis),
+        },
+        pd: parseDecimal(prescriptionEditForm.pd),
+        prescriptionImageUrl: normalizeOptionalField(prescriptionEditForm.prescriptionImageUrl),
+        notes: normalizeOptionalField(prescriptionEditForm.notes),
+      });
+
+      toast.success("Da cap nhat san pham theo toa.");
+      closePrescriptionEditor();
+    } catch (error) {
+      setPrescriptionEditError(resolveErrorMessage(error, "Khong the cap nhat san pham theo toa."));
     }
   }
 
@@ -145,29 +248,45 @@ function CartPage() {
 
                         <div className="flex items-center justify-between pt-3 border-t border-border">
                           <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-3 bg-secondary rounded-lg px-3 py-2">
-                              <button
-                                onClick={() => handleUpdateQuantity(item.cartItemId, -1)}
-                                disabled={item.quantity <= 1 || isMutating}
-                                className="w-6 h-6 flex items-center justify-center hover:text-primary transition-colors"
-                              >
-                                <Minus className="w-4 h-4" />
-                              </button>
-                              <span className="w-8 text-center font-medium">{item.quantity}</span>
-                              <button
-                                onClick={() => handleUpdateQuantity(item.cartItemId, 1)}
-                                disabled={isMutating}
-                                className="w-6 h-6 flex items-center justify-center hover:text-primary transition-colors"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                            </div>
+                            {item.hasPrescription ? (
+                              <div className="rounded-lg bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                                SL 1 - Theo toa
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3 bg-secondary rounded-lg px-3 py-2">
+                                <button
+                                  onClick={() => handleUpdateQuantity(item.cartItemId, -1)}
+                                  disabled={item.quantity <= 1 || isMutating}
+                                  className="w-6 h-6 flex items-center justify-center hover:text-primary transition-colors"
+                                >
+                                  <Minus className="w-4 h-4" />
+                                </button>
+                                <span className="w-8 text-center font-medium">{item.quantity}</span>
+                                <button
+                                  onClick={() => handleUpdateQuantity(item.cartItemId, 1)}
+                                  disabled={isMutating}
+                                  className="w-6 h-6 flex items-center justify-center hover:text-primary transition-colors"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
                             <span className="text-sm text-muted-foreground">
                               Tổng: <span className="text-foreground font-semibold">{formatCurrency(item.totalPrice)}</span>
                             </span>
                           </div>
 
                           <div className="flex items-center gap-2">
+                            {item.hasPrescription ? (
+                              <button
+                                onClick={() => openPrescriptionEditor(item)}
+                                disabled={isMutating}
+                                className="p-2 text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors"
+                                title="Sua toa"
+                              >
+                                <Edit3 className="w-5 h-5" />
+                              </button>
+                            ) : null}
                             <button
                               onClick={() => handleSaveForLater(item)}
                               disabled={isMutating}
@@ -285,7 +404,134 @@ function CartPage() {
             </div>
           </div>}
       </div>
+      {prescriptionEditItem ? (
+        <PrescriptionEditor
+          form={prescriptionEditForm}
+          item={prescriptionEditItem}
+          error={prescriptionEditError}
+          isSaving={isMutating}
+          onChange={updatePrescriptionEditField}
+          onClose={closePrescriptionEditor}
+          onSubmit={handlePrescriptionEditSubmit}
+        />
+      ) : null}
     </div>;
+}
+
+function PrescriptionEditor({ item, form, error, isSaving, onChange, onClose, onSubmit }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6">
+      <form onSubmit={onSubmit} className="max-h-full w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-2xl">Sua san pham theo toa</h2>
+            <p className="mt-1 text-sm text-muted-foreground">{item.name}</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-muted-foreground hover:bg-secondary">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <EditField label="Lens type ID" value={form.lensTypeId} onChange={(value) => onChange("lensTypeId", value)} />
+          <EditField label="Chat lieu" value={form.lensMaterial} onChange={(value) => onChange("lensMaterial", value)} />
+          <EditField label="Coating" value={form.coatings} onChange={(value) => onChange("coatings", value)} placeholder="blue-light, anti-reflective" />
+          <EditField label="SPH phai" value={form.rightSph} onChange={(value) => onChange("rightSph", value)} />
+          <EditField label="CYL phai" value={form.rightCyl} onChange={(value) => onChange("rightCyl", value)} />
+          <EditField label="AXIS phai" value={form.rightAxis} onChange={(value) => onChange("rightAxis", value)} />
+          <EditField label="SPH trai" value={form.leftSph} onChange={(value) => onChange("leftSph", value)} />
+          <EditField label="CYL trai" value={form.leftCyl} onChange={(value) => onChange("leftCyl", value)} />
+          <EditField label="AXIS trai" value={form.leftAxis} onChange={(value) => onChange("leftAxis", value)} />
+          <EditField label="PD" value={form.pd} onChange={(value) => onChange("pd", value)} />
+          <div className="md:col-span-2">
+            <EditField label="URL anh toa" value={form.prescriptionImageUrl} onChange={(value) => onChange("prescriptionImageUrl", value)} />
+          </div>
+        </div>
+
+        <label className="mt-4 block">
+          <span className="mb-2 block text-sm">Ghi chu</span>
+          <textarea
+            value={form.notes}
+            onChange={(event) => onChange("notes", event.target.value)}
+            rows={3}
+            className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+          />
+        </label>
+
+        {error ? <p className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
+
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <button type="button" onClick={onClose} className="rounded-xl border border-border px-5 py-3 hover:bg-secondary">
+            Huy
+          </button>
+          <button type="submit" disabled={isSaving} className="rounded-xl bg-primary px-5 py-3 text-white hover:bg-primary/90 disabled:opacity-60">
+            {isSaving ? "Dang luu..." : "Luu thay doi"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function EditField({ label, value, onChange, placeholder }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm">{label}</span>
+      <input
+        type="text"
+        inputMode="decimal"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+      />
+    </label>
+  );
+}
+
+function validatePrescriptionEditForm(form) {
+  if (!Number.isFinite(Number(form.lensTypeId)) || Number(form.lensTypeId) <= 0) {
+    return "Lens type ID khong hop le.";
+  }
+
+  const requiredValues = [form.rightSph, form.rightCyl, form.leftSph, form.leftCyl, form.pd];
+
+  if (requiredValues.some((value) => !Number.isFinite(parseDecimal(value)))) {
+    return "Vui long nhap day du thong so toa.";
+  }
+
+  const rightAxis = parseInteger(form.rightAxis);
+  const leftAxis = parseInteger(form.leftAxis);
+
+  if (!Number.isInteger(rightAxis) || rightAxis < 0 || rightAxis > 180 || !Number.isInteger(leftAxis) || leftAxis < 0 || leftAxis > 180) {
+    return "AXIS phai nam trong khoang 0-180.";
+  }
+
+  if (parseDecimal(form.pd) <= 0) {
+    return "PD phai lon hon 0.";
+  }
+
+  return "";
+}
+
+function parseDecimal(value) {
+  return Number.parseFloat(String(value ?? "").trim().replace(",", "."));
+}
+
+function parseInteger(value) {
+  return Number.parseInt(String(value ?? "").trim(), 10);
+}
+
+function parseCoatings(value) {
+  return String(value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeOptionalField(value) {
+  const normalizedValue = String(value ?? "").trim();
+  return normalizedValue.length > 0 ? normalizedValue : undefined;
 }
 
 function formatCurrency(value) {

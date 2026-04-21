@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
@@ -14,10 +14,12 @@ import { ADMIN_ORDER_STATUSES, ADMIN_SHIPPING_STATUSES } from "@/hooks/admin/use
 export function useAdminOrderDetailPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { orderId } = useParams();
   const auth = useAppSelector(selectAuthState);
   const admin = useAppSelector(selectAdminState);
   const { popupAlert, popupForm, popupElement } = usePopupDialog();
+  const orderBasePath = location.pathname.startsWith("/staff") ? "/staff/orders" : "/admin/orders";
 
   useEffect(() => {
     if (!auth.isReady || !auth.accessToken || !orderId) {
@@ -135,7 +137,7 @@ export function useAdminOrderDetailPage() {
       isLoading: admin.currentOrder.status === "loading",
     },
     actions: {
-      backToOrders: () => navigate("/admin/orders"),
+      backToOrders: () => navigate(orderBasePath),
       retry: refresh,
       updateOrderStatus,
       updateShippingStatus,

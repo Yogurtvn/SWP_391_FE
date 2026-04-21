@@ -9,6 +9,7 @@ import {
   getVariantDetailsByIds,
   mergeCartViewCache,
   normalizeServerCart,
+  updatePrescriptionCartItem as updatePrescriptionCartItemRequest,
   updateStandardCartItem as updateStandardCartItemRequest,
 } from "@/services/cartService";
 import { loadStoredCartViewCache } from "@/store/cart/cartStorage";
@@ -116,6 +117,38 @@ export const updateCartItemQuantity = createAsyncThunk(
   },
 );
 
+export const updatePrescriptionCartItem = createAsyncThunk(
+  "cart/updatePrescriptionCartItem",
+  async (payload, { getState, rejectWithValue }) => {
+    const { auth, cart } = getState();
+
+    if (!canUseCustomerCart(auth)) {
+      return rejectWithValue("Vui lòng đăng nhập bằng tài khoản khách hàng để sử dụng giỏ hàng.");
+    }
+
+    const nextViewCache = mergeCartViewCache(cart.viewCache, payload?.view);
+
+    try {
+      await updatePrescriptionCartItemRequest(auth.accessToken, payload.cartItemId, {
+        variantId: payload.variantId,
+        quantity: 1,
+        lensTypeId: payload.lensTypeId,
+        lensMaterial: payload.lensMaterial,
+        coatings: payload.coatings,
+        rightEye: payload.rightEye,
+        leftEye: payload.leftEye,
+        pd: payload.pd,
+        notes: payload.notes,
+        prescriptionImageUrl: payload.prescriptionImageUrl,
+      });
+
+      return await loadCartSnapshot(auth.accessToken, nextViewCache);
+    } catch (error) {
+      return rejectWithValue(getCartErrorMessage(error, "Không thể cập nhật sản phẩm theo toa."));
+    }
+  },
+);
+
 export const deleteCartItem = createAsyncThunk(
   "cart/deleteCartItem",
   async ({ cartItemId, itemType = "standard" }, { getState, rejectWithValue }) => {
@@ -193,6 +226,9 @@ const cartSlice = createSlice({
       .addCase(updateCartItemQuantity.pending, startMutation)
       .addCase(updateCartItemQuantity.fulfilled, finishMutation)
       .addCase(updateCartItemQuantity.rejected, failMutation)
+      .addCase(updatePrescriptionCartItem.pending, startMutation)
+      .addCase(updatePrescriptionCartItem.fulfilled, finishMutation)
+      .addCase(updatePrescriptionCartItem.rejected, failMutation)
       .addCase(deleteCartItem.pending, startMutation)
       .addCase(deleteCartItem.fulfilled, finishMutation)
       .addCase(deleteCartItem.rejected, failMutation)

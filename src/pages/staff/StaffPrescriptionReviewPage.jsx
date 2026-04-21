@@ -1,437 +1,356 @@
-import { useState } from "react";
-import { Eye, Check, X, Search, FileText, Image as ImageIcon } from "lucide-react";
+import { Check, Eye, FileText, Image as ImageIcon, RefreshCw, Search, X } from "lucide-react";
+import { useStaffPrescriptionReview } from "@/hooks/prescription/useStaffPrescriptionReview";
+
+const STATUS_FILTERS = [
+  { value: "", label: "Tat ca" },
+  { value: "submitted", label: "Cho kiem tra" },
+  { value: "reviewing", label: "Dang kiem tra" },
+  { value: "needMoreInfo", label: "Can bo sung" },
+  { value: "approved", label: "Da duyet" },
+  { value: "rejected", label: "Tu choi" },
+  { value: "inProduction", label: "Dang san xuat" },
+];
+
 function StaffPrescriptionReviewPage() {
-  const [reviews, setReviews] = useState([
-    {
-      id: "PRE-001",
-      orderNumber: "ORD-2024-001",
-      customerName: "Nguy\u1EC5n V\u0103n A",
-      customerEmail: "nguyenvana@email.com",
-      frameName: "G\u1ECDng Titan Ch\u1EEF Nh\u1EADt",
-      framePrice: 189e4,
-      prescriptionData: {
-        odSph: "-2.50",
-        odCyl: "-0.75",
-        odAxis: "90",
-        osSph: "-2.25",
-        osCyl: "-0.50",
-        osAxis: "85",
-        pd: "63"
-      },
-      lensType: "Tr\xF2ng k\xEDnh c\u1EADn cao c\u1EA5p (ch\u1ED1ng \xE1nh s\xE1ng xanh)",
-      lensPrice: 98e4,
-      totalPrice: 287e4,
-      prescriptionImage: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400",
-      notes: "Kh\xE1ch h\xE0ng y\xEAu c\u1EA7u l\xE0m nhanh trong 48h",
-      createdAt: "2024-01-16T14:30:00",
-      status: "pending",
-      priority: "high"
-    },
-    {
-      id: "PRE-002",
-      orderNumber: "ORD-2024-005",
-      customerName: "Ho\xE0ng V\u0103n E",
-      customerEmail: "hoangvane@email.com",
-      frameName: "G\u1ECDng M\u1EAFt M\xE8o Acetate",
-      framePrice: 21e5,
-      prescriptionData: {
-        odSph: "-1.25",
-        odCyl: "",
-        odAxis: "",
-        osSph: "-1.50",
-        osCyl: "",
-        osAxis: "",
-        pd: "62"
-      },
-      lensType: "Tr\xF2ng k\xEDnh c\u1EADn ti\xEAu chu\u1EA9n",
-      lensPrice: 65e4,
-      totalPrice: 275e4,
-      createdAt: "2024-01-16T09:20:00",
-      status: "pending",
-      priority: "normal"
-    },
-    {
-      id: "PRE-003",
-      orderNumber: "ORD-2024-008",
-      customerName: "Tr\u1EA7n Th\u1ECB B",
-      customerEmail: "tranthib@email.com",
-      frameName: "G\u1ECDng Oval Kim Lo\u1EA1i",
-      framePrice: 145e4,
-      prescriptionData: {
-        odSph: "+1.50",
-        odCyl: "+0.50",
-        odAxis: "180",
-        osSph: "+1.75",
-        osCyl: "+0.25",
-        osAxis: "175",
-        pd: "64",
-        add: "+2.00"
-      },
-      lensType: "Tr\xF2ng k\xEDnh \u0111a tr\xF2ng (Progressive)",
-      lensPrice: 185e4,
-      totalPrice: 33e5,
-      prescriptionImage: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400",
-      notes: "K\xEDnh \u0111a tr\xF2ng cho ng\u01B0\u1EDDi l\u1EDBn tu\u1ED5i",
-      createdAt: "2024-01-15T16:45:00",
-      status: "approved",
-      priority: "normal"
-    }
-  ]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [selectedReview, setSelectedReview] = useState(null);
-  const filteredReviews = reviews.filter((review) => {
-    const matchesSearch = review.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) || review.customerName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filterStatus === "all" || review.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
-  const handleApprove = (reviewId) => {
-    setReviews(
-      reviews.map(
-        (review) => review.id === reviewId ? { ...review, status: "approved" } : review
-      )
-    );
-    setSelectedReview(null);
-  };
-  const handleReject = (reviewId) => {
-    const reason = prompt("L\xFD do t\u1EEB ch\u1ED1i (s\u1EBD \u0111\u01B0\u1EE3c g\u1EEDi cho kh\xE1ch h\xE0ng):");
-    if (reason) {
-      setReviews(
-        reviews.map(
-          (review) => review.id === reviewId ? { ...review, status: "rejected" } : review
-        )
-      );
-      alert(`\u0110\xE3 t\u1EEB ch\u1ED1i \u0111\u01A1n v\u1EDBi l\xFD do: ${reason}`);
-      setSelectedReview(null);
-    }
-  };
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "pending":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      case "approved":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "rejected":
-        return "bg-red-100 text-red-800 border-red-300";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
-    }
-  };
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case "pending":
-        return "Ch\u1EDD ki\u1EC3m tra";
-      case "approved":
-        return "\u0110\xE3 duy\u1EC7t";
-      case "rejected":
-        return "\u0110\xE3 t\u1EEB ch\u1ED1i";
-      default:
-        return status;
-    }
-  };
-  const getPriorityBadge = (priority) => {
-    switch (priority) {
-      case "high":
-        return <span className="px-2 py-1 bg-red-50 text-red-700 border-2 border-red-200 rounded-lg text-xs font-bold">
-            ⚠️ Khẩn
-          </span>;
-      case "low":
-        return <span className="px-2 py-1 bg-gray-50 text-gray-700 border-2 border-gray-200 rounded-lg text-xs font-bold">
-            Thấp
-          </span>;
-      default:
-        return <span className="px-2 py-1 bg-blue-50 text-blue-700 border-2 border-blue-200 rounded-lg text-xs font-bold">
-            Bình thường
-          </span>;
-    }
-  };
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND"
-    }).format(amount);
-  };
-  const pendingCount = reviews.filter((r) => r.status === "pending").length;
-  return <div className="min-h-screen bg-blue-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {
-    /* Header */
-  }
-        <div className="bg-white rounded-2xl border-2 border-blue-300 shadow-sm p-6 mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center border-2 border-blue-300">
-              <Eye className="w-6 h-6 text-blue-600" />
+  const {
+    items,
+    selectedId,
+    detail,
+    searchQuery,
+    filterStatus,
+    actionNote,
+    pendingCount,
+    ui,
+    actions,
+  } = useStaffPrescriptionReview();
+
+  return (
+    <div className="min-h-screen bg-secondary/30">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-6 rounded-[28px] border border-border bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Eye className="h-6 w-6" />
+              </div>
+              <div>
+                <h1 className="text-3xl">Kiem tra prescription</h1>
+                <p className="text-sm text-muted-foreground">{pendingCount} toa dang can xu ly</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Kiểm Tra Đơn Kính</h1>
-              <p className="text-gray-600 font-medium">
-                <span className="font-bold text-blue-600">{pendingCount}</span> đơn đang chờ kiểm tra
-              </p>
-            </div>
+            <button
+              type="button"
+              onClick={actions.loadList}
+              disabled={ui.isListLoading}
+              className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm hover:bg-secondary disabled:opacity-60"
+            >
+              <RefreshCw className={`h-4 w-4 ${ui.isListLoading ? "animate-spin" : ""}`} />
+              Tai lai
+            </button>
           </div>
         </div>
 
-        {
-    /* Search & Filter */
-  }
-        <div className="bg-white rounded-2xl border-2 border-blue-300 shadow-sm p-6 mb-6">
-          <div className="flex flex-col md:flex-row gap-4">
+        <div className="mb-6 rounded-[28px] border border-border bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <input
-    type="text"
-    placeholder="Tìm kiếm theo mã đơn hoặc tên khách hàng..."
-    value={searchQuery}
-    onChange={(e) => setSearchQuery(e.target.value)}
-    className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all"
-  />
+                type="text"
+                placeholder="Tim theo order, prescription, khach hang"
+                value={searchQuery}
+                onChange={(event) => actions.setSearchQuery(event.target.value)}
+                className="w-full rounded-xl border border-border bg-background py-3 pl-12 pr-4 outline-none focus:border-primary"
+              />
             </div>
 
             <select
-    value={filterStatus}
-    onChange={(e) => setFilterStatus(e.target.value)}
-    className="px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 font-medium"
-  >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="pending">Chờ kiểm tra</option>
-              <option value="approved">Đã duyệt</option>
-              <option value="rejected">Đã từ chối</option>
+              value={filterStatus}
+              onChange={(event) => actions.setFilterStatus(event.target.value)}
+              className="rounded-xl border border-border bg-background px-4 py-3 outline-none focus:border-primary"
+            >
+              {STATUS_FILTERS.map((status) => (
+                <option key={status.value || "all"} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
-        {
-    /* Main Content */
-  }
-        <div className="grid lg:grid-cols-3 gap-6">
-          {
-    /* List */
-  }
-          <div className="lg:col-span-1 space-y-3 max-h-[calc(100vh-300px)] overflow-y-auto pr-2">
-            {filteredReviews.map((review) => <button
-    key={review.id}
-    onClick={() => setSelectedReview(review)}
-    className={`w-full p-4 border-2 rounded-xl text-left transition-all ${selectedReview?.id === review.id ? "border-blue-500 bg-blue-50 shadow-md" : "border-blue-200 bg-white hover:border-blue-400 hover:shadow-sm"}`}
-  >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-sm font-bold text-gray-900 mb-1">{review.orderNumber}</p>
-                    <p className="text-xs text-gray-600 font-medium">{review.customerName}</p>
-                  </div>
-                  <div className="text-right">
-                    {getPriorityBadge(review.priority)}
-                  </div>
-                </div>
+        {ui.listError ? (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{ui.listError}</div>
+        ) : null}
 
-                <div className="mb-3">
-                  <p className="text-xs text-gray-500 font-medium mb-1">Gọng kính:</p>
-                  <p className="text-sm font-bold text-gray-900">{review.frameName}</p>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div
-    className={`text-xs px-3 py-1 rounded-lg border-2 font-bold ${getStatusColor(
-      review.status
-    )}`}
-  >
-                    {getStatusLabel(review.status)}
+        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.5fr]">
+          <div className="space-y-3">
+            {ui.isListLoading ? (
+              <LoadingCard text="Dang tai danh sach..." />
+            ) : items.length === 0 ? (
+              <EmptyCard text="Khong co prescription phu hop." />
+            ) : (
+              items.map((item) => (
+                <button
+                  key={item.prescriptionId}
+                  type="button"
+                  onClick={() => actions.setSelectedId(item.prescriptionId)}
+                  className={`w-full rounded-2xl border p-4 text-left transition-colors ${
+                    selectedId === item.prescriptionId ? "border-primary bg-primary/5" : "border-border bg-white hover:border-primary/40"
+                  }`}
+                >
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">Prescription #{item.prescriptionId}</p>
+                      <p className="text-sm text-muted-foreground">Order #{item.orderId || "N/A"}</p>
+                    </div>
+                    <StatusBadge status={item.prescriptionStatus} label={item.prescriptionStatusLabel} />
                   </div>
-                  {review.prescriptionImage && <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
-                      <ImageIcon className="w-3 h-3" />
-                      Có ảnh
-                    </span>}
-                </div>
-              </button>)}
+                  <p className="text-sm">{item.customerName}</p>
+                  <p className="text-xs text-muted-foreground">{item.customerEmail}</p>
+                  <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{item.lensTypeCode || `Lens #${item.lensTypeId}`}</span>
+                    {item.prescriptionImageUrl ? (
+                      <span className="inline-flex items-center gap-1 text-primary">
+                        <ImageIcon className="h-3.5 w-3.5" />
+                        Co anh
+                      </span>
+                    ) : null}
+                  </div>
+                </button>
+              ))
+            )}
           </div>
 
-          {
-    /* Detail */
-  }
-          <div className="lg:col-span-2">
-            {selectedReview ? <div className="bg-white border-2 border-blue-300 rounded-2xl overflow-hidden shadow-sm">
-                {
-    /* Header */
-  }
-                <div className="p-6 border-b-2 border-blue-300 bg-blue-50">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h2 className="text-2xl mb-2 font-bold text-gray-900">{selectedReview.orderNumber}</h2>
-                      <p className="text-sm text-gray-600 font-medium">
-                        Khách hàng: <span className="font-bold text-gray-900">{selectedReview.customerName}</span>
-                      </p>
-                      <p className="text-sm text-gray-600 font-medium">
-                        Email: {selectedReview.customerEmail}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div
-    className={`text-sm px-4 py-2 rounded-xl border-2 font-bold mb-2 ${getStatusColor(
-      selectedReview.status
-    )}`}
-  >
-                        {getStatusLabel(selectedReview.status)}
-                      </div>
-                      {getPriorityBadge(selectedReview.priority)}
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 font-medium">
-                    Ngày tạo: {new Date(selectedReview.createdAt).toLocaleString("vi-VN")}
-                  </p>
-                </div>
-
-                {
-    /* Prescription Data */
-  }
-                <div className="p-6 border-b-2 border-blue-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-blue-600" />
-                    Thông Tin Đơn Kính
-                  </h3>
-                  <div className="bg-blue-50 p-5 rounded-xl space-y-4 text-sm border-2 border-blue-200">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <p className="text-blue-700 mb-3 font-bold text-base">Mắt Phải (OD)</p>
-                        <div className="space-y-2">
-                          <p className="font-medium text-gray-900">
-                            <span className="text-gray-600">SPH:</span>{" "}
-                            <span className="font-mono font-bold">{selectedReview.prescriptionData.odSph}</span>
-                          </p>
-                          <p className="font-medium text-gray-900">
-                            <span className="text-gray-600">CYL:</span>{" "}
-                            <span className="font-mono font-bold">{selectedReview.prescriptionData.odCyl || "\u2014"}</span>
-                          </p>
-                          <p className="font-medium text-gray-900">
-                            <span className="text-gray-600">AXIS:</span>{" "}
-                            <span className="font-mono font-bold">{selectedReview.prescriptionData.odAxis || "\u2014"}</span>
-                          </p>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-blue-700 mb-3 font-bold text-base">Mắt Trái (OS)</p>
-                        <div className="space-y-2">
-                          <p className="font-medium text-gray-900">
-                            <span className="text-gray-600">SPH:</span>{" "}
-                            <span className="font-mono font-bold">{selectedReview.prescriptionData.osSph}</span>
-                          </p>
-                          <p className="font-medium text-gray-900">
-                            <span className="text-gray-600">CYL:</span>{" "}
-                            <span className="font-mono font-bold">{selectedReview.prescriptionData.osCyl || "\u2014"}</span>
-                          </p>
-                          <p className="font-medium text-gray-900">
-                            <span className="text-gray-600">AXIS:</span>{" "}
-                            <span className="font-mono font-bold">{selectedReview.prescriptionData.osAxis || "\u2014"}</span>
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="border-t-2 border-blue-300 pt-4">
-                      <p className="font-bold text-gray-900">
-                        Khoảng Cách Đồng Tử (PD):{" "}
-                        <span className="font-mono text-blue-700">{selectedReview.prescriptionData.pd} mm</span>
-                      </p>
-                      {selectedReview.prescriptionData.add && <p className="font-bold text-gray-900 mt-2">
-                          ADD (Đa tròng):{" "}
-                          <span className="font-mono text-blue-700">{selectedReview.prescriptionData.add}</span>
-                        </p>}
-                    </div>
-                  </div>
-                </div>
-
-                {
-    /* Product Details */
-  }
-                <div className="p-6 border-b-2 border-blue-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Chi Tiết Sản Phẩm</h3>
-                  <div className="space-y-3">
-                    <div className="p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
-                      <p className="text-xs text-gray-500 mb-1 font-bold">Gọng kính:</p>
-                      <p className="font-bold text-gray-900">{selectedReview.frameName}</p>
-                      <p className="text-sm text-blue-600 font-bold mt-1">
-                        {formatCurrency(selectedReview.framePrice)}
-                      </p>
-                    </div>
-                    <div className="p-4 bg-gray-50 rounded-xl border-2 border-gray-200">
-                      <p className="text-xs text-gray-500 mb-1 font-bold">Loại tròng:</p>
-                      <p className="font-bold text-gray-900">{selectedReview.lensType}</p>
-                      <p className="text-sm text-blue-600 font-bold mt-1">
-                        {formatCurrency(selectedReview.lensPrice)}
-                      </p>
-                    </div>
-                    <div className="p-4 bg-blue-50 rounded-xl border-2 border-blue-300">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-gray-900">Tổng cộng:</span>
-                        <span className="text-xl text-blue-600 font-bold">
-                          {formatCurrency(selectedReview.totalPrice)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {
-    /* Prescription Image */
-  }
-                {selectedReview.prescriptionImage && <div className="p-6 border-b-2 border-blue-200">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                      <ImageIcon className="w-5 h-5 text-blue-600" />
-                      Ảnh Đơn Thuốc
-                    </h3>
-                    <img
-    src={selectedReview.prescriptionImage}
-    alt="Prescription"
-    className="w-full rounded-xl border-2 border-gray-300"
-  />
-                  </div>}
-
-                {
-    /* Notes */
-  }
-                {selectedReview.notes && <div className="p-6 border-b-2 border-blue-200">
-                    <h3 className="text-lg font-bold text-gray-900 mb-3">Ghi chú</h3>
-                    <p className="text-gray-700 bg-yellow-50 p-4 rounded-xl border-2 border-yellow-200 font-medium">
-                      {selectedReview.notes}
-                    </p>
-                  </div>}
-
-                {
-    /* Actions */
-  }
-                {selectedReview.status === "pending" && <div className="p-6 bg-blue-50">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">Thao tác</h3>
-                    <div className="flex gap-3">
-                      <button
-    onClick={() => handleApprove(selectedReview.id)}
-    className="flex-1 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-bold text-lg border-2 border-green-700"
-  >
-                        <Check className="w-5 h-5" />
-                        Duyệt Đơn Kính
-                      </button>
-                      <button
-    onClick={() => handleReject(selectedReview.id)}
-    className="flex-1 py-3 border-2 border-red-500 text-red-600 rounded-xl hover:bg-red-50 transition-colors flex items-center justify-center gap-2 font-bold text-lg"
-  >
-                        <X className="w-5 h-5" />
-                        Từ Chối
-                      </button>
-                    </div>
-                  </div>}
-
-                {selectedReview.status !== "pending" && <div className="p-6 bg-gray-50">
-                    <p className="text-sm text-gray-600 text-center font-medium">
-                      ✓ Đơn kính này đã được xử lý
-                    </p>
-                  </div>}
-              </div> : <div className="bg-white rounded-2xl border-2 border-blue-200 p-12 text-center">
-                <Eye className="w-20 h-20 text-blue-400 mx-auto mb-4" />
-                <p className="text-gray-600 font-medium text-lg">
-                  Chọn một đơn kính để kiểm tra chi tiết
-                </p>
-              </div>}
+          <div>
+            {ui.isDetailLoading ? (
+              <LoadingCard text="Dang tai chi tiet..." />
+            ) : detail ? (
+              <DetailPanel
+                detail={detail}
+                actionNote={actionNote}
+                setActionNote={actions.setActionNote}
+                actionError={ui.actionError}
+                saving={ui.isSaving}
+                onReview={actions.review}
+                onRequestMoreInfo={actions.requestMoreInfo}
+              />
+            ) : (
+              <EmptyCard text="Chon mot prescription de kiem tra." />
+            )}
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }
-export {
-  StaffPrescriptionReviewPage as default
-};
+
+function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, onReview, onRequestMoreInfo }) {
+  const status = normalizeStatus(detail.prescriptionStatus);
+
+  return (
+    <div className="overflow-hidden rounded-[28px] border border-border bg-white shadow-sm">
+      <div className="border-b border-border bg-secondary/50 p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div>
+            <h2 className="text-2xl">Prescription #{detail.prescriptionId}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Order #{detail.orderId || "N/A"}</p>
+            <p className="mt-3">{detail.customerName}</p>
+            <p className="text-sm text-muted-foreground">{detail.customerEmail}</p>
+          </div>
+          <StatusBadge status={detail.prescriptionStatus} label={detail.prescriptionStatusLabel} />
+        </div>
+      </div>
+
+      <div className="space-y-6 p-6">
+        <section>
+          <SectionTitle icon={FileText} title="Thong so toa" />
+          <div className="grid gap-4 md:grid-cols-2">
+            <EyeCard title="Mat phai" eye={detail.rightEye} />
+            <EyeCard title="Mat trai" eye={detail.leftEye} />
+          </div>
+          <div className="mt-4 rounded-2xl bg-secondary/60 p-4">
+            <Row label="PD" value={`${detail.pd} mm`} />
+          </div>
+        </section>
+
+        <section>
+          <SectionTitle icon={FileText} title="Trong kinh" />
+          <div className="grid gap-3 md:grid-cols-2">
+            <RowCard label="Lens" value={detail.lensTypeCode || `#${detail.lensTypeId}`} />
+            <RowCard label="Chat lieu" value={detail.lensMaterial || "Mac dinh"} />
+            <RowCard label="Lens base" value={formatCurrency(detail.lensBasePrice)} />
+            <RowCard label="Material" value={formatCurrency(detail.materialPrice)} />
+            <RowCard label="Coating" value={formatCurrency(detail.coatingPrice)} />
+            <RowCard label="Tong lens" value={formatCurrency(detail.totalLensPrice)} />
+          </div>
+          {detail.coatings.length > 0 ? <p className="mt-3 text-sm text-muted-foreground">Coating: {detail.coatings.join(", ")}</p> : null}
+        </section>
+
+        {detail.prescriptionImageUrl ? (
+          <section>
+            <SectionTitle icon={ImageIcon} title="Anh toa" />
+            <a href={detail.prescriptionImageUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-primary hover:underline">
+              <ImageIcon className="h-4 w-4" />
+              Mo anh toa
+            </a>
+          </section>
+        ) : null}
+
+        <section>
+          <SectionTitle icon={FileText} title="Ghi chu xu ly" />
+          <textarea
+            value={actionNote}
+            onChange={(event) => setActionNote(event.target.value)}
+            rows={4}
+            placeholder="Nhap ghi chu cho review hoac yeu cau bo sung"
+            className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none focus:border-primary"
+          />
+          {actionError ? <p className="mt-3 text-sm text-red-600">{actionError}</p> : null}
+        </section>
+
+        <section className="flex flex-wrap gap-3 border-t border-border pt-6">
+          {["submitted", "needmoreinfo"].includes(status) ? (
+            <ActionButton disabled={saving} onClick={() => onReview("reviewing")}>
+              <Eye className="h-4 w-4" />
+              Dang kiem tra
+            </ActionButton>
+          ) : null}
+
+          {["submitted", "reviewing"].includes(status) ? (
+            <>
+              <ActionButton disabled={saving} onClick={() => onReview("approved")} tone="success">
+                <Check className="h-4 w-4" />
+                Duyet
+              </ActionButton>
+              <ActionButton disabled={saving} onClick={onRequestMoreInfo} tone="warning">
+                <RefreshCw className="h-4 w-4" />
+                Can bo sung
+              </ActionButton>
+              <ActionButton disabled={saving} onClick={() => onReview("rejected")} tone="danger">
+                <X className="h-4 w-4" />
+                Tu choi
+              </ActionButton>
+            </>
+          ) : null}
+
+          {status === "approved" ? (
+            <ActionButton disabled={saving} onClick={() => onReview("inProduction")} tone="success">
+              <Check className="h-4 w-4" />
+              San xuat
+            </ActionButton>
+          ) : null}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function ActionButton({ children, onClick, disabled, tone = "default" }) {
+  const toneClass =
+    tone === "success"
+      ? "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+      : tone === "danger"
+        ? "border-red-600 bg-red-600 text-white hover:bg-red-700"
+        : tone === "warning"
+          ? "border-amber-500 bg-amber-500 text-white hover:bg-amber-600"
+          : "border-primary bg-primary text-white hover:bg-primary/90";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm transition-colors disabled:opacity-60 ${toneClass}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SectionTitle({ icon: Icon, title }) {
+  return (
+    <div className="mb-3 flex items-center gap-2">
+      <Icon className="h-5 w-5 text-primary" />
+      <h3 className="text-lg">{title}</h3>
+    </div>
+  );
+}
+
+function EyeCard({ title, eye }) {
+  return (
+    <div className="rounded-2xl bg-secondary/60 p-4">
+      <p className="mb-3 font-medium">{title}</p>
+      <Row label="SPH" value={eye.sph} />
+      <Row label="CYL" value={eye.cyl} />
+      <Row label="AXIS" value={eye.axis} />
+    </div>
+  );
+}
+
+function RowCard({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-secondary/60 p-4">
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="mt-1">{value}</p>
+    </div>
+  );
+}
+
+function Row({ label, value }) {
+  return (
+    <div className="flex items-center justify-between gap-4 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+function StatusBadge({ status, label }) {
+  return <span className={`rounded-full px-3 py-1 text-sm ${getStatusColor(status)}`}>{label}</span>;
+}
+
+function LoadingCard({ text }) {
+  return (
+    <div className="rounded-[28px] border border-border bg-white p-8 text-center shadow-sm">
+      <div className="mx-auto mb-4 h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+      <p className="text-sm text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
+function EmptyCard({ text }) {
+  return (
+    <div className="rounded-[28px] border border-border bg-white p-10 text-center shadow-sm">
+      <Eye className="mx-auto mb-4 h-14 w-14 text-muted-foreground" />
+      <p className="text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
+function getStatusColor(status) {
+  switch (normalizeStatus(status)) {
+    case "approved":
+    case "inproduction":
+      return "bg-emerald-100 text-emerald-700";
+    case "needmoreinfo":
+      return "bg-amber-100 text-amber-700";
+    case "rejected":
+      return "bg-red-100 text-red-700";
+    case "reviewing":
+      return "bg-blue-100 text-blue-700";
+    default:
+      return "bg-slate-100 text-slate-700";
+  }
+}
+
+function normalizeStatus(status) {
+  return String(status ?? "").trim().toLowerCase();
+}
+
+function formatCurrency(amount) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(Number(amount ?? 0));
+}
+
+export { StaffPrescriptionReviewPage as default };

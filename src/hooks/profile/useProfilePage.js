@@ -12,7 +12,6 @@ import {
 } from "@/store/order/orderSlice";
 
 const DEFAULT_ORDER_FILTERS = {
-  orderType: "ready",
   page: 1,
   pageSize: 50,
   sortBy: "createdAt",

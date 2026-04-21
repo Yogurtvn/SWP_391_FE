@@ -7,6 +7,7 @@ import {
   deleteCartItem,
   fetchMyCart,
   selectCartState,
+  updatePrescriptionCartItem,
   updateCartItemQuantity,
 } from "@/store/cart/cartSlice";
 import { selectAuthState } from "@/store/auth/authSlice";
@@ -28,6 +29,8 @@ export function useCart() {
     addPrescriptionItem: (payload) => dispatch(addPrescriptionCartItem(payload)).unwrap(),
     updateQuantity: (cartItemId, quantity) =>
       dispatch(updateCartItemQuantity({ cartItemId, quantity })).unwrap(),
+    updatePrescriptionItem: (payload) =>
+      dispatch(updatePrescriptionCartItem(payload)).unwrap(),
     removeItem: (cartItemId, itemType = "standard") =>
       dispatch(deleteCartItem({ cartItemId, itemType })).unwrap(),
     clearCart: () => dispatch(clearMyCart()).unwrap(),

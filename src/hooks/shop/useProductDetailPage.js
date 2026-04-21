@@ -2,6 +2,11 @@
 import { useNavigate, useParams } from "react-router";
 import { useCart } from "@/hooks/cart/useCart";
 import { useCartDrawer } from "@/store/cart/CartDrawerContext";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  fetchProductPrescriptionEligibility,
+  selectPrescriptionState,
+} from "@/store/prescription/prescriptionSlice";
 import {
   getCatalogErrorMessage,
   getCatalogProductById,
@@ -18,6 +23,8 @@ import { toast } from "sonner";
 export function useProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const prescription = useAppSelector(selectPrescriptionState);
   const { addStandardItem } = useCart();
   const { openDrawer } = useCartDrawer();
   const mockProduct = useMemo(() => mockProducts.find((item) => item.id === id) ?? null, [id]);
@@ -29,6 +36,10 @@ export function useProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const productNumericId = useMemo(() => Number.parseInt(String(product?.productId ?? id ?? ""), 10), [id, product?.productId]);
+  const eligibilityState = Number.isFinite(productNumericId) && productNumericId > 0
+    ? prescription.productEligibility[String(productNumericId)]
+    : null;
 
   useEffect(() => {
     let isMounted = true;
@@ -106,6 +117,14 @@ export function useProductDetailPage() {
     setSelectedSize(product?.selectedVariant?.size ?? product?.sizes?.[0] ?? "");
   }, [product]);
 
+  useEffect(() => {
+    if (mockProduct || !product || !Number.isFinite(productNumericId) || productNumericId <= 0) {
+      return;
+    }
+
+    void dispatch(fetchProductPrescriptionEligibility(productNumericId));
+  }, [dispatch, mockProduct, product, productNumericId]);
+
   const resolvedVariant = useMemo(() => {
     if (!product) {
       return null;
@@ -147,8 +166,10 @@ export function useProductDetailPage() {
       inStock: availabilityStatus === "available",
       isPreOrderAllowed: Boolean(activeVariant?.isPreOrderAllowed),
       canPreOrder: Boolean(product.canPreOrder || activeVariant?.isPreOrderAllowed),
+      prescriptionCompatible: resolvePrescriptionCompatibility(product, eligibilityState, Boolean(mockProduct)),
+      prescriptionEligibilityReason: eligibilityState?.data?.reason || eligibilityState?.error || "",
     };
-  }, [product, resolvedVariant]);
+  }, [eligibilityState, mockProduct, product, resolvedVariant]);
 
   async function addCurrentProductToCart(openCartDrawer) {
     if (!resolvedProduct || resolvedProduct.availabilityStatus !== "available") {
@@ -250,13 +271,19 @@ export function useProductDetailPage() {
           navigate("/cart");
         }
       },
-      goToPrescriptionFlow: () =>
+      goToPrescriptionFlow: () => {
+        if (!resolvedProduct?.prescriptionCompatible) {
+          toast.error(resolvedProduct?.prescriptionEligibilityReason || "San pham nay hien khong ho tro kinh theo toa.");
+          return;
+        }
+
         navigate(`/prescription/${id}`, {
           state: {
             selectedColor,
             selectedSize,
           },
-        }),
+        });
+      },
       goBackToShop: () => navigate("/shop"),
       goToPreOrder: () =>
         navigate(`/preorder/${id}`, {
@@ -277,6 +304,22 @@ function resolvePreferredVariantBy(product, predicate) {
     variants[0] ||
     null
   );
+}
+
+function resolvePrescriptionCompatibility(product, eligibilityState, isMockProduct) {
+  if (isMockProduct) {
+    return Boolean(product?.prescriptionCompatible);
+  }
+
+  if (!product?.prescriptionCompatible) {
+    return false;
+  }
+
+  if (!eligibilityState || eligibilityState.status === "loading") {
+    return false;
+  }
+
+  return eligibilityState.status === "succeeded" && Boolean(eligibilityState.data?.isEligible);
 }
 
 function normalizeMockProduct(product) {

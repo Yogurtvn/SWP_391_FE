@@ -43,6 +43,17 @@ export default function OrdersPage() {
           </div>
 
           <select
+            value={filters.filterOrderType}
+            onChange={(event) => actions.setFilterOrderType(event.target.value)}
+            className="rounded-lg border border-border px-4 py-2 focus:border-primary focus:outline-none"
+          >
+            <option value="all">Tất cả loại đơn</option>
+            <option value="ready">Có sẵn</option>
+            <option value="prescription">Theo toa</option>
+            <option value="preOrder">Đặt trước</option>
+          </select>
+
+          <select
             value={filters.filterStatus}
             onChange={(event) => actions.setFilterStatus(event.target.value)}
             className="rounded-lg border border-border px-4 py-2 focus:border-primary focus:outline-none"

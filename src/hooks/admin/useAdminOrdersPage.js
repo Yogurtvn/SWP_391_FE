@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
@@ -40,9 +40,11 @@ function normalizeValue(value) {
 export function useAdminOrdersPage() {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const auth = useAppSelector(selectAuthState);
   const admin = useAppSelector(selectAdminState);
   const { popupAlert, popupForm, popupElement } = usePopupDialog();
+  const orderBasePath = location.pathname.startsWith("/staff") ? "/staff/orders" : "/admin/orders";
 
   const [filters, setFilters] = useState({
     page: 1,
@@ -260,7 +262,7 @@ export function useAdminOrdersPage() {
         setSelectedOrderId(null);
         dispatch(clearAdminCurrentOrder());
       },
-      goToDetail: (orderId) => navigate(`/admin/orders/${orderId}`),
+      goToDetail: (orderId) => navigate(`${orderBasePath}/${orderId}`),
       updateOrderStatus,
       updateShippingStatus,
     },

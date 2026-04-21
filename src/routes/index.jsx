@@ -151,7 +151,8 @@ const router = createBrowserRouter([
     children: [
       { path: "dashboard", Component: StaffDashboard },
       { path: "prescriptions", Component: StaffPrescriptionReviewPage },
-      { path: "orders", Component: ManagerOrdersPage },
+      { path: "orders", Component: AdminOrdersPage },
+      { path: "orders/:orderId", Component: AdminOrderDetailPage },
       { path: "reports", Component: SettingsPage }
     ]
   }

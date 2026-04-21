@@ -131,13 +131,14 @@ export async function getPreOrdersSummary(params = {}, token) {
 /**
  * GET /api/orders
  * Lấy tất cả đơn hàng (Admin/Staff xem toàn bộ).
- * @param {object} params - { page, pageSize, status, search, sortBy, sortOrder }
+ * @param {object} params - { page, pageSize, orderType, orderStatus, status, search, sortBy, sortOrder }
  * @param {string} token
  */
 export async function getAllOrders(params = {}, token) {
   const query = new URLSearchParams();
   if (params.page) query.set("page", params.page);
   if (params.pageSize) query.set("pageSize", params.pageSize);
+  if (params.orderType) query.set("orderType", params.orderType);
   if (params.orderStatus) query.set("orderStatus", params.orderStatus);
   if (params.shippingStatus) query.set("shippingStatus", params.shippingStatus);
   if (params.paymentStatus) query.set("paymentStatus", params.paymentStatus);

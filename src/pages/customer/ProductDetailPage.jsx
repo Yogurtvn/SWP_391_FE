@@ -10,7 +10,8 @@ export default function ProductDetailPage() {
       product?.isPreOrderAllowed ||
       product?.availabilityStatus === "preorder",
   );
-  const shouldShowOutOfStock = product?.availabilityStatus !== "available";
+  const isPreOrderOnly = !canBuyNow && canPreOrder;
+  const shouldShowOutOfStock = !canBuyNow && !canPreOrder;
 
   if (ui.loading) {
     return (
@@ -145,6 +146,9 @@ export default function ProductDetailPage() {
             {shouldShowOutOfStock ? (
               <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">Hết hàng</span>
             ) : null}
+            {isPreOrderOnly ? (
+              <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">Available for Pre-order</span>
+            ) : null}
             {canBuyNow && canPreOrder ? (
               <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">Co the dat truoc</span>
             ) : null}
@@ -230,6 +234,23 @@ export default function ProductDetailPage() {
                   <p>{product.selectedVariant.sku}</p>
                 </div>
               </div>
+              {product.selectedVariant.isPreOrderAllowed ? (
+                <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-orange-900">
+                  <p className="font-medium">
+                    {Number(product.selectedVariant.quantity ?? 0) > 0
+                      ? `Co the dat truoc khi so luong vuot qua ${Number(product.selectedVariant.quantity ?? 0)} san pham co san.`
+                      : "Available for Pre-order"}
+                  </p>
+                  {product.selectedVariant.expectedRestockDate ? (
+                    <p className="mt-1 text-sm">
+                      Du kien co hang: {formatDate(product.selectedVariant.expectedRestockDate)}
+                    </p>
+                  ) : null}
+                  {product.selectedVariant.preOrderNote ? (
+                    <p className="mt-1 text-sm">{product.selectedVariant.preOrderNote}</p>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -299,4 +320,18 @@ function formatCurrency(value) {
     style: "currency",
     currency: "VND",
   }).format(Number(value ?? 0));
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "chua cap nhat";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 }

@@ -92,6 +92,11 @@ function DashboardLayout() {
           icon: ShoppingCart
         },
         {
+          name: "Kho & Nhap Hang",
+          path: "/staff/inventory",
+          icon: ClipboardCheck
+        },
+        {
           name: "B\xE1o C\xE1o C\xF4ng Vi\u1EC7c",
           path: "/staff/reports",
           icon: FileText

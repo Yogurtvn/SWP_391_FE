@@ -153,6 +153,7 @@ const router = createBrowserRouter([
       { path: "prescriptions", Component: StaffPrescriptionReviewPage },
       { path: "orders", Component: AdminOrdersPage },
       { path: "orders/:orderId", Component: AdminOrderDetailPage },
+      { path: "inventory", Component: AdminInventoryPage },
       { path: "reports", Component: SettingsPage }
     ]
   }

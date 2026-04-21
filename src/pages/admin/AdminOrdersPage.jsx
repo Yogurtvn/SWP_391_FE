@@ -119,8 +119,8 @@ export default function AdminOrdersPage() {
               >
                 <option value="all">Tat ca loai don</option>
                 {orderTypeOptions.map((type) => (
-                  <option key={type} value={type}>
-                    {getTypeLabel(type)}
+                  <option key={type.value} value={type.value}>
+                    {type.label}
                   </option>
                 ))}
               </select>
@@ -133,6 +133,7 @@ export default function AdminOrdersPage() {
                 <option value="">Tat ca trang thai</option>
                 <option value="Pending">Cho duyet</option>
                 <option value="Confirmed">Da xac nhan</option>
+                <option value="AwaitingStock">Cho hang</option>
                 <option value="Processing">Dang xu ly</option>
                 <option value="Shipped">Dang giao</option>
                 <option value="Completed">Hoan thanh</option>

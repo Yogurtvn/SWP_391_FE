@@ -38,7 +38,8 @@ function ProductCard({
       product?.canPreOrder ||
       resolvedAvailabilityStatus === "preorder",
   );
-  const shouldShowOutOfStock = resolvedAvailabilityStatus !== "available";
+  const isPreOrderOnly = resolvedAvailabilityStatus === "preorder" && !canBuyNow;
+  const shouldShowOutOfStock = resolvedAvailabilityStatus === "unavailable";
 
   async function handleQuickBuy(event) {
     event.preventDefault();
@@ -110,7 +111,10 @@ function ProductCard({
               {canBuyNow && <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-md">
                   Con hang
                 </span>}
-              {shouldShowOutOfStock && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
+              {isPreOrderOnly && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
+                  Co the dat truoc
+                </span>}
+              {shouldShowOutOfStock && <span className="px-2 py-1 bg-gray-600 text-white text-xs rounded-md">
                   Het hang
                 </span>}
               {canBuyNow && canPreOrder && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
@@ -144,6 +148,9 @@ function ProductCard({
         </h3>
         <p className="text-sm mb-1" style={{ fontWeight: 600 }}>{formatCurrency(displayPrice)}</p>
         <p className="text-xs text-muted-foreground mb-2">{displaySubtitle}</p>
+        {isPreOrderOnly && <p className="mb-3 text-xs font-medium text-orange-700">
+            Available for Pre-order
+          </p>}
 
         {displayColors.length > 0 && <div className="flex items-center gap-1.5 mb-3">
             {displayColors.map((item, index) => <div

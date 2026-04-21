@@ -30,6 +30,12 @@ export const ADMIN_SHIPPING_STATUSES = [
   "Failed",
 ];
 
+export const ADMIN_ORDER_TYPES = [
+  { value: "ready", label: "Don thuong" },
+  { value: "preOrder", label: "Pre-order" },
+  { value: "prescription", label: "Don kinh" },
+];
+
 function normalizeValue(value) {
   return String(value || "")
     .trim()
@@ -62,6 +68,7 @@ export function useAdminOrdersPage() {
         page: filters.page,
         pageSize: filters.pageSize,
         search: filters.search.trim() || undefined,
+        orderType: typeFilter === "all" ? undefined : typeFilter,
         orderStatus: filters.orderStatus || undefined,
         shippingStatus: filters.shippingStatus || undefined,
         sortBy: "createdAt",
@@ -76,7 +83,7 @@ export function useAdminOrdersPage() {
     }
 
     void refreshOrders();
-  }, [auth.accessToken, auth.isReady, filters.page, filters.pageSize, filters.search, filters.orderStatus, filters.shippingStatus]);
+  }, [auth.accessToken, auth.isReady, filters.page, filters.pageSize, filters.search, filters.orderStatus, filters.shippingStatus, typeFilter]);
 
   useEffect(() => {
     if (!auth.isReady || !auth.accessToken || !selectedOrderId) {
@@ -92,24 +99,8 @@ export function useAdminOrdersPage() {
     };
   }, [dispatch]);
 
-  const filteredOrders = useMemo(() => {
-    if (typeFilter === "all") {
-      return admin.orders.items;
-    }
-
-    return admin.orders.items.filter((order) => normalizeValue(order.orderType) === normalizeValue(typeFilter));
-  }, [admin.orders.items, typeFilter]);
-
-  const orderTypeOptions = useMemo(() => {
-    const typeMap = new Map();
-    admin.orders.items.forEach((order) => {
-      if (order?.orderType) {
-        typeMap.set(normalizeValue(order.orderType), order.orderType);
-      }
-    });
-
-    return Array.from(typeMap.values());
-  }, [admin.orders.items]);
+  const filteredOrders = admin.orders.items;
+  const orderTypeOptions = ADMIN_ORDER_TYPES;
 
   const selectedOrderSummary = useMemo(
     () => filteredOrders.find((order) => String(order.orderId) === String(selectedOrderId)) ?? null,
@@ -126,6 +117,14 @@ export function useAdminOrdersPage() {
       ...current,
       page: field === "page" ? value : 1,
       [field]: value,
+    }));
+  }
+
+  function setOrderTypeFilter(value) {
+    setTypeFilter(value);
+    setFilters((current) => ({
+      ...current,
+      page: 1,
     }));
   }
 
@@ -250,7 +249,7 @@ export function useAdminOrdersPage() {
     },
     actions: {
       setFilter,
-      setTypeFilter,
+      setTypeFilter: setOrderTypeFilter,
       retry: async () => {
         await refreshOrders();
         if (selectedOrderId) {

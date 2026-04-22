@@ -17,22 +17,23 @@ import {
   XCircle,
 } from "lucide-react";
 import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
-import { getAllOrders, getDashboard } from "@/services/adminService";
+import { getAllOrders, getDashboard, getOrderById, getOrderItems, getProducts, getUsers } from "@/services/adminService";
 import { selectAuthState } from "@/store/auth/authSlice";
 
 const DATE_RANGES = {
   today: { label: "Hôm nay", days: 0 },
-  "7days": { label: "7 ngay qua", days: 7 },
-  "30days": { label: "30 ngay qua", days: 30 },
-  "90days": { label: "90 ngay qua", days: 90 },
+  "7days": { label: "7 ngày qua", days: 7 },
+  "30days": { label: "30 ngày qua", days: 30 },
+  "90days": { label: "90 ngày qua", days: 90 },
 };
 
 const STATUS_CONFIG = {
-  pending: { label: "Cho xử lý", icon: Clock, className: "bg-amber-50 text-amber-700 border-amber-200" },
+  pending: { label: "Chờ xử lý", icon: Clock, className: "bg-amber-50 text-amber-700 border-amber-200" },
   processing: { label: "Đang xử lý", icon: Package, className: "bg-sky-50 text-sky-700 border-sky-200" },
+  awaitingstock: { label: "Chờ hàng", icon: AlertCircle, className: "bg-orange-50 text-orange-700 border-orange-200" },
   "awaiting-stock": { label: "Chờ hàng", icon: AlertCircle, className: "bg-orange-50 text-orange-700 border-orange-200" },
   reviewing: { label: "Kiểm tra", icon: Eye, className: "bg-violet-50 text-violet-700 border-violet-200" },
-  completed: { label: "Hoan thành", icon: CheckCircle, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  completed: { label: "Hoàn thành", icon: CheckCircle, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   delivered: { label: "Đã giao", icon: CheckCircle, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   cancelled: { label: "Đã hủy", icon: XCircle, className: "bg-red-50 text-red-700 border-red-200" },
 };
@@ -77,7 +78,7 @@ function SummaryCard({ title, value, changePercent, icon: Icon, iconClassName })
               }`}
             >
               {isPositive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-              {Mãth.abs(Number(changePercent)).toFixed(1)}%
+              {Math.abs(Number(changePercent)).toFixed(1)}%
             </span>
           )}
         </div>
@@ -89,7 +90,7 @@ function SummaryCard({ title, value, changePercent, icon: Icon, iconClassName })
 }
 
 function StatusBadge({ status }) {
-  const config = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
+  const config = STATUS_CONFIG[normalizeStatus(status)] ?? STATUS_CONFIG.pending;
   const Icon = config.icon;
 
   return (
@@ -98,6 +99,192 @@ function StatusBadge({ status }) {
       {config.label}
     </span>
   );
+}
+
+async function enrichOrders(orders, token) {
+  const items = Array.isArray(orders) ? orders : [];
+
+  const entries = await Promise.all(
+    items.map(async (order) => {
+      const orderId = Number(order?.orderId ?? order?.id ?? 0);
+
+      if (!Number.isFinite(orderId) || orderId <= 0) {
+        return normalizeAdminOrder(order, null);
+      }
+
+      try {
+        const detail = await getOrderById(orderId, token);
+        let detailItems = Array.isArray(detail?.items) ? detail.items : [];
+
+        if (detail && detailItems.length === 0) {
+          try {
+            detailItems = (await getOrderItems(orderId, token))?.items ?? [];
+          } catch {
+            detailItems = [];
+          }
+        }
+
+        return normalizeAdminOrder(order, detail ? { ...detail, items: detailItems } : null);
+      } catch {
+        return normalizeAdminOrder(order, null);
+      }
+    }),
+  );
+
+  return entries;
+}
+
+function normalizeAdminOrder(order, detail) {
+  const source = detail ?? order ?? {};
+  const detailItems = Array.isArray(detail?.items) ? detail.items : [];
+
+  return {
+    ...order,
+    detail,
+    items: detailItems,
+    orderId: Number(source.orderId ?? order?.orderId ?? order?.id ?? 0),
+    customerName:
+      normalizeText(source.customerName) ??
+      normalizeText(source.receiverName) ??
+      normalizeText(order?.customer) ??
+      normalizeText(order?.customerName) ??
+      "-",
+    receiverName: normalizeText(source.receiverName) ?? normalizeText(order?.receiverName) ?? "",
+    totalAmount: Number(source.totalAmount ?? order?.totalAmount ?? order?.total ?? 0),
+    orderStatus: source.orderStatus ?? order?.orderStatus ?? order?.status ?? "",
+    status: source.orderStatus ?? order?.orderStatus ?? order?.status ?? "",
+    shippingStatus: source.shippingStatus ?? order?.shippingStatus ?? "",
+    paymentStatus: source.payment?.paymentStatus ?? order?.paymentStatus ?? "",
+    createdAt: source.createdAt ?? order?.createdAt ?? null,
+  };
+}
+
+function deriveDashboardData({ dashboard, ordersPage, orders, customersPage, productsPage }) {
+  const rangeOrders = Array.isArray(orders) && orders.length > 0
+    ? orders
+    : Array.isArray(ordersPage?.items)
+      ? ordersPage.items.map((order) => normalizeAdminOrder(order, null))
+      : [];
+  const derivedStatusCounts = deriveOrdersByStatus(rangeOrders);
+  const dashboardStatusCounts = normalizeOrdersByStatus(dashboard?.ordersByStatus);
+  const ordersByStatus = sumObjectValues(dashboardStatusCounts) > 0 ? dashboardStatusCounts : derivedStatusCounts;
+  const fallbackOrderCount = getPageTotal(ordersPage, rangeOrders.length);
+  const fallbackRevenue = rangeOrders
+    .filter((order) => normalizeStatus(order.orderStatus) !== "cancelled")
+    .reduce((total, order) => total + Number(order.totalAmount ?? 0), 0);
+  const topProducts = normalizeTopProducts(dashboard?.topProducts);
+
+  return {
+    ...dashboard,
+    revenue: normalizeMetric(dashboard?.revenue, fallbackRevenue),
+    totalOrders: normalizeMetric(dashboard?.totalOrders, fallbackOrderCount),
+    totalCustomers: normalizeMetric(dashboard?.totalCustomers, getPageTotal(customersPage, 0)),
+    totalProducts: normalizeMetric(dashboard?.totalProducts, getPageTotal(productsPage, 0)),
+    ordersByStatus,
+    topProducts: topProducts.length > 0 ? topProducts : deriveTopProducts(rangeOrders),
+  };
+}
+
+function normalizeMetric(metric, fallbackValue) {
+  if (metric && typeof metric === "object") {
+    const rawCurrent = Number(metric.current ?? metric.total ?? 0);
+    const fallback = Number(fallbackValue ?? 0);
+    const current = rawCurrent > 0 || fallback <= 0 ? rawCurrent : fallback;
+    return {
+      ...metric,
+      current: Number.isFinite(current) ? current : 0,
+      total: Number.isFinite(Number(metric.total)) ? Number(metric.total) : current,
+    };
+  }
+
+  const rawValue = Number(metric ?? 0);
+  const fallback = Number(fallbackValue ?? 0);
+  const value = rawValue > 0 || fallback <= 0 ? rawValue : fallback;
+
+  return {
+    current: Number.isFinite(value) ? value : 0,
+    total: Number.isFinite(value) ? value : 0,
+  };
+}
+
+function getPageTotal(page, fallbackValue) {
+  const value = Number(page?.totalItems ?? page?.totalCount ?? page?.total ?? fallbackValue ?? 0);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function normalizeOrdersByStatus(rawStatusCounts) {
+  if (!rawStatusCounts || typeof rawStatusCounts !== "object") {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(rawStatusCounts).map(([status, count]) => [normalizeStatus(status), Number(count ?? 0)]),
+  );
+}
+
+function sumObjectValues(values) {
+  return Object.values(values ?? {}).reduce((total, value) => total + Number(value ?? 0), 0);
+}
+
+function deriveOrdersByStatus(orders) {
+  return (Array.isArray(orders) ? orders : []).reduce((counts, order) => {
+    const key = normalizeStatus(order.orderStatus ?? order.status);
+    counts[key] = (counts[key] ?? 0) + 1;
+    return counts;
+  }, {});
+}
+
+function normalizeTopProducts(products) {
+  return (Array.isArray(products) ? products : [])
+    .map((product) => ({
+      name: product.name ?? product.productName ?? "-",
+      soldCount: Number(product.soldCount ?? product.sold ?? product.quantity ?? 0),
+      revenue: Number(product.revenue ?? product.totalRevenue ?? 0),
+    }))
+    .filter((product) => product.name !== "-");
+}
+
+function deriveTopProducts(orders) {
+  const productMap = new Map();
+
+  (Array.isArray(orders) ? orders : []).forEach((order) => {
+    const items = Array.isArray(order.items) ? order.items : [];
+
+    items.forEach((item) => {
+      const key = String(item.productId ?? item.variantId ?? item.productName ?? "");
+
+      if (!key) {
+        return;
+      }
+
+      const current = productMap.get(key) ?? {
+        name: item.productName ?? item.name ?? `Sản phẩm #${key}`,
+        soldCount: 0,
+        revenue: 0,
+      };
+
+      const quantity = Number(item.quantity ?? 0);
+      current.soldCount += Number.isFinite(quantity) ? quantity : 0;
+      current.revenue += Number(item.lineTotal ?? item.totalPrice ?? item.unitPrice * quantity ?? 0) || 0;
+      productMap.set(key, current);
+    });
+  });
+
+  return Array.from(productMap.values())
+    .sort((a, b) => b.soldCount - a.soldCount || b.revenue - a.revenue)
+    .slice(0, 5);
+}
+
+function normalizeStatus(status) {
+  return String(status ?? "pending")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+}
+
+function normalizeText(value) {
+  const normalizedValue = String(value ?? "").trim();
+  return normalizedValue.length > 0 ? normalizedValue : null;
 }
 
 export default function AdminDashboard() {
@@ -119,13 +306,37 @@ export default function AdminDashboard() {
         throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
       }
 
-      const [dashboard, ordersResult] = await Promise.all([
-        getDashboard(buildDateRange(dateRange), accessToken),
+      const range = buildDateRange(dateRange);
+      const orderRangeFilters = {
+        fromDate: range.startDate,
+        toDate: range.endDate,
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      };
+      const [dashboardResult, ordersResult, recentOrdersResult, customersResult, productsResult] = await Promise.allSettled([
+        getDashboard(range, accessToken),
+        getAllOrders({ ...orderRangeFilters, page: 1, pageSize: 200 }, accessToken),
         getAllOrders({ page: 1, pageSize: 5, sortBy: "createdAt", sortOrder: "desc" }, accessToken),
+        getUsers({ page: 1, pageSize: 1, role: "customer" }, accessToken),
+        getProducts({ page: 1, pageSize: 1 }, accessToken),
       ]);
 
-      setDashboardData(dashboard);
-      setRecentOrders(ordersResult?.items ?? []);
+      const dashboard = dashboardResult.status === "fulfilled" ? dashboardResult.value : null;
+      const ordersPage = ordersResult.status === "fulfilled" ? ordersResult.value : null;
+      const recentOrdersPage = recentOrdersResult.status === "fulfilled" ? recentOrdersResult.value : null;
+      const enrichedRangeOrders = await enrichOrders((ordersPage?.items ?? []).slice(0, 50), accessToken);
+      const enrichedRecentOrders = await enrichOrders(recentOrdersPage?.items ?? [], accessToken);
+      const derivedDashboard = deriveDashboardData({
+        dashboard,
+        ordersPage,
+        orders: enrichedRangeOrders,
+        recentOrders: enrichedRecentOrders,
+        customersPage: customersResult.status === "fulfilled" ? customersResult.value : null,
+        productsPage: productsResult.status === "fulfilled" ? productsResult.value : null,
+      });
+
+      setDashboardData(derivedDashboard);
+      setRecentOrders(enrichedRecentOrders);
     } catch (fetchError) {
       setDashboardData(null);
       setRecentOrders([]);
@@ -179,7 +390,7 @@ export default function AdminDashboard() {
         <>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             <SummaryCard
-              title="Tổng doảnh thu"
+              title="Tổng doanh thu"
               value={formatCurrency(revenue.current ?? revenue.total)}
               changePercent={revenue.changePercent}
               icon={DollarSign}
@@ -211,7 +422,7 @@ export default function AdminDashboard() {
             <AdminSection title="Trạng thái đơn hàng">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 p-5">
-                  <p className="text-sm font-semibold text-slate-600">Cho xử lý</p>
+                  <p className="text-sm font-semibold text-slate-600">Chờ xử lý</p>
                   <p className="mt-2 text-3xl font-bold text-amber-700">{ordersByStatus.pending ?? 0}</p>
                 </div>
                 <div className="rounded-[1.4rem] border border-sky-200 bg-sky-50 p-5">
@@ -219,9 +430,9 @@ export default function AdminDashboard() {
                   <p className="mt-2 text-3xl font-bold text-sky-700">{ordersByStatus.processing ?? 0}</p>
                 </div>
                 <div className="rounded-[1.4rem] border border-emerald-200 bg-emerald-50 p-5">
-                  <p className="text-sm font-semibold text-slate-600">Hoan thành</p>
+                  <p className="text-sm font-semibold text-slate-600">Hoàn thành</p>
                   <p className="mt-2 text-3xl font-bold text-emerald-700">
-                    {ordersByStatus.completed ?? ordersByStatus.delivered ?? 0}
+                    {Number(ordersByStatus.completed ?? 0) + Number(ordersByStatus.delivered ?? 0)}
                   </p>
                 </div>
                 <div className="rounded-[1.4rem] border border-red-200 bg-red-50 p-5">
@@ -231,9 +442,9 @@ export default function AdminDashboard() {
               </div>
             </AdminSection>
 
-            <AdminSection title="Sản phẩm ban chay">
+            <AdminSection title="Sản phẩm bán chạy">
               {topProducts.length === 0 ? (
-                <p className="py-8 text-center text-slate-500">Chưa có du lieu.</p>
+                <p className="py-8 text-center text-slate-500">Chưa có dữ liệu.</p>
               ) : (
                 <div className="space-y-3">
                   {topProducts.map((product, index) => (
@@ -244,7 +455,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="truncate font-bold text-[#11284b]">{product.name ?? product.productName ?? "-"}</p>
-                          <p className="mt-1 text-sm text-slate-500">{product.soldCount ?? product.sold ?? 0} da ban</p>
+                          <p className="mt-1 text-sm text-slate-500">{product.soldCount ?? product.sold ?? 0} đã bán</p>
                           <p className="mt-2 font-bold text-orange-600">{formatCurrency(product.revenue ?? 0)}</p>
                         </div>
                       </div>
@@ -256,10 +467,10 @@ export default function AdminDashboard() {
           </div>
 
           <AdminSection
-            title="Đơn hàng gan day"
+            title="Đơn hàng gần đây"
             actions={
               <button type="button" className={adminStyles.secondaryButton} onClick={() => navigate("/admin/orders")}>
-                Xem tat ca
+                Xem tất cả
               </button>
             }
           >
@@ -271,14 +482,14 @@ export default function AdminDashboard() {
                     <th className={adminStyles.th}>Khách hàng</th>
                     <th className={adminStyles.th}>Tổng tiền</th>
                     <th className={adminStyles.th}>Trạng thái</th>
-                    <th className={adminStyles.th}>Thoi gian</th>
+                    <th className={adminStyles.th}>Thời gian</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {recentOrders.length === 0 ? (
                     <tr>
                       <td colSpan={5} className={adminStyles.emptyState}>
-                        Chưa có đơn hàng nao.
+                        Chưa có đơn hàng nào.
                       </td>
                     </tr>
                   ) : (
@@ -289,12 +500,12 @@ export default function AdminDashboard() {
                         onClick={() => navigate(`/admin/orders/${order.orderId ?? order.id}`)}
                       >
                         <td className={adminStyles.td}>#{order.orderId ?? order.id}</td>
-                        <td className={adminStyles.td}>{order.customerName ?? order.customer ?? "-"}</td>
+                        <td className={adminStyles.td}>{order.customerName ?? order.receiverName ?? order.customer ?? "-"}</td>
                         <td className={`${adminStyles.td} font-bold text-orange-600`}>
                           {formatCurrency(order.totalAmount ?? order.total)}
                         </td>
                         <td className={adminStyles.td}>
-                          <StatusBadge status={order.status} />
+                          <StatusBadge status={order.status ?? order.orderStatus} />
                         </td>
                         <td className={adminStyles.td}>
                           {order.createdAt

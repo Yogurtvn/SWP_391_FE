@@ -110,30 +110,6 @@ export default function LoginPage() {
                   <span>Đang xác thực tài khoản Google...</span>
                 </div>}
 
-              <p className="text-xs text-center text-muted-foreground">
-                Google login sử dụng backend thật và sẽ tạo tài khoản customer nếu email chưa tồn tại.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-border">
-            <p className="text-sm text-muted-foreground mb-3">Tài khoản demo cho giao diện:</p>
-            <div className="space-y-2 text-sm">
-              <div className="p-3 bg-secondary rounded-lg">
-                <p className="mb-1">
-                  <strong>Admin:</strong> admin@eyewear.com / admin123
-                </p>
-              </div>
-              <div className="p-3 bg-secondary rounded-lg">
-                <p className="mb-1">
-                  <strong>Staff:</strong> staff@eyewear.com / staff123
-                </p>
-              </div>
-              <div className="p-3 bg-secondary rounded-lg">
-                <p className="mb-1">
-                  <strong>Customer:</strong> customer@example.com / customer123
-                </p>
-              </div>
             </div>
           </div>
         </div>

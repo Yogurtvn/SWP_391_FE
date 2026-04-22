@@ -1,4 +1,4 @@
-﻿import { apiGet, apiPost } from "@/services/apiClient";
+import { apiGet, apiPost } from "@/services/apiClient";
 
 const AUTH_BASE_PATH = "/api/auth";
 
@@ -41,7 +41,11 @@ export async function loginUser(credentials) {
 
     return createSessionFromApiResponse(authResponse);
   } catch (error) {
-    return loginWithDemoAccount(email, password, error);
+    if (import.meta.env.DEV) {
+      return loginWithDemoAccount(email, password, error);
+    }
+
+    throw error;
   }
 }
 

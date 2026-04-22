@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useSelector } from "react-redux";
 import {
@@ -21,20 +21,20 @@ import { getAllOrders, getDashboard } from "@/services/adminService";
 import { selectAuthState } from "@/store/auth/authSlice";
 
 const DATE_RANGES = {
-  today: { label: "Hom nay", days: 0 },
+  today: { label: "Hôm nay", days: 0 },
   "7days": { label: "7 ngay qua", days: 7 },
   "30days": { label: "30 ngay qua", days: 30 },
   "90days": { label: "90 ngay qua", days: 90 },
 };
 
 const STATUS_CONFIG = {
-  pending: { label: "Cho xu ly", icon: Clock, className: "bg-amber-50 text-amber-700 border-amber-200" },
-  processing: { label: "Dang xu ly", icon: Package, className: "bg-sky-50 text-sky-700 border-sky-200" },
-  "awaiting-stock": { label: "Cho hang", icon: AlertCircle, className: "bg-orange-50 text-orange-700 border-orange-200" },
-  reviewing: { label: "Kiem tra", icon: Eye, className: "bg-violet-50 text-violet-700 border-violet-200" },
-  completed: { label: "Hoan thanh", icon: CheckCircle, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  delivered: { label: "Da giao", icon: CheckCircle, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  cancelled: { label: "Da huy", icon: XCircle, className: "bg-red-50 text-red-700 border-red-200" },
+  pending: { label: "Cho xử lý", icon: Clock, className: "bg-amber-50 text-amber-700 border-amber-200" },
+  processing: { label: "Đang xử lý", icon: Package, className: "bg-sky-50 text-sky-700 border-sky-200" },
+  "awaiting-stock": { label: "Chờ hàng", icon: AlertCircle, className: "bg-orange-50 text-orange-700 border-orange-200" },
+  reviewing: { label: "Kiểm tra", icon: Eye, className: "bg-violet-50 text-violet-700 border-violet-200" },
+  completed: { label: "Hoan thành", icon: CheckCircle, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  delivered: { label: "Đã giao", icon: CheckCircle, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  cancelled: { label: "Đã hủy", icon: XCircle, className: "bg-red-50 text-red-700 border-red-200" },
 };
 
 function formatCurrency(value) {
@@ -77,7 +77,7 @@ function SummaryCard({ title, value, changePercent, icon: Icon, iconClassName })
               }`}
             >
               {isPositive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-              {Math.abs(Number(changePercent)).toFixed(1)}%
+              {Mãth.abs(Number(changePercent)).toFixed(1)}%
             </span>
           )}
         </div>
@@ -116,7 +116,7 @@ export default function AdminDashboard() {
 
     try {
       if (!accessToken) {
-        throw new Error("Phien dang nhap da het han. Vui long dang nhap lai.");
+        throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
       }
 
       const [dashboard, ordersResult] = await Promise.all([
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
     } catch (fetchError) {
       setDashboardData(null);
       setRecentOrders([]);
-      setError(fetchError.message || "Khong the tai dashboard.");
+      setError(fetchError.message || "Không thể tải dashboard.");
     } finally {
       setLoading(false);
     }
@@ -148,7 +148,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminPageShell
-      title="Dashboard Tong Quan"
+      title="Dashboard Tổng Quan"
       actions={
         <>
           <select
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
           </select>
           <button type="button" onClick={fetchDashboard} className={adminStyles.secondaryButton} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Tai lai
+            Tải lại
           </button>
         </>
       }
@@ -179,28 +179,28 @@ export default function AdminDashboard() {
         <>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             <SummaryCard
-              title="Tong doanh thu"
+              title="Tổng doảnh thu"
               value={formatCurrency(revenue.current ?? revenue.total)}
               changePercent={revenue.changePercent}
               icon={DollarSign}
               iconClassName="border-emerald-200 bg-emerald-50 text-emerald-600"
             />
             <SummaryCard
-              title="Tong don hang"
+              title="Tổng đơn hàng"
               value={(totalOrders.current ?? totalOrders.total ?? 0).toLocaleString("vi-VN")}
               changePercent={totalOrders.changePercent}
               icon={ShoppingCart}
               iconClassName="border-sky-200 bg-sky-50 text-sky-600"
             />
             <SummaryCard
-              title="Khach hang"
+              title="Khách hàng"
               value={(totalCustomers.current ?? totalCustomers.total ?? 0).toLocaleString("vi-VN")}
               changePercent={totalCustomers.changePercent}
               icon={Users}
               iconClassName="border-violet-200 bg-violet-50 text-violet-600"
             />
             <SummaryCard
-              title="San pham"
+              title="Sản phẩm"
               value={(totalProducts.current ?? totalProducts.total ?? 0).toLocaleString("vi-VN")}
               icon={Package}
               iconClassName="border-orange-200 bg-orange-50 text-orange-600"
@@ -208,32 +208,32 @@ export default function AdminDashboard() {
           </div>
 
           <div className="grid gap-6 xl:grid-cols-[1.6fr,1fr]">
-            <AdminSection title="Trang thai don hang">
+            <AdminSection title="Trạng thái đơn hàng">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 p-5">
-                  <p className="text-sm font-semibold text-slate-600">Cho xu ly</p>
+                  <p className="text-sm font-semibold text-slate-600">Cho xử lý</p>
                   <p className="mt-2 text-3xl font-bold text-amber-700">{ordersByStatus.pending ?? 0}</p>
                 </div>
                 <div className="rounded-[1.4rem] border border-sky-200 bg-sky-50 p-5">
-                  <p className="text-sm font-semibold text-slate-600">Dang xu ly</p>
+                  <p className="text-sm font-semibold text-slate-600">Đang xử lý</p>
                   <p className="mt-2 text-3xl font-bold text-sky-700">{ordersByStatus.processing ?? 0}</p>
                 </div>
                 <div className="rounded-[1.4rem] border border-emerald-200 bg-emerald-50 p-5">
-                  <p className="text-sm font-semibold text-slate-600">Hoan thanh</p>
+                  <p className="text-sm font-semibold text-slate-600">Hoan thành</p>
                   <p className="mt-2 text-3xl font-bold text-emerald-700">
                     {ordersByStatus.completed ?? ordersByStatus.delivered ?? 0}
                   </p>
                 </div>
                 <div className="rounded-[1.4rem] border border-red-200 bg-red-50 p-5">
-                  <p className="text-sm font-semibold text-slate-600">Da huy</p>
+                  <p className="text-sm font-semibold text-slate-600">Đã hủy</p>
                   <p className="mt-2 text-3xl font-bold text-red-700">{ordersByStatus.cancelled ?? 0}</p>
                 </div>
               </div>
             </AdminSection>
 
-            <AdminSection title="San pham ban chay">
+            <AdminSection title="Sản phẩm ban chay">
               {topProducts.length === 0 ? (
-                <p className="py-8 text-center text-slate-500">Chua co du lieu.</p>
+                <p className="py-8 text-center text-slate-500">Chưa có du lieu.</p>
               ) : (
                 <div className="space-y-3">
                   {topProducts.map((product, index) => (
@@ -256,7 +256,7 @@ export default function AdminDashboard() {
           </div>
 
           <AdminSection
-            title="Don hang gan day"
+            title="Đơn hàng gan day"
             actions={
               <button type="button" className={adminStyles.secondaryButton} onClick={() => navigate("/admin/orders")}>
                 Xem tat ca
@@ -267,10 +267,10 @@ export default function AdminDashboard() {
               <table className={adminStyles.table}>
                 <thead className={adminStyles.tableHead}>
                   <tr>
-                    <th className={adminStyles.th}>Ma don</th>
-                    <th className={adminStyles.th}>Khach hang</th>
-                    <th className={adminStyles.th}>Tong tien</th>
-                    <th className={adminStyles.th}>Trang thai</th>
+                    <th className={adminStyles.th}>Mã đơn</th>
+                    <th className={adminStyles.th}>Khách hàng</th>
+                    <th className={adminStyles.th}>Tổng tiền</th>
+                    <th className={adminStyles.th}>Trạng thái</th>
                     <th className={adminStyles.th}>Thoi gian</th>
                   </tr>
                 </thead>
@@ -278,7 +278,7 @@ export default function AdminDashboard() {
                   {recentOrders.length === 0 ? (
                     <tr>
                       <td colSpan={5} className={adminStyles.emptyState}>
-                        Chua co don hang nao.
+                        Chưa có đơn hàng nao.
                       </td>
                     </tr>
                   ) : (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import {
   AlertCircle,
@@ -33,9 +33,9 @@ function getRoleLabel(role) {
     case "admin":
       return "Admin";
     case "staff":
-      return "Nhan vien";
+      return "Nhân viên";
     case "customer":
-      return "Khach hang";
+      return "Khách hàng";
     default:
       return role ?? "-";
   }
@@ -54,7 +54,7 @@ export default function AdminUsersPage() {
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  const [showModal, setShowModal] = useState(false);
+  const [showMởdal, setShowMởdal] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [formData, setFormData] = useState({
@@ -72,7 +72,7 @@ export default function AdminUsersPage() {
 
       try {
         if (!accessToken) {
-          throw new Error("Phien dang nhap da het han. Vui long dang nhap lai.");
+          throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
         }
 
         const result = await getUsers(
@@ -96,7 +96,7 @@ export default function AdminUsersPage() {
       } catch (fetchError) {
         setUsers([]);
         setPagination((current) => ({ ...current, page, totalItems: 0, totalPages: 1 }));
-        setError(fetchError.message || "Khong the tai danh sach nguoi dung.");
+        setError(fetchError.message || "Không thể tải danh sách người dùng.");
       } finally {
         setLoading(false);
       }
@@ -117,20 +117,20 @@ export default function AdminUsersPage() {
 
     try {
       if (!accessToken) {
-        throw new Error("Phien dang nhap da het han. Vui long dang nhap lai.");
+        throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
       }
 
       const nextStatus = user.isActive === false;
       await updateUserStatus(user.userId, nextStatus, accessToken);
       setUsers((current) => current.map((item) => (item.userId === user.userId ? { ...item, isActive: nextStatus } : item)));
     } catch (updateError) {
-      setError(updateError.message || "Khong the cap nhat trang thai nguoi dung.");
+      setError(updateError.message || "Không thể cập nhật trạng thái người dùng.");
     } finally {
       setActionLoading(null);
     }
   };
 
-  const openCreateModal = () => {
+  const openCreateMởdal = () => {
     setFormData({
       fullName: "",
       email: "",
@@ -139,7 +139,7 @@ export default function AdminUsersPage() {
       role: "Staff",
     });
     setSubmitError("");
-    setShowModal(true);
+    setShowMởdal(true);
   };
 
   const handleSubmit = async (event) => {
@@ -149,7 +149,7 @@ export default function AdminUsersPage() {
 
     try {
       if (!accessToken) {
-        throw new Error("Phien dang nhap da het han. Vui long dang nhap lai.");
+        throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
       }
 
       await createUser(
@@ -163,10 +163,10 @@ export default function AdminUsersPage() {
         accessToken,
       );
 
-      setShowModal(false);
+      setShowMởdal(false);
       await fetchUsers(1);
     } catch (createError) {
-      setSubmitError(createError.message || "Khong the tao nguoi dung moi.");
+      setSubmitError(createError.message || "Không thể tạo người dùng mới.");
     } finally {
       setSubmitLoading(false);
     }
@@ -174,40 +174,40 @@ export default function AdminUsersPage() {
 
   return (
     <AdminPageShell
-      title="Quan Ly Nguoi Dung"
+      title="Quản Lý Người Dùng"
       actions={
         <>
           <button type="button" className={adminStyles.secondaryButton} onClick={() => fetchUsers(pagination.page)} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Tai lai
+            Tải lại
           </button>
-          <button type="button" className={adminStyles.primaryButton} onClick={openCreateModal}>
+          <button type="button" className={adminStyles.primaryButton} onClick={openCreateMởdal}>
             <UserPlus className="h-4 w-4" />
-            Them nguoi dung
+            Thêm người dùng
           </button>
         </>
       }
     >
-      <AdminSection subtitle={`Tong so: ${loading ? "..." : pagination.totalItems} nguoi dung`}>
+      <AdminSection subtitle={`Tổng số: ${loading ? "..." : pagination.totalItems} người dùng`}>
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr),220px,220px]">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
               type="search"
-              placeholder="Tim theo ten hoac email..."
+              placeholder="Tìm theo tên hoặc email..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               className={`${adminStyles.input} pl-12`}
             />
           </label>
           <select value={filterRole} onChange={(event) => setFilterRole(event.target.value)} className={adminStyles.input}>
-            <option value="all">Tat ca vai tro</option>
+            <option value="all">Tất cả vai trò</option>
             <option value="Admin">Admin</option>
-            <option value="Staff">Nhan vien</option>
-            <option value="Customer">Khach hang</option>
+            <option value="Staff">Nhân viên</option>
+            <option value="Customer">Khách hàng</option>
           </select>
           <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className={adminStyles.input}>
-            <option value="all">Tat ca trang thai</option>
+            <option value="all">Tất cả trạng thái</option>
             <option value="active">Hoat dong</option>
             <option value="inactive">Bi khoa</option>
           </select>
@@ -216,17 +216,17 @@ export default function AdminUsersPage() {
 
       <AdminErrorBanner message={error} />
 
-      <AdminSection title="Danh sach nguoi dung" bodyClassName="p-0">
+      <AdminSection title="Danh sách người dùng" bodyClassName="p-0">
         <div className={adminStyles.tableWrapper}>
           <table className={adminStyles.table}>
             <thead className={adminStyles.tableHead}>
               <tr>
-                <th className={adminStyles.th}>Nguoi dung</th>
+                <th className={adminStyles.th}>Người dùng</th>
                 <th className={adminStyles.th}>Email</th>
-                <th className={adminStyles.th}>So dien thoai</th>
-                <th className={adminStyles.th}>Vai tro</th>
-                <th className={adminStyles.th}>Trang thai</th>
-                <th className={adminStyles.th}>Ngay tao</th>
+                <th className={adminStyles.th}>Số điện thoại</th>
+                <th className={adminStyles.th}>Vai trò</th>
+                <th className={adminStyles.th}>Trạng thái</th>
+                <th className={adminStyles.th}>Ngày tạo</th>
                 <th className={`${adminStyles.th} text-right`}>Thao tac</th>
               </tr>
             </thead>
@@ -240,7 +240,7 @@ export default function AdminUsersPage() {
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={7} className={adminStyles.emptyState}>
-                    Khong tim thay nguoi dung nao.
+                    Không tìm thấy người dùng nào.
                   </td>
                 </tr>
               ) : (
@@ -291,12 +291,12 @@ export default function AdminUsersPage() {
                         ) : user.isActive !== false ? (
                           <>
                             <Lock className="h-4 w-4 text-red-500" />
-                            Khoa
+                            Khóa
                           </>
                         ) : (
                           <>
                             <Unlock className="h-4 w-4 text-emerald-600" />
-                            Mo khoa
+                            Mở khóa
                           </>
                         )}
                       </button>
@@ -335,17 +335,17 @@ export default function AdminUsersPage() {
         ) : null}
       </AdminSection>
 
-      {showModal ? (
+      {showMởdal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[1.8rem] border border-orange-200 bg-white shadow-[0_24px_48px_rgba(15,23,42,0.18)]">
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
               <div>
-                <h2 className="text-3xl font-bold text-[#11284b]">Them nguoi dung moi</h2>
-                <p className="mt-1 text-sm text-slate-500">Tao tai khoan admin hoac nhan vien moi.</p>
+                <h2 className="text-3xl font-bold text-[#11284b]">Thêm người dùng mới</h2>
+                <p className="mt-1 text-sm text-slate-500">Tạo tài khoản admin hoặc nhân viên mới.</p>
               </div>
-              <button type="button" className={adminStyles.secondaryButton} onClick={() => setShowModal(false)} disabled={submitLoading}>
+              <button type="button" className={adminStyles.secondaryButton} onClick={() => setShowMởdal(false)} disabled={submitLoading}>
                 <X className="h-4 w-4" />
-                Dong
+                Đóng
               </button>
             </div>
 
@@ -354,13 +354,13 @@ export default function AdminUsersPage() {
 
               <div className="grid gap-5 md:grid-cols-2">
                 <label className="space-y-2">
-                  <span className="text-sm font-semibold text-[#11284b]">Ho ten</span>
+                  <span className="text-sm font-semibold text-[#11284b]">Họ tên</span>
                   <input
                     required
                     value={formData.fullName}
                     onChange={(event) => setFormData((current) => ({ ...current, fullName: event.target.value }))}
                     className={adminStyles.input}
-                    placeholder="Nhap ho ten"
+                    placeholder="Nhập họ tên"
                   />
                 </label>
                 <label className="space-y-2">
@@ -375,7 +375,7 @@ export default function AdminUsersPage() {
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-semibold text-[#11284b]">Mat khau</span>
+                  <span className="text-sm font-semibold text-[#11284b]">Mãt khau</span>
                   <input
                     required
                     minLength={6}
@@ -387,7 +387,7 @@ export default function AdminUsersPage() {
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-semibold text-[#11284b]">So dien thoai</span>
+                  <span className="text-sm font-semibold text-[#11284b]">Số điện thoại</span>
                   <input
                     value={formData.phone}
                     onChange={(event) => setFormData((current) => ({ ...current, phone: event.target.value }))}
@@ -398,13 +398,13 @@ export default function AdminUsersPage() {
               </div>
 
               <label className="space-y-2">
-                <span className="text-sm font-semibold text-[#11284b]">Vai tro</span>
+                <span className="text-sm font-semibold text-[#11284b]">Vai trò</span>
                 <select
                   value={formData.role}
                   onChange={(event) => setFormData((current) => ({ ...current, role: event.target.value }))}
                   className={adminStyles.input}
                 >
-                  <option value="Staff">Nhan vien</option>
+                  <option value="Staff">Nhân viên</option>
                   <option value="Admin">Admin</option>
                 </select>
               </label>
@@ -412,9 +412,9 @@ export default function AdminUsersPage() {
               <div className="flex flex-col gap-3 pt-2 md:flex-row">
                 <button type="submit" className={adminStyles.primaryButton} disabled={submitLoading}>
                   {submitLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {submitLoading ? "Dang tao..." : "Tao nguoi dung"}
+                  {submitLoading ? "Đang tạo..." : "Tạo người dùng"}
                 </button>
-                <button type="button" className={adminStyles.secondaryButton} onClick={() => setShowModal(false)} disabled={submitLoading}>
+                <button type="button" className={adminStyles.secondaryButton} onClick={() => setShowMởdal(false)} disabled={submitLoading}>
                   Huy
                 </button>
               </div>

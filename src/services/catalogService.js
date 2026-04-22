@@ -61,33 +61,32 @@ export function getCatalogRouteConfig(categorySlug) {
   switch (normalizedSlug) {
     case "":
       return {
-        title: "Tat Ca San Pham",
+        title: "Tất Cả Sản Phẩm",
       };
     case "eyeglasses":
       return {
-        title: "Kinh Can",
+        title: "Kính Cận",
         productType: "frame",
         prescriptionCompatible: true,
       };
     case "sunglasses":
       return {
-        title: "Kinh Ram",
+        title: "Kính Râm",
         productType: "sunglasses",
       };
     case "ai-glasses":
       return {
-        title: "Gong Kinh",
+        title: "Gọng Kính",
         productType: "frame",
       };
     case "lenses":
       return {
-        title: "Trong Kinh",
+        title: "Tròng Kính",
         productType: "lens",
       };
     case "premium":
       return {
-        title: "Thuong Hieu Cao Cap",
-        notice: "API hiện tại chưa có filter premium, đang hiển thị toàn bộ sản phẩm.",
+        title: "Thương Hiệu Cao Cấp",
       };
     default:
       return {
@@ -99,9 +98,9 @@ export function getCatalogRouteConfig(categorySlug) {
 
 export function getCatalogSortOptions() {
   return [
-    { value: "newest", label: "Moi nhat" },
-    { value: "price-asc", label: "Gia thap den cao" },
-    { value: "price-desc", label: "Gia cao den thap" },
+    { value: "newest", label: "Mới nhất" },
+    { value: "price-asc", label: "Giá thấp đến cao" },
+    { value: "price-desc", label: "Giá cao đến thấp" },
   ];
 }
 
@@ -169,7 +168,7 @@ function normalizeCatalogDetail(item) {
     id: String(item?.productId ?? ""),
     productId: item?.productId ?? 0,
     name: item?.productName?.trim() || "Sản phẩm",
-    description: item?.description?.trim() || "Sản phẩm hien chua co mo ta.",
+    description: item?.description?.trim() || "Sản phẩm hiện chưa có mô tả.",
     price: displayPrice,
     basePrice: normalizePrice(item?.basePrice),
     images: images.length > 0 ? images : [DEFAULT_IMAGE_URL],
@@ -221,7 +220,7 @@ function normalizeVariant(variant) {
 function normalizeCategory(category) {
   return {
     id: category?.categoryId ?? 0,
-    name: category?.categoryName?.trim() || "Danh muc",
+    name: category?.categoryName?.trim() || "Danh mục",
   };
 }
 
@@ -327,11 +326,11 @@ function normalizeProductType(productType) {
 function getProductTypeLabel(productType) {
   switch (productType) {
     case "sunglasses":
-      return "Kinh Ram";
+      return "Kính Râm";
     case "lens":
-      return "Trong Kinh";
+      return "Tròng Kính";
     default:
-      return "Gong Kinh";
+      return "Gọng Kính";
   }
 }
 

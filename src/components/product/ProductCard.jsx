@@ -39,7 +39,7 @@ function ProductCard({
     event.preventDefault();
 
     if (!canBuyNow) {
-      toast.error("Sản phẩm nay hien chua san sang de mua ngay.");
+      toast.error("Sản phẩm này hiện chưa sẵn sàng để mua ngay.");
       return;
     }
 
@@ -50,7 +50,7 @@ function ProductCard({
     event.preventDefault();
 
     if (!canBuyNow) {
-      toast.error("Sản phẩm nay hien chua the them vao gio.");
+      toast.error("Sản phẩm này hiện chưa thể thêm vào giỏ.");
       return;
     }
 
@@ -61,7 +61,7 @@ function ProductCard({
     const productId = Number.parseInt(String(product?.productId ?? id ?? ""), 10);
 
     if (!Number.isFinite(productId) || productId <= 0) {
-      toast.error("Sản phẩm mau nay chua được map variant de goi cart API.");
+      toast.error("Sản phẩm mẫu này chưa được map variant để gọi cart API.");
       return;
     }
 
@@ -70,7 +70,7 @@ function ProductCard({
       const variant = resolvePreferredVariant(detailProduct);
 
       if (!variant?.variantId) {
-        toast.error("Không tim thay bien the hop le de them vao giỏ hàng.");
+        toast.error("Không tìm thấy biến thể hợp lệ để thêm vào giỏ hàng.");
         return;
       }
 
@@ -81,7 +81,7 @@ function ProductCard({
         view: createCartItemView(detailProduct, variant),
       });
 
-      toast.success("Da them vao giỏ hàng!");
+      toast.success("Đã thêm vào giỏ hàng!");
 
       if (openCartDrawer) {
         openDrawer();
@@ -103,13 +103,13 @@ function ProductCard({
           <div className="absolute top-3 left-3">
             <div className="flex flex-wrap gap-2">
               {canBuyNow && <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-md">
-                  Con hang
+                  Còn hàng
                 </span>}
               {canPreOrder && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
-                  Dat truoc
+                  Đặt trước
                 </span>}
               {shouldShowOutOfStock && <span className="px-2 py-1 bg-gray-600 text-white text-xs rounded-md">
-                  Het hang
+                  Hết hàng
                 </span>}
             </div>
           </div>
@@ -120,14 +120,14 @@ function ProductCard({
                 event.preventDefault();
               }}
               className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white shadow-md hover:scale-110 transition-transform"
-              title="Thêm vao yeu thich"
+              title="Thêm vào yêu thích"
             >
               <Heart className="w-4 h-4 text-foreground" />
             </button>
             {canBuyNow && <button
                 onClick={handleAddToCart}
                 className="w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-primary hover:text-white shadow-md hover:scale-110 transition-all"
-                title="Thêm vao gio"
+                title="Thêm vào giỏ"
               >
                 <ShoppingCart className="w-4 h-4" />
               </button>}
@@ -166,7 +166,7 @@ function ProductCard({
             className="block w-full py-2 text-sm text-center bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
             style={{ fontWeight: 500 }}
           >
-            Dat Truoc
+            Đặt Trước
           </Link>}
       </div>
     </div>;

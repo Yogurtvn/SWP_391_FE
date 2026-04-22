@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
@@ -33,20 +33,20 @@ export function useAdminInventoryPage() {
 
   async function updateQuantity(item) {
     const formValues = await popupForm({
-      title: "Sua so luong ton kho",
+      title: "Sửa số lượng tồn kho",
       message: `SKU: ${item.sku || "-"} | Variant ID: ${item.variantId}`,
-      okText: "Luu",
+      okText: "Lưu",
       fields: [
         {
           name: "quantity",
-          label: "So luong",
+          label: "Số lượng",
           type: "number",
           required: true,
           min: 0,
           validate: (value) => {
             const parsed = Number(value);
             if (Number.isNaN(parsed) || parsed < 0) {
-              return "So luong khong hop le.";
+              return "Số lượng không hợp lệ.";
             }
             return "";
           },
@@ -77,15 +77,15 @@ export function useAdminInventoryPage() {
       ).unwrap();
       await dispatch(fetchAdminInventory()).unwrap();
     } catch (error) {
-      await popupAlert(error || "Khong cap nhat duoc ton kho.");
+      await popupAlert(error || "Không cập nhật được tồn kho.");
     }
   }
 
   async function editPreOrder(item) {
     const formValues = await popupForm({
-      title: "Cap nhat pre-order",
+      title: "Cập nhật pre-order",
       message: `SKU: ${item.sku || "-"} | Variant ID: ${item.variantId}`,
-      okText: "Cap nhat",
+      okText: "Cập nhật",
       fields: [
         {
           name: "isPreOrderAllowed",
@@ -93,20 +93,20 @@ export function useAdminInventoryPage() {
           type: "select",
           required: true,
           options: [
-            { value: "true", label: "Bat" },
-            { value: "false", label: "Tat" },
+            { value: "true", label: "Bật" },
+            { value: "false", label: "Tắt" },
           ],
         },
         {
           name: "expectedRestockDate",
-          label: "Ngay du kien co hang",
+          label: "Ngày dự kiến có hàng",
           type: "date",
         },
         {
           name: "preOrderNote",
-          label: "Ghi chu pre-order",
+          label: "Ghi chú pre-order",
           type: "textarea",
-          placeholder: "Them ghi chu cho khach hang hoac kho...",
+          placeholder: "Thêm ghi chú cho khách hàng hoặc kho...",
         },
       ],
       initialValues: {
@@ -137,7 +137,7 @@ export function useAdminInventoryPage() {
       ).unwrap();
       await dispatch(fetchAdminInventory()).unwrap();
     } catch (error) {
-      await popupAlert(error || "Khong cap nhat duoc pre-order.");
+      await popupAlert(error || "Không cập nhật được pre-order.");
     }
   }
 
@@ -148,12 +148,12 @@ export function useAdminInventoryPage() {
     const quantityReceived = Number(receiptForm.quantityReceived);
 
     if (Number.isNaN(variantId) || variantId <= 0) {
-      await popupAlert("Variant ID khong hop le.");
+      await popupAlert("Variant ID không hợp lệ.");
       return;
     }
 
     if (Number.isNaN(quantityReceived) || quantityReceived <= 0) {
-      await popupAlert("So luong nhap phai lon hon 0.");
+      await popupAlert("Số lượng nhập phai lon hon 0.");
       return;
     }
 
@@ -168,7 +168,7 @@ export function useAdminInventoryPage() {
       setReceiptForm(DEFAULT_RECEIPT_FORM);
       await dispatch(fetchAdminInventory()).unwrap();
     } catch (error) {
-      await popupAlert(error || "Khong tao duoc phieu nhap.");
+      await popupAlert(error || "Không tạo được phiếu nhập.");
     }
   }
 
@@ -177,7 +177,7 @@ export function useAdminInventoryPage() {
     receipts: admin.inventory.receipts,
     receiptForm,
     ui: {
-      error: admin.inventory.error ?? (!auth.accessToken && auth.isReady ? "Khong co access token." : null),
+      error: admin.inventory.error ?? (!auth.accessToken && auth.isReady ? "Không có access token." : null),
       isLoading: admin.inventory.status === "loading",
     },
     actions: {

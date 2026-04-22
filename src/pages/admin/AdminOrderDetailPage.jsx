@@ -1,4 +1,4 @@
-import { AdminErrorBanner, adminStyles } from "@/components/admin/admin-ui";
+﻿import { AdminErrorBanner, adminStyles } from "@/components/admin/admin-ui";
 import { useAdminOrderDetailPage } from "@/hooks/admin/useAdminOrderDetailPage";
 
 function formatCurrency(value) {
@@ -81,19 +81,19 @@ export default function AdminOrderDetailPage() {
               onClick={actions.backToOrders}
               className="inline-flex items-center rounded-full border border-orange-200 bg-white px-4 py-2 text-sm font-semibold text-[#df7f00] shadow-[0_8px_18px_rgba(223,127,0,0.08)] transition hover:bg-orange-50"
             >
-              &lt; Quay lai danh sach don
+              &lt; Quay lại danh sách đơn
             </button>
             <div>
-              <h1 className="text-[2.2rem] font-bold tracking-tight text-[#11284b]">Chi tiet don hang #{orderId}</h1>
+              <h1 className="text-[2.2rem] font-bold tracking-tight text-[#11284b]">Chi tiết đơn hàng #{orderId}</h1>
               <p className="mt-2 text-sm font-medium text-slate-500">
-                Theo doi thong tin giao hang, thanh toan va lich su xu ly cua don hang.
+                Theo dõi thông tin giao hàng, thanh toán và lịch sử xử lý của đơn hàng.
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-3">
             <button type="button" onClick={actions.retry} className={adminStyles.secondaryButton}>
-              Tai lai
+              Tải lại
             </button>
             <button
               type="button"
@@ -101,7 +101,7 @@ export default function AdminOrderDetailPage() {
               disabled={!order}
               className={adminStyles.secondaryButton}
             >
-              Doi trang thai don
+              Đổi trạng thái đơn
             </button>
             <button
               type="button"
@@ -109,59 +109,59 @@ export default function AdminOrderDetailPage() {
               disabled={!order}
               className={adminStyles.secondaryButton}
             >
-              Doi van chuyen
+              Doi vận chuyển
             </button>
           </div>
         </div>
 
         <AdminErrorBanner message={ui.error} />
-        {ui.isLoading ? <p className="text-sm font-medium text-slate-500">Dang tai...</p> : null}
+        {ui.isLoading ? <p className="text-sm font-medium text-slate-500">Đang tải...</p> : null}
 
         {order ? (
           <div className="space-y-6">
             <section className="rounded-[1.8rem] border border-orange-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)] md:p-6">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <DetailField label="Loai don">
+                <DetailField label="Loại đơn">
                   <StatusPill value={order.orderType} />
                 </DetailField>
-                <DetailField label="Trang thai don">
+                <DetailField label="Trạng thái đơn">
                   <StatusPill value={order.orderStatus} />
                 </DetailField>
-                <DetailField label="Van chuyen">
+                <DetailField label="Vận chuyển">
                   <StatusPill value={order.shippingStatus} type="shipping" />
                 </DetailField>
-                <DetailField label="Tong tien" value={formatCurrency(order.totalAmount)} emphasize />
-                <DetailField label="Nguoi nhan" value={order.receiverName} />
-                <DetailField label="So dien thoai" value={order.receiverPhone} />
-                <DetailField label="Dia chi" value={order.shippingAddress} />
-                <DetailField label="Ma van don" value={order.shippingCode} />
-                <DetailField label="Du kien giao" value={formatDateTime(order.expectedDeliveryDate)} />
-                <DetailField label="Ngay tao" value={formatDateTime(order.createdAt)} />
-                <DetailField label="Cap nhat" value={formatDateTime(order.updatedAt)} />
+                <DetailField label="Tổng tiền" value={formatCurrency(order.totalAmount)} emphasize />
+                <DetailField label="Người nhận" value={order.receiverName} />
+                <DetailField label="Số điện thoại" value={order.receiverPhone} />
+                <DetailField label="Địa chỉ" value={order.shippingAddress} />
+                <DetailField label="Mã vận đơn" value={order.shippingCode} />
+                <DetailField label="Dự kiến giao" value={formatDateTime(order.expectedDeliveryDate)} />
+                <DetailField label="Ngày tạo" value={formatDateTime(order.createdAt)} />
+                <DetailField label="Cập nhật" value={formatDateTime(order.updatedAt)} />
               </div>
             </section>
 
             <section className="overflow-hidden rounded-[1.8rem] border border-orange-200 bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
               <div className="border-b border-orange-100 px-5 py-5 md:px-6">
-                <h2 className="text-xl font-bold text-[#11284b]">San pham trong don</h2>
+                <h2 className="text-xl font-bold text-[#11284b]">Sản phẩm trong đơn</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className={adminStyles.table}>
                   <thead className={adminStyles.tableHead}>
                     <tr>
-                      <th className={adminStyles.th}>San pham</th>
+                      <th className={adminStyles.th}>Sản phẩm</th>
                       <th className={adminStyles.th}>SKU</th>
-                      <th className={adminStyles.th}>Mau</th>
+                      <th className={adminStyles.th}>Màu</th>
                       <th className={adminStyles.th}>SL</th>
-                      <th className={adminStyles.th}>Don gia</th>
-                      <th className={adminStyles.th}>Thanh tien</th>
+                      <th className={adminStyles.th}>Đơn giá</th>
+                      <th className={adminStyles.th}>Thành tien</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
                     {(order.items ?? []).length === 0 ? (
                       <tr>
                         <td colSpan={6} className={adminStyles.emptyState}>
-                          Khong co du lieu.
+                          Không có dữ liệu.
                         </td>
                       </tr>
                     ) : (
@@ -185,24 +185,24 @@ export default function AdminOrderDetailPage() {
 
             <div className="grid gap-6 lg:grid-cols-2">
               <section className="rounded-[1.8rem] border border-orange-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)] md:p-6">
-                <h2 className="mb-4 text-xl font-bold text-[#11284b]">Thanh toan</h2>
+                <h2 className="mb-4 text-xl font-bold text-[#11284b]">Thanh toán</h2>
                 {order.payment ? (
                   <div className="space-y-4 text-sm text-slate-700">
                     <div className="grid gap-4 md:grid-cols-2">
-                      <DetailField label="Phuong thuc" value={order.payment.paymentMethod} />
-                      <DetailField label="Trang thai">
+                      <DetailField label="Phương thức" value={order.payment.paymentMethod} />
+                      <DetailField label="Trạng thái">
                         <StatusPill value={order.payment.paymentStatus} />
                       </DetailField>
-                      <DetailField label="So tien" value={formatCurrency(order.payment.amount)} emphasize />
-                      <DetailField label="Da thanh toan luc" value={formatDateTime(order.payment.paidAt)} />
+                      <DetailField label="Số tiền" value={formatCurrency(order.payment.amount)} emphasize />
+                      <DetailField label="Đã thanh toán lúc" value={formatDateTime(order.payment.paidAt)} />
                     </div>
 
                     <div className="pt-2">
-                      <h3 className="mb-3 text-base font-bold text-[#11284b]">Lich su thanh toan</h3>
+                      <h3 className="mb-3 text-base font-bold text-[#11284b]">Lịch sử thanh toán</h3>
                       <ul className="space-y-3">
                         {(order.payment.histories ?? []).length === 0 ? (
                           <li className="rounded-[1.2rem] border border-orange-100 bg-[#fffaf4] px-4 py-3 text-sm text-slate-500">
-                            Khong co du lieu.
+                            Không có dữ liệu.
                           </li>
                         ) : (
                           (order.payment.histories ?? []).map((history) => (
@@ -224,17 +224,17 @@ export default function AdminOrderDetailPage() {
                   </div>
                 ) : (
                   <p className="rounded-[1.2rem] border border-orange-100 bg-[#fffaf4] px-4 py-4 text-sm text-slate-500">
-                    Khong co thong tin thanh toan.
+                    Không có thông tin thanh toán.
                   </p>
                 )}
               </section>
 
               <section className="rounded-[1.8rem] border border-orange-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)] md:p-6">
-                <h2 className="mb-4 text-xl font-bold text-[#11284b]">Lich su trang thai</h2>
+                <h2 className="mb-4 text-xl font-bold text-[#11284b]">Lịch sử trạng thái</h2>
                 <ul className="space-y-3">
                   {(order.statusHistory ?? []).length === 0 ? (
                     <li className="rounded-[1.2rem] border border-orange-100 bg-[#fffaf4] px-4 py-3 text-sm text-slate-500">
-                      Khong co du lieu.
+                      Không có dữ liệu.
                     </li>
                   ) : (
                     (order.statusHistory ?? []).map((history) => (

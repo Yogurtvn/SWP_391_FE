@@ -1,4 +1,4 @@
-import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
+﻿import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
 import { useAdminLensPackagesPage } from "@/hooks/admin/useAdminLensPackagesPage";
 
 export default function AdminLensPackagesPage() {
@@ -6,29 +6,29 @@ export default function AdminLensPackagesPage() {
 
   return (
     <AdminPageShell
-      title="Goi Trong Kinh"
+      title="Gói Tròng Kính"
       actions={
         <button type="button" onClick={actions.retry} className={adminStyles.secondaryButton}>
-          Tai lai
+          Tải lại
         </button>
       }
     >
       <AdminErrorBanner message={ui.error} />
 
-      <AdminSection title="Tao goi moi">
+      <AdminSection title="Tạo gói mới">
         <form onSubmit={actions.createLens} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <input
               value={form.lensCode}
               onChange={(event) => actions.setFormField("lensCode", event.target.value)}
-              placeholder="Ma lens"
+              placeholder="Mã lens"
               className={adminStyles.input}
               required
             />
             <input
               value={form.lensName}
               onChange={(event) => actions.setFormField("lensName", event.target.value)}
-              placeholder="Ten lens"
+              placeholder="Tên lens"
               className={adminStyles.input}
               required
             />
@@ -37,20 +37,20 @@ export default function AdminLensPackagesPage() {
               min="0"
               value={form.price}
               onChange={(event) => actions.setFormField("price", event.target.value)}
-              placeholder="Gia"
+              placeholder="Giá"
               className={adminStyles.input}
               required
             />
             <input
               value={form.description}
               onChange={(event) => actions.setFormField("description", event.target.value)}
-              placeholder="Mo ta"
+              placeholder="Mô tả"
               className={adminStyles.input}
             />
           </div>
 
           <button type="submit" className={adminStyles.primaryButton}>
-            Tao
+            Tạo
           </button>
         </form>
       </AdminSection>
@@ -60,10 +60,10 @@ export default function AdminLensPackagesPage() {
           <thead className={adminStyles.tableHead}>
             <tr>
               <th className={adminStyles.th}>ID</th>
-              <th className={adminStyles.th}>Ma</th>
-              <th className={adminStyles.th}>Ten</th>
-              <th className={adminStyles.th}>Gia</th>
-              <th className={adminStyles.th}>Trang thai</th>
+              <th className={adminStyles.th}>Mã</th>
+              <th className={adminStyles.th}>Tên</th>
+              <th className={adminStyles.th}>Giá</th>
+              <th className={adminStyles.th}>Trạng thái</th>
               <th className={adminStyles.th}>Thao tac</th>
             </tr>
           </thead>
@@ -71,7 +71,7 @@ export default function AdminLensPackagesPage() {
             {!ui.isLoading && items.length === 0 ? (
               <tr>
                 <td colSpan={6} className={adminStyles.emptyState}>
-                  Khong co du lieu.
+                  Không có dữ liệu.
                 </td>
               </tr>
             ) : null}
@@ -86,17 +86,17 @@ export default function AdminLensPackagesPage() {
                 <td className={adminStyles.td}>
                   <div className="flex flex-wrap gap-2">
                     <button type="button" onClick={() => actions.editLens(item)} className={adminStyles.smallButton}>
-                      Sua
+                      Sửa
                     </button>
                     <button type="button" onClick={() => actions.toggleLens(item)} className={adminStyles.smallButton}>
-                      {item.isActive ? "Khoa" : "Mo"}
+                      {item.isActive ? "Khóa" : "Mở"}
                     </button>
                     <button
                       type="button"
                       onClick={() => actions.deleteLens(item)}
                       className={adminStyles.smallDangerButton}
                     >
-                      Xoa
+                      Xóa
                     </button>
                   </div>
                 </td>

@@ -47,7 +47,7 @@ function CartDrawer({ open, onOpenChange }) {
             Xem và quản lý các sản phẩm trong giỏ hàng của bạn
           </SheetDescription>
           <SheetTitle className="text-xl">
-            Gio Hang ({items.length})
+            Giỏ Hàng ({items.length})
           </SheetTitle>
         </SheetHeader>
 
@@ -148,7 +148,7 @@ function CartDrawer({ open, onOpenChange }) {
                 disabled={isMutating}
                 className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium disabled:opacity-60"
               >
-                Thanh Toan
+                Thanh Toán
               </button>
               <button
                 onClick={() => {
@@ -157,7 +157,7 @@ function CartDrawer({ open, onOpenChange }) {
                 }}
                 className="w-full py-3 border border-border rounded-lg hover:bg-white transition-colors text-sm"
               >
-                Xem Chi Tiet Gio Hang
+                Xem Chi Tiết Giỏ Hàng
               </button>
             </div>
           </div>}
@@ -207,7 +207,7 @@ function EmptyCartState({ onOpenChange }) {
         }}
         className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
       >
-        Kham Pha San Pham
+        Khám Phá Sản Phẩm
       </button>
     </div>;
 }

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+﻿import { useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
 import { selectAuthState } from "@/store/auth/authSlice";
@@ -39,22 +39,22 @@ export function useAdminOrderDetailPage() {
 
   async function updateOrderStatus() {
     const formValues = await popupForm({
-      title: "Doi trang thai don",
-      message: "Chon trang thai don hop le va luu ghi chu neu can.",
-      okText: "Cap nhat",
+      title: "Đổi trạng thái đơn",
+      message: "Chọn trạng thái đơn hợp lệ và lưu ghi chú nếu cần.",
+      okText: "Cập nhật",
       fields: [
         {
           name: "orderStatus",
-          label: "Trang thai don",
+          label: "Trạng thái đơn",
           type: "select",
           required: true,
           options: ADMIN_ORDER_STATUSES.map((status) => ({ value: status, label: status })),
         },
         {
           name: "note",
-          label: "Ghi chu",
+          label: "Ghi chú",
           type: "textarea",
-          placeholder: "Them ghi chu...",
+          placeholder: "Thêm ghi chú...",
         },
       ],
       initialValues: {
@@ -79,28 +79,28 @@ export function useAdminOrderDetailPage() {
       ).unwrap();
       await refresh();
     } catch (error) {
-      await popupAlert(error || "Khong cap nhat duoc trang thai don.");
+      await popupAlert(error || "Không cập nhật được trạng thái đơn.");
     }
   }
 
   async function updateShippingStatus() {
     const formValues = await popupForm({
-      title: "Doi trang thai van chuyen",
-      message: "Chon trang thai van chuyen hop le.",
-      okText: "Cap nhat",
+      title: "Đổi trạng thái vận chuyển",
+      message: "Chọn trạng thái vận chuyển hợp lệ.",
+      okText: "Cập nhật",
       fields: [
         {
           name: "shippingStatus",
-          label: "Trang thai van chuyen",
+          label: "Trạng thái vận chuyển",
           type: "select",
           required: true,
           options: ADMIN_SHIPPING_STATUSES.map((status) => ({ value: status, label: status })),
         },
         {
           name: "note",
-          label: "Ghi chu",
+          label: "Ghi chú",
           type: "textarea",
-          placeholder: "Them ghi chu giao hang...",
+          placeholder: "Thêm ghi chú giao hàng...",
         },
       ],
       initialValues: {
@@ -125,7 +125,7 @@ export function useAdminOrderDetailPage() {
       ).unwrap();
       await refresh();
     } catch (error) {
-      await popupAlert(error || "Khong cap nhat duoc trang thai van chuyen.");
+      await popupAlert(error || "Không cập nhật được trạng thái vận chuyển.");
     }
   }
 
@@ -133,7 +133,7 @@ export function useAdminOrderDetailPage() {
     orderId,
     order: admin.currentOrder.data,
     ui: {
-      error: admin.currentOrder.error ?? (!auth.accessToken && auth.isReady ? "Khong co access token." : null),
+      error: admin.currentOrder.error ?? (!auth.accessToken && auth.isReady ? "Không có access token." : null),
       isLoading: admin.currentOrder.status === "loading",
     },
     actions: {

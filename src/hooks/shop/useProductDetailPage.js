@@ -278,7 +278,7 @@ export function useProductDetailPage() {
       },
       goToPrescriptionFlow: () => {
         if (!resolvedProduct?.prescriptionCompatible) {
-          toast.error(resolvedProduct?.prescriptionEligibilityReason || "San pham nay hien khong ho tro kinh theo toa.");
+          toast.error(resolvedProduct?.prescriptionEligibilityReason || "Sản phẩm này hiện không hỗ trợ kính theo toa.");
           return;
         }
 
@@ -394,11 +394,11 @@ function mapMockProductToCard(product) {
 function mapMockTypeToLabel(type) {
   switch (type) {
     case "sunglasses":
-      return "Kinh Ram";
+      return "Kính Râm";
     case "lenses-only":
-      return "Trong Kinh";
+      return "Tròng Kính";
     default:
-      return "Gong Kinh";
+      return "Gọng Kính";
   }
 }
 

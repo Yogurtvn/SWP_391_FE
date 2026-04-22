@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
@@ -49,41 +49,41 @@ export function useAdminLensPackagesPage() {
       setForm(DEFAULT_LENS_FORM);
       await dispatch(fetchAdminLensTypes({ page: 1, pageSize: 100, sortBy: "lensCode", sortOrder: "asc" })).unwrap();
     } catch (error) {
-      await popupAlert(error || "Khong tao duoc lens type.");
+      await popupAlert(error || "Không tạo được lens type.");
     }
   }
 
   async function editLens(item) {
     const formValues = await popupForm({
-      title: "Sua lens type",
+      title: "Sửa lens type",
       message: `Lens code: ${item.lensCode}`,
-      okText: "Cap nhat",
+      okText: "Cập nhật",
       fields: [
         {
           name: "lensName",
-          label: "Ten lens",
+          label: "Tên lens",
           type: "text",
           required: true,
         },
         {
           name: "price",
-          label: "Gia",
+          label: "Giá",
           type: "number",
           required: true,
           min: 0,
           validate: (value) => {
             const parsed = Number(value);
             if (Number.isNaN(parsed) || parsed < 0) {
-              return "Gia khong hop le.";
+              return "Giá không hợp lệ.";
             }
             return "";
           },
         },
         {
           name: "description",
-          label: "Mo ta",
+          label: "Mô tả",
           type: "textarea",
-          placeholder: "Mo ta goi trong kinh...",
+          placeholder: "Mô tả goi trong kinh...",
         },
       ],
       initialValues: {
@@ -112,7 +112,7 @@ export function useAdminLensPackagesPage() {
       ).unwrap();
       await dispatch(fetchAdminLensTypes({ page: 1, pageSize: 100, sortBy: "lensCode", sortOrder: "asc" })).unwrap();
     } catch (error) {
-      await popupAlert(error || "Khong cap nhat duoc lens type.");
+      await popupAlert(error || "Không cập nhật được lens type.");
     }
   }
 
@@ -126,14 +126,14 @@ export function useAdminLensPackagesPage() {
       ).unwrap();
       await dispatch(fetchAdminLensTypes({ page: 1, pageSize: 100, sortBy: "lensCode", sortOrder: "asc" })).unwrap();
     } catch (error) {
-      await popupAlert(error || "Khong cap nhat duoc trang thai.");
+      await popupAlert(error || "Không cập nhật được trạng thái.");
     }
   }
 
   async function deleteLens(item) {
-    const isConfirmed = await popupConfirm(`Ban co chac muon xoa lens type ${item.lensCode}?`, {
-      title: "Xoa lens type",
-      okText: "Xoa",
+    const isConfirmed = await popupConfirm(`Bạn có chắc muốn xóa lens type ${item.lensCode}?`, {
+      title: "Xóa lens type",
+      okText: "Xóa",
     });
 
     if (!isConfirmed) {
@@ -144,7 +144,7 @@ export function useAdminLensPackagesPage() {
       await dispatch(removeAdminLensType(item.lensTypeId)).unwrap();
       await dispatch(fetchAdminLensTypes({ page: 1, pageSize: 100, sortBy: "lensCode", sortOrder: "asc" })).unwrap();
     } catch (error) {
-      await popupAlert(error || "Khong xoa duoc lens type.");
+      await popupAlert(error || "Không xóa được lens type.");
     }
   }
 
@@ -152,7 +152,7 @@ export function useAdminLensPackagesPage() {
     items: admin.lenses.items,
     form,
     ui: {
-      error: admin.lenses.error ?? (!auth.accessToken && auth.isReady ? "Khong co access token." : null),
+      error: admin.lenses.error ?? (!auth.accessToken && auth.isReady ? "Không có access token." : null),
       isLoading: admin.lenses.status === "loading",
     },
     actions: {

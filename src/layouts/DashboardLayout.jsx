@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router";
 import {
   LayoutDashboard,
@@ -92,7 +92,7 @@ function DashboardLayout() {
           icon: ShoppingCart
         },
         {
-          name: "Kho & Nhap Hang",
+          name: "Kho & Nhập Hàng",
           path: "/staff/inventory",
           icon: ClipboardCheck
         },
@@ -410,7 +410,7 @@ function DashboardLayout() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-sm text-gray-600">
             <p>© 2024 EyeWear. All rights reserved.</p>
             <p>
-              Made with ❤️ for optical business |{" "}
+              Made with care for optical business |{" "}
               <span className={`px-2 py-1 rounded ${roleBadge.color}`}>
                 {roleBadge.label} Panel
               </span>

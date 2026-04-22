@@ -1,4 +1,4 @@
-import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
+﻿import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
 import { useAdminInventoryPage } from "@/hooks/admin/useAdminInventoryPage";
 
 function formatDateTime(value) {
@@ -14,16 +14,16 @@ export default function AdminInventoryPage() {
 
   return (
     <AdminPageShell
-      title="Quan Ly Kho"
+      title="Quản Lý Kho"
       actions={
         <button type="button" onClick={actions.retry} className={adminStyles.secondaryButton}>
-          Tai lai
+          Tải lại
         </button>
       }
     >
       <AdminErrorBanner message={ui.error} />
 
-      <AdminSection title="Nhap kho theo phieu nhap">
+      <AdminSection title="Nhập kho theo phiếu nhập">
         <form onSubmit={actions.createReceipt} className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <input
@@ -40,20 +40,20 @@ export default function AdminInventoryPage() {
               min="1"
               value={receiptForm.quantityReceived}
               onChange={(event) => actions.setReceiptField("quantityReceived", event.target.value)}
-              placeholder="So luong nhap"
+              placeholder="Số lượng nhập"
               className={adminStyles.input}
               required
             />
             <input
               value={receiptForm.note}
               onChange={(event) => actions.setReceiptField("note", event.target.value)}
-              placeholder="Ghi chu"
+              placeholder="Ghi chú"
               className={adminStyles.input}
             />
           </div>
 
           <button type="submit" className={adminStyles.primaryButton}>
-            Tao phieu nhap
+            Tạo phiếu nhập
           </button>
         </form>
       </AdminSection>
@@ -64,7 +64,7 @@ export default function AdminInventoryPage() {
             <tr>
               <th className={adminStyles.th}>SKU</th>
               <th className={adminStyles.th}>Variant ID</th>
-              <th className={adminStyles.th}>So luong</th>
+              <th className={adminStyles.th}>Số lượng</th>
               <th className={adminStyles.th}>Pre-order</th>
               <th className={adminStyles.th}>Restock date</th>
               <th className={adminStyles.th}>Pre-order note</th>
@@ -75,7 +75,7 @@ export default function AdminInventoryPage() {
             {!ui.isLoading && inventories.length === 0 ? (
               <tr>
                 <td colSpan={7} className={adminStyles.emptyState}>
-                  Khong co du lieu.
+                  Không có dữ liệu.
                 </td>
               </tr>
             ) : null}
@@ -85,7 +85,7 @@ export default function AdminInventoryPage() {
                 <td className={adminStyles.td}>{item.sku || "-"}</td>
                 <td className={`${adminStyles.td} font-semibold text-slate-950`}>{item.variantId}</td>
                 <td className={adminStyles.td}>{item.quantity}</td>
-                <td className={adminStyles.td}>{item.isPreOrderAllowed ? "Bat" : "Tat"}</td>
+                <td className={adminStyles.td}>{item.isPreOrderAllowed ? "Bật" : "Tắt"}</td>
                 <td className={adminStyles.td}>{formatDateTime(item.expectedRestockDate)}</td>
                 <td className={adminStyles.td}>{item.preOrderNote || "-"}</td>
                 <td className={adminStyles.td}>
@@ -95,14 +95,14 @@ export default function AdminInventoryPage() {
                       onClick={() => actions.updateQuantity(item)}
                       className={adminStyles.smallButton}
                     >
-                      Sua so luong
+                      Sửa số lượng
                     </button>
                     <button
                       type="button"
                       onClick={() => actions.editPreOrder(item)}
                       className={adminStyles.smallButton}
                     >
-                      Sua pre-order
+                      Sửa pre-order
                     </button>
                   </div>
                 </td>
@@ -112,22 +112,22 @@ export default function AdminInventoryPage() {
         </table>
       </div>
 
-      <AdminSection title="Phieu nhap gan day">
+      <AdminSection title="Phiếu nhập gần đây">
         <div className="overflow-x-auto">
           <table className={adminStyles.table}>
             <thead className={adminStyles.tableHead}>
               <tr>
                 <th className={adminStyles.th}>Receipt ID</th>
                 <th className={adminStyles.th}>Variant ID</th>
-                <th className={adminStyles.th}>So luong nhap</th>
-                <th className={adminStyles.th}>Ngay nhan</th>
+                <th className={adminStyles.th}>Số lượng nhập</th>
+                <th className={adminStyles.th}>Ngày nhận</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {!ui.isLoading && receipts.length === 0 ? (
                 <tr>
                   <td colSpan={4} className={adminStyles.emptyState}>
-                    Khong co phieu nhap.
+                    Không có phiếu nhập.
                   </td>
                 </tr>
               ) : null}

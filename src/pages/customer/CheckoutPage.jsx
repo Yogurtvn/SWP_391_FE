@@ -7,7 +7,6 @@ import {
   CreditCard,
   MapPin,
   Package,
-  ShieldCheck,
   Truck,
   Wallet,
 } from "lucide-react";
@@ -590,12 +589,6 @@ export default function CheckoutPage() {
                 />
               </div>
 
-              {paymentMethod === "payos" && (
-                <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-900">
-                  Sau khi bấm thanh toán, FE sẽ gọi `POST /api/orders/checkout`.
-                  Nếu BE trả về `payment.payUrl`, trình duyệt sẽ được chuyển sang PayOS.
-                </div>
-              )}
             </section>
           </div>
 
@@ -685,14 +678,6 @@ export default function CheckoutPage() {
                 )}
               </button>
 
-              <div className="mt-4 flex items-start gap-3 rounded-2xl bg-secondary/60 p-4 text-sm text-muted-foreground">
-                <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
-                <p>
-                  {checkoutOrderType === "preorder"
-                    ? "Đơn đặt trước sẽ ở trạng thái chờ hàng. Hệ thống sẽ gửi email khi sản phẩm về kho."
-                    : "Phí vận chuyển đang lấy từ API GHN của backend và được gửi kèm checkout để PayOS thu đúng tổng tiền."}
-                </p>
-              </div>
             </div>
           </aside>
         </form>

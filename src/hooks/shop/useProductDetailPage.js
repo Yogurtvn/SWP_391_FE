@@ -157,6 +157,11 @@ export function useProductDetailPage() {
 
     const activeVariant = resolvedVariant ?? product.selectedVariant ?? null;
     const availabilityStatus = activeVariant ? resolveCartAvailabilityStatus(activeVariant) : product.availabilityStatus;
+    const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
+    const canPreOrder =
+      isCompletelyOutOfStock &&
+      availabilityStatus === "preorder" &&
+      Boolean(activeVariant?.isPreOrderAllowed);
 
     return {
       ...product,
@@ -165,7 +170,7 @@ export function useProductDetailPage() {
       availabilityStatus,
       inStock: availabilityStatus === "available",
       isPreOrderAllowed: Boolean(activeVariant?.isPreOrderAllowed),
-      canPreOrder: Boolean(product.canPreOrder || activeVariant?.isPreOrderAllowed),
+      canPreOrder,
       prescriptionCompatible: resolvePrescriptionCompatibility(product, eligibilityState, Boolean(mockProduct)),
       prescriptionEligibilityReason: eligibilityState?.data?.reason || eligibilityState?.error || "",
     };
@@ -285,12 +290,18 @@ export function useProductDetailPage() {
         });
       },
       goBackToShop: () => navigate("/shop"),
-      goToPreOrder: () =>
+      goToPreOrder: () => {
+        if (!resolvedProduct?.canPreOrder) {
+          toast.error("Chỉ sản phẩm đã hết hàng hoàn toàn mới được đặt trước.");
+          return;
+        }
+
         navigate(`/preorder/${id}`, {
           state: {
             selectedVariantId: resolvedProduct?.selectedVariant?.variantId ?? null,
           },
-        }),
+        });
+      },
     },
   };
 }
@@ -320,6 +331,16 @@ function resolvePrescriptionCompatibility(product, eligibilityState, isMockProdu
   }
 
   return eligibilityState.status === "succeeded" && Boolean(eligibilityState.data?.isEligible);
+}
+
+function isProductCompletelyOutOfStock(product) {
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+
+  if (variants.length === 0) {
+    return !product?.inStock && product?.availabilityStatus !== "available";
+  }
+
+  return variants.every((variant) => !variant?.isReadyAvailable && Number(variant?.quantity ?? 0) <= 0);
 }
 
 function normalizeMockProduct(product) {

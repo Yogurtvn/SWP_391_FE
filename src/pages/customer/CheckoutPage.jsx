@@ -19,6 +19,7 @@ import {
   getShippingProvinces,
   getShippingWards,
 } from "@/services/shippingService";
+import { persistPendingPayOsCart } from "@/store/cart/cartStorage";
 
 const INITIAL_SHIPPING_INFO = {
   fullName: "",
@@ -74,6 +75,7 @@ export default function CheckoutPage() {
   const shippingFee = Number(shippingQuote?.totalFee ?? 0);
   const displayTotal = subtotal + shippingFee;
   const isCalculatingShippingFee = shippingStatus.fee === "loading";
+  const isUnsupportedShippingRoute = Boolean(shippingError) && shippingStatus.fee === "failed";
 
   useEffect(() => {
     let isMounted = true;
@@ -278,11 +280,20 @@ export default function CheckoutPage() {
     }
 
     if (!shippingQuote) {
+      if (shippingError) {
+        setLocalError("");
+        return;
+      }
+
       setLocalError("Vui lòng chọn đầy đủ tỉnh/thành, quận/huyện, phường/xã để tính phí vận chuyển trước khi đặt hàng.");
       return;
     }
 
     try {
+      if (paymentMethod === "payos") {
+        persistPendingPayOsCart(checkoutItems);
+      }
+
       const { result, orderSummary } = await submitCheckout({
         shippingInfo,
         paymentMethod,
@@ -644,7 +655,9 @@ export default function CheckoutPage() {
                       ? "Đang tính..."
                       : shippingQuote
                         ? formatCurrency(shippingFee)
-                        : "Chưa chọn địa chỉ"}
+                        : isUnsupportedShippingRoute
+                          ? "Không hỗ trợ giao hàng"
+                          : "Chưa chọn địa chỉ"}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-border pt-3">

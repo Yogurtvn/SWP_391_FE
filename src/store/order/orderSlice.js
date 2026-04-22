@@ -38,10 +38,12 @@ export const checkoutReadyOrder = createAsyncThunk(
     try {
       const result = await checkoutCartOrder(auth.accessToken, payload);
 
-      try {
-        await dispatch(fetchMyCart()).unwrap();
-      } catch {
-        // Keep the checkout result even if the cart refresh fails.
+      if (normalizePaymentMethod(payload?.paymentMethod) !== "payos") {
+        try {
+          await dispatch(fetchMyCart()).unwrap();
+        } catch {
+          // Keep the checkout result even if the cart refresh fails.
+        }
       }
 
       return result;
@@ -180,3 +182,6 @@ export const selectOrderState = (state) => state.order;
 
 export default orderSlice.reducer;
 
+function normalizePaymentMethod(paymentMethod) {
+  return String(paymentMethod ?? "").trim().toLowerCase();
+}

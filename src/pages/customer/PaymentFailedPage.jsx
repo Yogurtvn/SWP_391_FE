@@ -7,15 +7,20 @@ import {
   ShieldAlert,
   ShoppingBag,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+import { useCart } from "@/hooks/cart/useCart";
 import { usePayOsCallback } from "@/hooks/order/usePayOsCallback";
 import { createPayment } from "@/services/paymentService";
 import { selectAuthState } from "@/store/auth/authSlice";
+import { clearPendingPayOsCart, loadPendingPayOsCart } from "@/store/cart/cartStorage";
 import { useAppSelector } from "@/store/hooks";
 
 export default function PaymentFailedPage() {
   const location = useLocation();
   const auth = useAppSelector(selectAuthState);
+  const cart = useCart();
+  const restoreAttemptedRef = useRef(false);
   const [retryState, setRetryState] = useState({
     status: "idle",
     error: null,
@@ -36,13 +41,60 @@ export default function PaymentFailedPage() {
     lookup.error ??
     getDefaultFailureMessage(callback);
   const orderCreated = Boolean(location.state?.orderCreated ?? resolvedOrderSummary.orderCreated);
+  const paymentCanceled =
+    callback?.cancel ||
+    callback?.status === "CANCELLED" ||
+    normalizeOrderStatus(resolvedOrderSummary.orderStatus) === "cancelled";
   const canTrackOrder = Number(resolvedOrderSummary.orderId ?? 0) > 0;
   const canRetryPayment =
-    orderCreated
+    !paymentCanceled
+    && orderCreated
     && canTrackOrder
     && normalizePaymentMethod(resolvedOrderSummary.paymentMethod) === "payos"
     && Number(resolvedOrderSummary.total ?? 0) > 0;
   const isRetrying = retryState.status === "loading";
+
+  useEffect(() => {
+    if (restoreAttemptedRef.current || !auth.isReady || !auth.accessToken || cart.status !== "succeeded") {
+      return;
+    }
+
+    if (normalizePaymentMethod(resolvedOrderSummary.paymentMethod) !== "payos") {
+      return;
+    }
+
+    const pendingCart = loadPendingPayOsCart();
+
+    if (!pendingCart?.items?.length) {
+      return;
+    }
+
+    restoreAttemptedRef.current = true;
+
+    if (cart.items.length > 0) {
+      clearPendingPayOsCart();
+      return;
+    }
+
+    async function restoreCart() {
+      try {
+        for (const item of pendingCart.items) {
+          if (item.itemType === "prescriptionConfigured") {
+            await cart.addPrescriptionItem(item);
+          } else {
+            await cart.addStandardItem(item);
+          }
+        }
+
+        clearPendingPayOsCart();
+        toast.success("Đã khôi phục giỏ hàng sau khi hủy thanh toán.");
+      } catch (error) {
+        toast.error(resolveErrorMessage(error, "Không thể khôi phục giỏ hàng sau khi hủy PayOS."));
+      }
+    }
+
+    void restoreCart();
+  }, [auth.accessToken, auth.isReady, cart, resolvedOrderSummary.paymentMethod]);
 
   async function handleRetryPayment() {
     if (!canRetryPayment || isRetrying) {
@@ -122,7 +174,7 @@ export default function PaymentFailedPage() {
               Thanh toán chưa hoàn tất
             </p>
             <h1 className="mb-3 text-3xl">
-              {orderCreated ? "Đơn hàng đã tạo nhưng chưa thanh toán xong" : "Tạo đơn hàng thất bại"}
+              {orderCreated ? "Đơn hàng đã hủy" : "Tạo đơn hàng thất bại"}
             </h1>
             <p className="mx-auto max-w-2xl text-muted-foreground leading-7">{errorMessage}</p>
           </div>
@@ -143,19 +195,19 @@ export default function PaymentFailedPage() {
                 <InfoCard
                   icon={ShieldAlert}
                   label="Trạng thái đơn"
-                  value={orderCreated ? `Đã tạo đơn #${resolvedOrderSummary.orderId}` : "Chưa tạo được đơn"}
+                  value={orderCreated ? `Đã hủy đơn #${resolvedOrderSummary.orderId}` : "Chưa tạo được đơn"}
                 />
                 <InfoCard
                   icon={RefreshCcw}
                   label="Bước nên làm"
-                  value={orderCreated ? "Mở lại thanh toán hoặc liên hệ shop" : "Kiểm tra giỏ hàng và thử lại"}
+                  value={orderCreated ? "Quay lại giỏ hàng hoặc checkout lại" : "Kiểm tra giỏ hàng và thử lại"}
                 />
               </div>
 
               <div className="mb-6 rounded-2xl border border-border p-6">
                 <h2 className="mb-4 text-lg">Lưu ý hiện tại</h2>
                 <div className="space-y-3 text-sm text-muted-foreground">
-                  <p>{orderCreated ? "Đơn hàng của bạn vẫn tồn tại trong hệ thống." : "Giỏ hàng vẫn giữ nguyên để bạn thử lại."}</p>
+                  <p>{orderCreated ? "Đơn hàng đã hủy. Giỏ hàng sẽ được khôi phục để bạn thử lại." : "Giỏ hàng vẫn giữ nguyên để bạn thử lại."}</p>
                   <p>Thông báo chi tiết: {errorMessage}</p>
                   <p>Nếu cần, bạn có thể quay lại checkout để nhập lại thông tin hoặc chọn phương thức khác.</p>
                 </div>
@@ -337,6 +389,10 @@ function formatCurrency(value) {
 
 function normalizePaymentMethod(paymentMethod) {
   return String(paymentMethod ?? "").trim().toLowerCase();
+}
+
+function normalizeOrderStatus(orderStatus) {
+  return String(orderStatus ?? "").trim().toLowerCase();
 }
 
 function resolveErrorMessage(error, fallbackMessage) {

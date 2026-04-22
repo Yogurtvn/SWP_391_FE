@@ -32,13 +32,7 @@ function ProductCard({
     availabilityStatus ||
     (inStock ? "available" : isPreOrderAllowed || product?.allowPreOrder ? "preorder" : "unavailable");
   const canBuyNow = resolvedAvailabilityStatus === "available";
-  const canPreOrder = Boolean(
-    isPreOrderAllowed ||
-      product?.allowPreOrder ||
-      product?.canPreOrder ||
-      resolvedAvailabilityStatus === "preorder",
-  );
-  const isPreOrderOnly = resolvedAvailabilityStatus === "preorder" && !canBuyNow;
+  const canPreOrder = resolvedAvailabilityStatus === "preorder";
   const shouldShowOutOfStock = resolvedAvailabilityStatus === "unavailable";
 
   async function handleQuickBuy(event) {
@@ -111,14 +105,11 @@ function ProductCard({
               {canBuyNow && <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-md">
                   Con hang
                 </span>}
-              {isPreOrderOnly && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
-                  Co the dat truoc
+              {canPreOrder && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
+                  Dat truoc
                 </span>}
               {shouldShowOutOfStock && <span className="px-2 py-1 bg-gray-600 text-white text-xs rounded-md">
                   Het hang
-                </span>}
-              {canBuyNow && canPreOrder && <span className="px-2 py-1 bg-orange-500 text-white text-xs rounded-md">
-                  Co dat truoc
                 </span>}
             </div>
           </div>
@@ -148,8 +139,8 @@ function ProductCard({
         </h3>
         <p className="text-sm mb-1" style={{ fontWeight: 600 }}>{formatCurrency(displayPrice)}</p>
         <p className="text-xs text-muted-foreground mb-2">{displaySubtitle}</p>
-        {isPreOrderOnly && <p className="mb-3 text-xs font-medium text-orange-700">
-            Available for Pre-order
+        {canPreOrder && <p className="mb-3 text-xs font-medium text-orange-700">
+            Sản phẩm hết hàng, có thể đặt trước
           </p>}
 
         {displayColors.length > 0 && <div className="flex items-center gap-1.5 mb-3">
@@ -161,7 +152,7 @@ function ProductCard({
           </div>}
       </Link>
 
-      <div className={canBuyNow && canPreOrder ? "grid grid-cols-2 gap-2" : ""}>
+      <div>
         {canBuyNow && <button
             onClick={handleQuickBuy}
             className="w-full py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 group/btn"

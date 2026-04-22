@@ -5,12 +5,7 @@ import { useProductDetailPage } from "@/hooks/shop/useProductDetailPage";
 export default function ProductDetailPage() {
   const { product, relatedProducts, selectedColor, selectedSize, currentImage, ui, actions } = useProductDetailPage();
   const canBuyNow = product?.availabilityStatus === "available";
-  const canPreOrder = Boolean(
-    product?.canPreOrder ||
-      product?.isPreOrderAllowed ||
-      product?.availabilityStatus === "preorder",
-  );
-  const isPreOrderOnly = !canBuyNow && canPreOrder;
+  const canPreOrder = Boolean(product?.canPreOrder && product?.availabilityStatus === "preorder");
   const shouldShowOutOfStock = !canBuyNow && !canPreOrder;
 
   if (ui.loading) {
@@ -146,11 +141,8 @@ export default function ProductDetailPage() {
             {shouldShowOutOfStock ? (
               <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">Hết hàng</span>
             ) : null}
-            {isPreOrderOnly ? (
-              <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">Available for Pre-order</span>
-            ) : null}
-            {canBuyNow && canPreOrder ? (
-              <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">Co the dat truoc</span>
+            {canPreOrder ? (
+              <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">Đặt trước</span>
             ) : null}
           </div>
 
@@ -234,12 +226,10 @@ export default function ProductDetailPage() {
                   <p>{product.selectedVariant.sku}</p>
                 </div>
               </div>
-              {product.selectedVariant.isPreOrderAllowed ? (
+              {canPreOrder && product.selectedVariant.isPreOrderAllowed ? (
                 <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-orange-900">
                   <p className="font-medium">
-                    {Number(product.selectedVariant.quantity ?? 0) > 0
-                      ? `Co the dat truoc khi so luong vuot qua ${Number(product.selectedVariant.quantity ?? 0)} san pham co san.`
-                      : "Available for Pre-order"}
+                    Sản phẩm đã hết hàng, có thể đặt trước.
                   </p>
                   {product.selectedVariant.expectedRestockDate ? (
                     <p className="mt-1 text-sm">

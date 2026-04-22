@@ -58,12 +58,19 @@ export const addStandardCartItem = createAsyncThunk(
         variantId: payload.variantId,
         quantity: payload.quantity ?? 1,
       };
+      const existingItem = findMergeableStandardCartItem(cart.items, payload);
 
       if (payload.orderType) {
         requestBody.orderType = payload.orderType;
       }
 
-      await createStandardCartItem(auth.accessToken, requestBody);
+      if (existingItem) {
+        await updateStandardCartItemRequest(auth.accessToken, existingItem.cartItemId, {
+          quantity: Number(existingItem.quantity ?? 0) + Number(requestBody.quantity ?? 1),
+        });
+      } else {
+        await createStandardCartItem(auth.accessToken, requestBody);
+      }
 
       return await loadCartSnapshot(auth.accessToken, nextViewCache);
     } catch (error) {
@@ -249,13 +256,17 @@ export const selectCartState = (state) => state.cart;
 
 export default cartSlice.reducer;
 
-async function loadCartSnapshot(token, viewCache) {
+async function loadCartSnapshot(token, viewCache, options = {}) {
   const cart = await getMyCart(token);
   const variantDetails = await getVariantDetailsByIds(
     Array.isArray(cart?.items) ? cart.items.map((item) => item?.variantId) : [],
   );
 
   const normalizedCart = normalizeServerCart(cart, viewCache, variantDetails);
+
+  if (!options.skipDuplicateMerge && (await mergeDuplicateStandardCartItems(token, normalizedCart.items))) {
+    return loadCartSnapshot(token, viewCache, { skipDuplicateMerge: true });
+  }
 
   return {
     ...normalizedCart,
@@ -274,6 +285,86 @@ function createEmptyCartPayload(viewCache) {
 
 function canUseCustomerCart(authState) {
   return Boolean(authState?.accessToken) && authState?.user?.role === "customer";
+}
+
+function findMergeableStandardCartItem(items, payload) {
+  const variantId = Number(payload?.variantId ?? 0);
+
+  if (!Number.isFinite(variantId) || variantId <= 0) {
+    return null;
+  }
+
+  const orderType = normalizeCartOrderType(payload?.orderType);
+
+  return (
+    (Array.isArray(items) ? items : []).find((item) => {
+      if (Number(item?.variantId ?? 0) !== variantId) {
+        return false;
+      }
+
+      if (item?.hasPrescription || item?.itemType === "prescriptionConfigured") {
+        return false;
+      }
+
+      return normalizeCartOrderType(item?.orderType) === orderType;
+    }) ?? null
+  );
+}
+
+function normalizeCartOrderType(orderType) {
+  const normalizedOrderType = String(orderType ?? "ready")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+
+  return normalizedOrderType === "preorder" ? "preorder" : "ready";
+}
+
+async function mergeDuplicateStandardCartItems(token, items) {
+  const groups = new Map();
+
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    if (item?.hasPrescription || item?.itemType === "prescriptionConfigured") {
+      return;
+    }
+
+    const variantId = Number(item?.variantId ?? 0);
+    const cartItemId = Number(item?.cartItemId ?? 0);
+
+    if (!Number.isFinite(variantId) || variantId <= 0 || !Number.isFinite(cartItemId) || cartItemId <= 0) {
+      return;
+    }
+
+    const key = `${variantId}:${normalizeCartOrderType(item?.orderType)}`;
+    const currentGroup = groups.get(key) ?? [];
+    currentGroup.push(item);
+    groups.set(key, currentGroup);
+  });
+
+  let didMerge = false;
+
+  for (const group of groups.values()) {
+    if (group.length <= 1) {
+      continue;
+    }
+
+    const [primaryItem, ...duplicateItems] = group.sort(
+      (firstItem, secondItem) => Number(firstItem.cartItemId ?? 0) - Number(secondItem.cartItemId ?? 0),
+    );
+    const mergedQuantity = group.reduce((total, item) => total + Number(item?.quantity ?? 0), 0);
+
+    await updateStandardCartItemRequest(token, primaryItem.cartItemId, {
+      quantity: Math.max(1, mergedQuantity),
+    });
+
+    for (const duplicateItem of duplicateItems) {
+      await deleteCartItemRequest(token, duplicateItem.cartItemId, duplicateItem.itemType);
+    }
+
+    didMerge = true;
+  }
+
+  return didMerge;
 }
 
 function applySnapshot(state, payload) {

@@ -110,6 +110,7 @@ export default function PreOrderPage() {
       await addStandardItem({
         variantId: selectedVariant.variantId,
         quantity,
+        orderType: "preOrder",
         view: createCartItemView(state.product, selectedVariant),
       });
 
@@ -386,9 +387,16 @@ function Row({ label, value, accent = false }) {
 }
 
 function getPreOrderVariants(product) {
-  return Array.isArray(product?.variants)
-    ? product.variants.filter((variant) => Boolean(variant?.isPreOrderAllowed))
-    : [];
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  const hasReadyVariant = variants.some(
+    (variant) => Boolean(variant?.isReadyAvailable) || Number(variant?.quantity ?? 0) > 0,
+  );
+
+  if (hasReadyVariant) {
+    return [];
+  }
+
+  return variants.filter((variant) => Boolean(variant?.isPreOrderAllowed));
 }
 
 function isPreOrderQuantity(variant, quantity) {

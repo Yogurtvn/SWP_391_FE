@@ -113,9 +113,10 @@ function normalizeCatalogListItem(item) {
   const isReadyAvailable = variants.length > 0
     ? variants.some((variant) => variant.isReadyAvailable)
     : Boolean(item?.isReadyAvailable ?? item?.isAvailable);
-  const canPreOrder = variants.length > 0
+  const hasPreOrderVariant = variants.length > 0
     ? variants.some((variant) => variant.isPreOrderAllowed)
     : Boolean(item?.isPreOrderAllowed);
+  const canPreOrder = !isReadyAvailable && hasPreOrderVariant;
   const availabilityStatus = resolveAvailabilityStatus(isReadyAvailable, canPreOrder);
 
   return {
@@ -159,7 +160,8 @@ function normalizeCatalogDetail(item) {
   const firstPreOrderVariant = variants.find((variant) => !variant.isReadyAvailable && variant.isPreOrderAllowed);
   const activeVariant = firstAvailableVariant ?? firstPreOrderVariant ?? variants[0] ?? null;
   const availabilityStatus = resolveDetailAvailabilityStatus(variants);
-  const canPreOrder = variants.some((variant) => variant.isPreOrderAllowed);
+  const hasReadyVariant = variants.some((variant) => variant.isReadyAvailable);
+  const canPreOrder = !hasReadyVariant && variants.some((variant) => variant.isPreOrderAllowed);
   const baseImage = images[0] ?? DEFAULT_IMAGE_URL;
   const displayPrice = activeVariant?.price ?? normalizePrice(item?.basePrice);
 

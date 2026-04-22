@@ -1,6 +1,6 @@
 ﻿import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
+import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/common/ui/sheet";
 import { useCart } from "@/hooks/cart/useCart";
 
@@ -46,17 +46,9 @@ function CartDrawer({ open, onOpenChange }) {
           <SheetDescription className="sr-only">
             Xem và quản lý các sản phẩm trong giỏ hàng của bạn
           </SheetDescription>
-          <div className="flex items-center justify-between">
-            <SheetTitle className="text-xl">
-              Gio Hang ({items.length})
-            </SheetTitle>
-            <button
-              onClick={() => onOpenChange(false)}
-              className="rounded-full p-1 hover:bg-secondary transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <SheetTitle className="text-xl">
+            Gio Hang ({items.length})
+          </SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">

@@ -113,9 +113,9 @@ function normalizeCatalogListItem(item) {
     ? variants.some((variant) => variant.isReadyAvailable)
     : Boolean(item?.isReadyAvailable ?? item?.isAvailable);
   const hasPreOrderVariant = variants.length > 0
-    ? variants.some((variant) => variant.isPreOrderAllowed)
-    : Boolean(item?.isPreOrderAllowed);
-  const canPreOrder = !isReadyAvailable && hasPreOrderVariant;
+    ? variants.some(isOutOfStockPreOrderVariant)
+    : Boolean(item?.isPreOrderAllowed) && !isReadyAvailable;
+  const canPreOrder = hasPreOrderVariant;
   const availabilityStatus = resolveAvailabilityStatus(isReadyAvailable, canPreOrder);
 
   return {
@@ -159,8 +159,7 @@ function normalizeCatalogDetail(item) {
   const firstPreOrderVariant = variants.find((variant) => !variant.isReadyAvailable && variant.isPreOrderAllowed);
   const activeVariant = firstAvailableVariant ?? firstPreOrderVariant ?? variants[0] ?? null;
   const availabilityStatus = resolveDetailAvailabilityStatus(variants);
-  const hasReadyVariant = variants.some((variant) => variant.isReadyAvailable);
-  const canPreOrder = !hasReadyVariant && variants.some((variant) => variant.isPreOrderAllowed);
+  const canPreOrder = variants.some(isOutOfStockPreOrderVariant);
   const baseImage = images[0] ?? DEFAULT_IMAGE_URL;
   const displayPrice = activeVariant?.price ?? normalizePrice(item?.basePrice);
 
@@ -215,6 +214,13 @@ function normalizeVariant(variant) {
     expectedRestockDate: variant?.expectedRestockDate ?? null,
     preOrderNote: normalizeText(variant?.preOrderNote),
   };
+}
+
+function isOutOfStockPreOrderVariant(variant) {
+  return (
+    Boolean(variant?.isPreOrderAllowed) &&
+    Number(variant?.quantity ?? 0) <= 0
+  );
 }
 
 function normalizeCategory(category) {

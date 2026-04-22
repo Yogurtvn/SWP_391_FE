@@ -164,10 +164,10 @@ function CartPage() {
         notes: normalizeOptionalField(prescriptionEditForm.notes),
       });
 
-      toast.success("Da cap nhat san pham theo toa.");
+      toast.success("Đã cập nhật sản phẩm theo toa.");
       closePrescriptionEditor();
     } catch (error) {
-      setPrescriptionEditError(resolveErrorMessage(error, "Khong the cap nhat san pham theo toa."));
+      setPrescriptionEditError(resolveErrorMessage(error, "Không thể cập nhật sản phẩm theo toa."));
     }
   }
 
@@ -293,7 +293,7 @@ function CartPage() {
                                 onClick={() => openPrescriptionEditor(item)}
                                 disabled={isMutating}
                                 className="p-2 text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors"
-                                title="Sua toa"
+                                title="Sửa toa"
                               >
                                 <Edit3 className="w-5 h-5" />
                               </button>
@@ -435,7 +435,7 @@ function PrescriptionEditor({ item, form, error, isSaving, onChange, onClose, on
       <form onSubmit={onSubmit} className="max-h-full w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl">Sua san pham theo toa</h2>
+            <h2 className="text-2xl">Sửa sản phẩm theo toa</h2>
             <p className="mt-1 text-sm text-muted-foreground">{item.name}</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-2 text-muted-foreground hover:bg-secondary">
@@ -445,14 +445,14 @@ function PrescriptionEditor({ item, form, error, isSaving, onChange, onClose, on
 
         <div className="grid gap-4 md:grid-cols-3">
           <EditField label="Lens type ID" value={form.lensTypeId} onChange={(value) => onChange("lensTypeId", value)} />
-          <EditField label="Chat lieu" value={form.lensMaterial} onChange={(value) => onChange("lensMaterial", value)} />
+          <EditField label="Chất liệu" value={form.lensMaterial} onChange={(value) => onChange("lensMaterial", value)} />
           <EditField label="Coating" value={form.coatings} onChange={(value) => onChange("coatings", value)} placeholder="blue-light, anti-reflective" />
-          <EditField label="SPH phai" value={form.rightSph} onChange={(value) => onChange("rightSph", value)} />
-          <EditField label="CYL phai" value={form.rightCyl} onChange={(value) => onChange("rightCyl", value)} />
-          <EditField label="AXIS phai" value={form.rightAxis} onChange={(value) => onChange("rightAxis", value)} />
-          <EditField label="SPH trai" value={form.leftSph} onChange={(value) => onChange("leftSph", value)} />
-          <EditField label="CYL trai" value={form.leftCyl} onChange={(value) => onChange("leftCyl", value)} />
-          <EditField label="AXIS trai" value={form.leftAxis} onChange={(value) => onChange("leftAxis", value)} />
+          <EditField label="SPH phải" value={form.rightSph} onChange={(value) => onChange("rightSph", value)} />
+          <EditField label="CYL phải" value={form.rightCyl} onChange={(value) => onChange("rightCyl", value)} />
+          <EditField label="AXIS phải" value={form.rightAxis} onChange={(value) => onChange("rightAxis", value)} />
+          <EditField label="SPH trái" value={form.leftSph} onChange={(value) => onChange("leftSph", value)} />
+          <EditField label="CYL trái" value={form.leftCyl} onChange={(value) => onChange("leftCyl", value)} />
+          <EditField label="AXIS trái" value={form.leftAxis} onChange={(value) => onChange("leftAxis", value)} />
           <EditField label="PD" value={form.pd} onChange={(value) => onChange("pd", value)} />
           <div className="md:col-span-2">
             <EditField label="URL anh toa" value={form.prescriptionImageUrl} onChange={(value) => onChange("prescriptionImageUrl", value)} />
@@ -502,7 +502,7 @@ function EditField({ label, value, onChange, placeholder }) {
 
 function validatePrescriptionEditForm(form) {
   if (!Number.isFinite(Number(form.lensTypeId)) || Number(form.lensTypeId) <= 0) {
-    return "Lens type ID khong hop le.";
+    return "Lens type ID không hợp lệ.";
   }
 
   const requiredValues = [form.rightSph, form.rightCyl, form.leftSph, form.leftCyl, form.pd];
@@ -515,11 +515,11 @@ function validatePrescriptionEditForm(form) {
   const leftAxis = parseInteger(form.leftAxis);
 
   if (!Number.isInteger(rightAxis) || rightAxis < 0 || rightAxis > 180 || !Number.isInteger(leftAxis) || leftAxis < 0 || leftAxis > 180) {
-    return "AXIS phai nam trong khoang 0-180.";
+    return "AXIS phải nằm trong khoảng 0-180.";
   }
 
   if (parseDecimal(form.pd) <= 0) {
-    return "PD phai lon hon 0.";
+    return "PD phải lớn hơn 0.";
   }
 
   return "";

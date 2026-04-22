@@ -82,8 +82,8 @@ function CartDrawer({ open, onOpenChange }) {
                       {item.sku && <p>SKU: {item.sku}</p>}
                       {item.prescriptionDetails ? <>
                           <p>Tròng: {item.prescriptionDetails.lensType}</p>
-                          <p className="text-amber-600">• Theo don thuoc</p>
-                        </> : item.orderType === "preOrder" ? <p className="text-blue-600">• Đặt trước</p> : <p className="text-green-600">• Hang có sẵn</p>}
+                          <p className="text-amber-600">• Theo đơn thuốc</p>
+                        </> : item.orderType === "preOrder" ? <p className="text-blue-600">• Đặt trước</p> : <p className="text-green-600">• Hàng có sẵn</p>}
                       {!item.prescriptionDetails && (
                         <p>
                           Tồn kho: {Number(item.stockQuantity ?? 0)}

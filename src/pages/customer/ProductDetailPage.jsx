@@ -5,7 +5,8 @@ import { useProductDetailPage } from "@/hooks/shop/useProductDetailPage";
 export default function ProductDetailPage() {
   const { product, relatedProducts, selectedColor, selectedSize, currentImage, ui, actions } = useProductDetailPage();
   const canBuyNow = product?.availabilityStatus === "available";
-  const canPreOrder = Boolean(product?.canPreOrder && product?.availabilityStatus === "preorder");
+  const canPreOrder = Boolean(product?.canPreOrder);
+  const canOpenPreOrder = Boolean(product?.hasPreOrderVariant || product?.canPreOrder);
   const shouldShowOutOfStock = !canBuyNow && !canPreOrder;
 
   if (ui.loading) {
@@ -226,14 +227,14 @@ export default function ProductDetailPage() {
                   <p>{product.selectedVariant.sku}</p>
                 </div>
               </div>
-              {canPreOrder && product.selectedVariant.isPreOrderAllowed ? (
+              {canPreOrder ? (
                 <div className="mt-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-orange-900">
                   <p className="font-medium">
-                    Sản phẩm đã hết hàng, có thể đặt trước.
+                    Biến thể này đã hết hàng, có thể đặt trước.
                   </p>
                   {product.selectedVariant.expectedRestockDate ? (
                     <p className="mt-1 text-sm">
-                      Du kien co hang: {formatDate(product.selectedVariant.expectedRestockDate)}
+                      Dự kiến có hàng: {formatDate(product.selectedVariant.expectedRestockDate)}
                     </p>
                   ) : null}
                   {product.selectedVariant.preOrderNote ? (
@@ -277,7 +278,7 @@ export default function ProductDetailPage() {
               </>
             ) : null}
 
-            {canPreOrder ? (
+            {canOpenPreOrder ? (
               <button
                 type="button"
                 onClick={actions.goToPreOrder}
@@ -316,7 +317,7 @@ function formatDate(value) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "chua cap nhat";
+    return "chưa cập nhật";
   }
 
   return new Intl.DateTimeFormat("vi-VN", {

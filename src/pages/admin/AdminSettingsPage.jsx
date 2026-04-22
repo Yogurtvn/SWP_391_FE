@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
 import { selectAuthState } from "@/store/auth/authSlice";
@@ -15,7 +15,7 @@ export default function AdminSettingsPage() {
 
   const fetchPolicies = useCallback(async () => {
     if (!accessToken) {
-      setError("Khong co access token.");
+      setError("Không có access token.");
       return;
     }
 
@@ -26,7 +26,7 @@ export default function AdminSettingsPage() {
       const result = await getPolicies({ page: 1, pageSize: 100 }, accessToken);
       setPolicies(result?.items ?? []);
     } catch (requestError) {
-      setError(requestError?.message || "Khong tai duoc policies.");
+      setError(requestError?.message || "Không tải được policies.");
     } finally {
       setLoading(false);
     }
@@ -51,13 +51,13 @@ export default function AdminSettingsPage() {
       setForm({ title: "", content: "" });
       fetchPolicies();
     } catch (requestError) {
-      await popupAlert(requestError?.message || "Khong tao duoc policy.");
+      await popupAlert(requestError?.message || "Không tạo được policy.");
     }
   }
 
   async function handleEdit(policy) {
-    const nextTitle = await popupPrompt("Sua tieu de:", policy.title || "", {
-      title: "Chinh sua policy",
+    const nextTitle = await popupPrompt("Sửa tiêu đề:", policy.title || "", {
+      title: "Chỉnh sửa policy",
       okText: "Tiep tuc",
       placeholder: "Tieu de",
     });
@@ -66,9 +66,9 @@ export default function AdminSettingsPage() {
       return;
     }
 
-    const nextContent = await popupPrompt("Sua noi dung:", policy.content || "", {
-      title: "Chinh sua policy",
-      okText: "Luu",
+    const nextContent = await popupPrompt("Sửa nội dung:", policy.content || "", {
+      title: "Chỉnh sửa policy",
+      okText: "Lưu",
       placeholder: "Noi dung",
     });
 
@@ -87,14 +87,14 @@ export default function AdminSettingsPage() {
       );
       fetchPolicies();
     } catch (requestError) {
-      await popupAlert(requestError?.message || "Khong sua duoc policy.");
+      await popupAlert(requestError?.message || "Không sửa được policy.");
     }
   }
 
   async function handleDelete(policyId) {
-    const isConfirmed = await popupConfirm("Ban co chac muon xoa policy nay?", {
-      title: "Xac nhan xoa",
-      okText: "Xoa",
+    const isConfirmed = await popupConfirm("Bạn có chắc muốn xóa policy này?", {
+      title: "Xác nhận xóa",
+      okText: "Xóa",
       cancelText: "Huy",
     });
 
@@ -106,22 +106,22 @@ export default function AdminSettingsPage() {
       await deletePolicy(policyId, accessToken);
       fetchPolicies();
     } catch (requestError) {
-      await popupAlert(requestError?.message || "Khong xoa duoc policy.");
+      await popupAlert(requestError?.message || "Không xóa được policy.");
     }
   }
 
   return (
     <AdminPageShell
-      title="Cai Dat Chinh Sach"
+      title="Cài Đặt Chính Sách"
       actions={
         <button type="button" onClick={fetchPolicies} className={adminStyles.secondaryButton}>
-          Tai lai
+          Tải lại
         </button>
       }
     >
       <AdminErrorBanner message={error} />
 
-      <AdminSection title="Tao policy moi">
+      <AdminSection title="Tạo policy mới">
         <form onSubmit={handleCreate} className="space-y-4">
           <input
             value={form.title}
@@ -139,7 +139,7 @@ export default function AdminSettingsPage() {
           />
 
           <button type="submit" className={adminStyles.primaryButton}>
-            Tao policy
+            Tạo policy
           </button>
         </form>
       </AdminSection>
@@ -158,7 +158,7 @@ export default function AdminSettingsPage() {
             {!loading && policies.length === 0 ? (
               <tr>
                 <td colSpan={4} className={adminStyles.emptyState}>
-                  Khong co du lieu.
+                  Không có dữ liệu.
                 </td>
               </tr>
             ) : null}
@@ -175,14 +175,14 @@ export default function AdminSettingsPage() {
                       onClick={() => handleEdit(policy)}
                       className={adminStyles.smallButton}
                     >
-                      Sua
+                      Sửa
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(policy.policyId)}
                       className={adminStyles.smallDangerButton}
                     >
-                      Xoa
+                      Xóa
                     </button>
                   </div>
                 </td>

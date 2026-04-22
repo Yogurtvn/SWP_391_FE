@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
 import { getProductById, getVariantById } from "@/services/adminService";
@@ -150,11 +150,11 @@ export function useAdminProductsPage() {
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [productSummaries, setProductSummaries] = useState({});
   const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [isVariantModalOpen, setIsVariantModalOpen] = useState(false);
+  const [isDetailMởdalOpen, setIsDetailMởdalOpen] = useState(false);
+  const [isVariantMởdalOpen, setIsVariantMởdalOpen] = useState(false);
   const [isCreatingVariant, setIsCreatingVariant] = useState(false);
   const [variantForm, setVariantForm] = useState(DEFAULT_VARIANT_FORM);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isEditMởdalOpen, setIsEditMởdalOpen] = useState(false);
   const [isLoadingEditProduct, setIsLoadingEditProduct] = useState(false);
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false);
   const [editForm, setEditForm] = useState(DEFAULT_EDIT_PRODUCT_FORM);
@@ -177,7 +177,7 @@ export function useAdminProductsPage() {
       return undefined;
     }
 
-    let isMounted = true;
+    let isMởunted = true;
     setIsLoadingSummaries(true);
 
     void Promise.all(
@@ -210,7 +210,7 @@ export function useAdminProductsPage() {
         }
       }),
     ).then((entries) => {
-      if (!isMounted) {
+      if (!isMởunted) {
         return;
       }
 
@@ -219,7 +219,7 @@ export function useAdminProductsPage() {
     });
 
     return () => {
-      isMounted = false;
+      isMởunted = false;
     };
   }, [admin.products.items, auth.accessToken]);
 
@@ -230,7 +230,7 @@ export function useAdminProductsPage() {
     setDraftVariants([]);
   }
 
-  function resetEditModalState() {
+  function resetEditMởdalState() {
     setEditForm(DEFAULT_EDIT_PRODUCT_FORM);
     setEditVariants([]);
     setSavingVariantIds([]);
@@ -315,22 +315,22 @@ export function useAdminProductsPage() {
     const quantity = Number(currentColorForm.quantity);
 
     if (!form.sku.trim()) {
-      await popupAlert("Vui long nhap SKU goc trong phan thong tin co ban.");
+      await popupAlert("Vui lòng nhập SKU gốc trong phần thông tin cơ bản.");
       return;
     }
 
     if (!currentColorForm.colorName.trim()) {
-      await popupAlert("Vui long chon mau sac.");
+      await popupAlert("Vui lòng chọn màu sắc.");
       return;
     }
 
     if (Number.isNaN(quantity) || quantity < 0) {
-      await popupAlert("Ton kho khong hop le.");
+      await popupAlert("Tồn kho không hợp lệ.");
       return;
     }
 
     if (currentColorForm.imageFiles.length === 0) {
-      await popupAlert("Vui long tai len it nhat 1 hinh anh cho mau nay.");
+      await popupAlert("Vui lòng tải lên ít nhất 1 hình ảnh cho màu này.");
       return;
     }
 
@@ -365,17 +365,17 @@ export function useAdminProductsPage() {
     event.preventDefault();
 
     if (!form.categoryId) {
-      await popupAlert("Vui long chon danh muc.");
+      await popupAlert("Vui lòng chọn danh mục.");
       return null;
     }
 
     if (!form.sku.trim()) {
-      await popupAlert("Vui long nhap SKU goc.");
+      await popupAlert("Vui lòng nhập SKU gốc.");
       return null;
     }
 
     if (draftVariants.length === 0) {
-      await popupAlert("Vui long them it nhat 1 mau sac va ton kho.");
+      await popupAlert("Vui lòng thêm ít nhất 1 màu sắc và tồn kho.");
       return null;
     }
 
@@ -396,7 +396,7 @@ export function useAdminProductsPage() {
       const productId = created?.productId;
 
       if (!productId) {
-        throw new Error("Khong nhan duoc productId sau khi tao san pham.");
+        throw new Error("Không nhận được productId sau khi tạo sản phẩm.");
       }
 
       for (const draft of draftVariants) {
@@ -418,24 +418,24 @@ export function useAdminProductsPage() {
         ).unwrap();
       }
 
-      const imageFiles = draftVariants.flatMap((draft) => draft.imageFiles);
+      const imageFiles = draftVariants.flatMãp((draft) => draft.imageFiles);
       if (imageFiles.length > 0) {
         await dispatch(uploadAdminProductImages({ productId, files: imageFiles })).unwrap();
       }
 
       await dispatch(fetchAdminProducts()).unwrap();
       resetCreateProductBuilder();
-      await popupAlert("Tao san pham thanh cong.");
+      await popupAlert("Tạo sản phẩm thành công.");
       return { productId };
     } catch (error) {
-      await popupAlert(error || "Khong tao duoc san pham.");
+      await popupAlert(error || "Không tạo được sản phẩm.");
       return null;
     } finally {
       setIsCreatingProduct(false);
     }
   }
 
-  function openVariantModal(product) {
+  function openVariantMởdal(product) {
     setVariantForm({
       productId: product.productId,
       productName: product.productName,
@@ -446,41 +446,41 @@ export function useAdminProductsPage() {
       size: "",
       frameType: "",
     });
-    setIsVariantModalOpen(true);
+    setIsVariantMởdalOpen(true);
   }
 
-  function closeVariantModal() {
+  function closeVariantMởdal() {
     if (isCreatingVariant) {
       return;
     }
 
-    setIsVariantModalOpen(false);
+    setIsVariantMởdalOpen(false);
     setVariantForm(DEFAULT_VARIANT_FORM);
   }
 
-  async function openEditModal(product) {
+  async function openEditMởdal(product) {
     setIsLoadingEditProduct(true);
 
     try {
       const detail = await loadProductForEditing(product.productId, true);
-      setIsDetailModalOpen(false);
+      setIsDetailMởdalOpen(false);
       setEditForm(buildEditProductForm(detail));
-      setIsEditModalOpen(true);
+      setIsEditMởdalOpen(true);
     } catch (error) {
-      await popupAlert(error || "Khong tai duoc thong tin san pham de chinh sua.");
+      await popupAlert(error || "Không tải được thông tin sản phẩm để chỉnh sửa.");
     } finally {
       setIsLoadingEditProduct(false);
     }
   }
 
-  function closeEditModal() {
+  function closeEditMởdal() {
     if (isUpdatingProduct) {
       return;
     }
 
-    const nextDetailOpen = isDetailModalOpen;
-    setIsEditModalOpen(false);
-    resetEditModalState();
+    const nextDetailOpen = isDetailMởdalOpen;
+    setIsEditMởdalOpen(false);
+    resetEditMởdalState();
     clearCurrentProductIfUnused(nextDetailOpen, false);
   }
 
@@ -488,12 +488,12 @@ export function useAdminProductsPage() {
     event.preventDefault();
 
     if (!editForm.productId) {
-      await popupAlert("Khong xac dinh duoc san pham can cap nhat.");
+      await popupAlert("Không xác định được sản phẩm cần cập nhật.");
       return false;
     }
 
     if (!editForm.categoryId) {
-      await popupAlert("Vui long chon danh muc.");
+      await popupAlert("Vui lòng chọn danh mục.");
       return false;
     }
 
@@ -517,10 +517,10 @@ export function useAdminProductsPage() {
       await dispatch(fetchAdminProducts()).unwrap();
       const refreshedDetail = await loadProductForEditing(editForm.productId, true);
       setEditForm(buildEditProductForm(refreshedDetail));
-      await popupAlert("Cap nhat san pham thanh cong.");
+      await popupAlert("Cập nhật sản phẩm thành công.");
       return true;
     } catch (error) {
-      await popupAlert(error || "Khong cap nhat duoc san pham.");
+      await popupAlert(error || "Không cập nhật được sản phẩm.");
       return false;
     } finally {
       setIsUpdatingProduct(false);
@@ -539,12 +539,12 @@ export function useAdminProductsPage() {
     const quantity = Number(variant.quantity);
 
     if (!normalizedSku) {
-      await popupAlert("SKU variant khong duoc de trong.");
+      await popupAlert("SKU variant không được để trống.");
       return;
     }
 
     if (Number.isNaN(price) || price < 0 || Number.isNaN(quantity) || quantity < 0) {
-      await popupAlert("Gia hoac so luong variant khong hop le.");
+      await popupAlert("Giá hoặc số lượng variant không hợp lệ.");
       return;
     }
 
@@ -573,18 +573,18 @@ export function useAdminProductsPage() {
         await loadProductForEditing(editForm.productId, true);
       }
 
-      await popupAlert("Cap nhat variant thanh cong.");
+      await popupAlert("Cập nhật variant thành cong.");
     } catch (error) {
-      await popupAlert(error || "Khong cap nhat duoc variant.");
+      await popupAlert(error || "Không cập nhật được variant.");
     } finally {
       setSavingVariantIds((current) => current.filter((item) => item !== variantId));
     }
   }
 
   async function deleteEditVariant(variantId) {
-    const isConfirmed = await popupConfirm("Ban co chac muon xoa variant nay?", {
-      title: "Xoa variant",
-      okText: "Xoa",
+    const isConfirmed = await popupConfirm("Bạn có chắc muốn xóa variant này?", {
+      title: "Xóa variant",
+      okText: "Xóa",
     });
 
     if (!isConfirmed) {
@@ -601,9 +601,9 @@ export function useAdminProductsPage() {
         await loadProductForEditing(editForm.productId, true);
       }
 
-      await popupAlert("Da xoa variant.");
+      await popupAlert("Da xóa variant.");
     } catch (error) {
-      await popupAlert(error || "Khong xoa duoc variant.");
+      await popupAlert(error || "Không xóa được variant.");
     } finally {
       setDeletingVariantIds((current) => current.filter((item) => item !== variantId));
     }
@@ -617,17 +617,17 @@ export function useAdminProductsPage() {
     const quantity = Number(variantForm.quantity);
 
     if (!variantForm.productId) {
-      await popupAlert("Khong xac dinh duoc san pham de tao variant.");
+      await popupAlert("Không xác định được sản phẩm để tạo variant.");
       return;
     }
 
     if (!normalizedSku) {
-      await popupAlert("SKU khong duoc de trong.");
+      await popupAlert("SKU không được để trống.");
       return;
     }
 
     if (Number.isNaN(price) || price < 0 || Number.isNaN(quantity) || quantity < 0) {
-      await popupAlert("Gia hoac so luong khong hop le.");
+      await popupAlert("Giá hoặc số lượng không hợp lệ.");
       return;
     }
 
@@ -651,16 +651,16 @@ export function useAdminProductsPage() {
         }),
       ).unwrap();
 
-      await popupAlert("Tao variant thanh cong.");
-      setIsVariantModalOpen(false);
+      await popupAlert("Tạo variant thành cong.");
+      setIsVariantMởdalOpen(false);
       setVariantForm(DEFAULT_VARIANT_FORM);
       await dispatch(fetchAdminProducts()).unwrap();
 
       if (admin.currentProduct.data?.productId === variantForm.productId || editForm.productId === variantForm.productId) {
-        await loadProductForEditing(variantForm.productId, isEditModalOpen);
+        await loadProductForEditing(variantForm.productId, isEditMởdalOpen);
       }
     } catch (error) {
-      await popupAlert(error || "Khong tao duoc variant.");
+      await popupAlert(error || "Không tạo được variant.");
     } finally {
       setIsCreatingVariant(false);
     }
@@ -669,21 +669,21 @@ export function useAdminProductsPage() {
   async function viewDetail(product) {
     try {
       await dispatch(fetchAdminProductDetail(product.productId)).unwrap();
-      setIsDetailModalOpen(true);
+      setIsDetailMởdalOpen(true);
     } catch (error) {
-      await popupAlert(error || "Khong tai duoc chi tiet san pham.");
+      await popupAlert(error || "Không tải được chi tiết sản phẩm.");
     }
   }
 
   function closeDetail() {
-    const nextEditOpen = isEditModalOpen;
-    setIsDetailModalOpen(false);
+    const nextEditOpen = isEditMởdalOpen;
+    setIsDetailMởdalOpen(false);
     clearCurrentProductIfUnused(false, nextEditOpen);
   }
 
   async function toggleProductStatus(product) {
     if (!product.isActive && !product.isAvailable) {
-      await popupAlert("San pham chua co ton kho. Vao Quan Ly Kho de nhap so luong truoc khi mo ban.");
+      await popupAlert("Sản phẩm chưa có tồn kho. Vào Quản Lý Kho để nhập số lượng trước khi mở bán.");
       navigate("/admin/inventory");
       return;
     }
@@ -692,37 +692,37 @@ export function useAdminProductsPage() {
       await dispatch(toggleAdminProductStatus(product)).unwrap();
       await popupAlert(
         product.isActive
-          ? "Da ngung ban san pham va dua ton kho ve 0."
-          : "Da mo ban lai san pham.",
+          ? "Đã ngừng bán sản phẩm và đưa tồn kho về 0."
+          : "Đã mở bán lại sản phẩm.",
       );
       await dispatch(fetchAdminProducts()).unwrap();
 
       if (admin.currentProduct.data?.productId === product.productId || editForm.productId === product.productId) {
-        await loadProductForEditing(product.productId, isEditModalOpen);
+        await loadProductForEditing(product.productId, isEditMởdalOpen);
       }
     } catch (error) {
       const errorMessage = String(error || "");
 
       if (errorMessage.includes("variant trong kho")) {
-        await popupAlert("San pham chua co variant trong kho.");
+        await popupAlert("Sản phẩm chưa có variant trong kho.");
         navigate("/admin/inventory");
         return;
       }
 
-      if (errorMessage.includes("ton kho")) {
-        await popupAlert("San pham chua co ton kho. Vao Quan Ly Kho de nhap so luong truoc khi mo ban.");
+      if (errorMessage.includes("tồn kho")) {
+        await popupAlert("Sản phẩm chưa có tồn kho. Vào Quản Lý Kho để nhập số lượng trước khi mở bán.");
         navigate("/admin/inventory");
         return;
       }
 
-      await popupAlert(error || "Khong doi duoc trang thai san pham.");
+      await popupAlert(error || "Không đổi được trạng thái sản phẩm.");
     }
   }
 
   async function deleteProduct(product) {
-    const isConfirmed = await popupConfirm(`Ban co chac muon xoa san pham ${product.productName}?`, {
-      title: "Xoa san pham",
-      okText: "Xoa",
+    const isConfirmed = await popupConfirm(`Bạn có chắc muốn xóa sản phẩm ${product.productName}?`, {
+      title: "Xóa sản phẩm",
+      okText: "Xóa",
     });
 
     if (!isConfirmed) {
@@ -733,15 +733,15 @@ export function useAdminProductsPage() {
       await dispatch(removeAdminProduct(product.productId)).unwrap();
 
       if (admin.currentProduct.data?.productId === product.productId || editForm.productId === product.productId) {
-        setIsEditModalOpen(false);
-        setIsDetailModalOpen(false);
-        resetEditModalState();
+        setIsEditMởdalOpen(false);
+        setIsDetailMởdalOpen(false);
+        resetEditMởdalState();
         dispatch(clearAdminCurrentProduct());
       }
 
       await dispatch(fetchAdminProducts()).unwrap();
     } catch (error) {
-      await popupAlert(error || "Khong xoa duoc san pham.");
+      await popupAlert(error || "Không xóa được sản phẩm.");
     }
   }
 
@@ -755,9 +755,9 @@ export function useAdminProductsPage() {
 
     try {
       await dispatch(uploadAdminProductImages({ productId, files })).unwrap();
-      await loadProductForEditing(productId, isEditModalOpen);
+      await loadProductForEditing(productId, isEditMởdalOpen);
     } catch (error) {
-      await popupAlert(error || "Khong upload duoc anh san pham.");
+      await popupAlert(error || "Không upload được ảnh sản phẩm.");
     } finally {
       event.target.value = "";
     }
@@ -781,9 +781,9 @@ export function useAdminProductsPage() {
           },
         }),
       ).unwrap();
-      await loadProductForEditing(productId, isEditModalOpen);
+      await loadProductForEditing(productId, isEditMởdalOpen);
     } catch (error) {
-      await popupAlert(error || "Khong cap nhat duoc anh chinh.");
+      await popupAlert(error || "Không cập nhật được ảnh chính.");
     }
   }
 
@@ -796,9 +796,9 @@ export function useAdminProductsPage() {
 
     try {
       await dispatch(removeAdminProductImage({ productId, imageId: image.imageId })).unwrap();
-      await loadProductForEditing(productId, isEditModalOpen);
+      await loadProductForEditing(productId, isEditMởdalOpen);
     } catch (error) {
-      await popupAlert(error || "Khong xoa duoc anh.");
+      await popupAlert(error || "Không xóa được ảnh.");
     }
   }
 
@@ -814,16 +814,16 @@ export function useAdminProductsPage() {
     productSummaries,
     variantForm,
     ui: {
-      error: admin.products.error ?? (!auth.accessToken && auth.isReady ? "Khong co access token." : null),
+      error: admin.products.error ?? (!auth.accessToken && auth.isReady ? "Không có access token." : null),
       isLoading: admin.products.status === "loading",
       isLoadingSummaries,
       detailLoading: admin.currentProduct.status === "loading",
-      isDetailModalOpen,
+      isDetailMởdalOpen,
       isCreatingProduct,
-      isEditModalOpen,
+      isEditMởdalOpen,
       isLoadingEditProduct,
       isUpdatingProduct,
-      isVariantModalOpen,
+      isVariantMởdalOpen,
       isCreatingVariant,
       savingVariantIds,
       deletingVariantIds,
@@ -841,13 +841,13 @@ export function useAdminProductsPage() {
       setVariantField: (field, value) => setVariantForm((current) => ({ ...current, [field]: value })),
       retry: () => dispatch(fetchAdminProducts()),
       createProduct,
-      openEditModal,
-      closeEditModal,
+      openEditMởdal,
+      closeEditMởdal,
       submitEditProduct,
       saveEditVariant,
       deleteEditVariant,
-      openVariantModal,
-      closeVariantModal,
+      openVariantMởdal,
+      closeVariantMởdal,
       submitVariant,
       viewDetail,
       closeDetail,

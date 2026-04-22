@@ -51,7 +51,6 @@ export default function PreOrderPage() {
         const preOrderVariants = getPreOrderVariants(product);
         const preferredVariant =
           preOrderVariants.find((variant) => variant.variantId === Number(location.state?.selectedVariantId)) ||
-          preOrderVariants.find((variant) => Number(variant.quantity ?? 0) <= 0) ||
           preOrderVariants[0] ||
           null;
 
@@ -102,7 +101,7 @@ export default function PreOrderPage() {
     }
 
     if (!isPreOrderQuantity(selectedVariant, quantity)) {
-      toast.error("Biến thể này vẫn còn đủ hàng cho số lượng đã chọn. Vui lòng mua ngay hoặc tăng số lượng vượt tồn kho.");
+      toast.error("Chỉ biến thể đã hết hàng và bật pre-order mới được đặt trước.");
       return;
     }
 
@@ -130,7 +129,7 @@ export default function PreOrderPage() {
       <StateCard
         icon={Package}
         title="Chọn sản phẩm để đặt trước"
-        description="Backend hiện xử lý pre-order theo product variant. Hãy chọn sản phẩm có nút Đặt Trước trong catalog."
+        description="Hãy chọn sản phẩm có biến thể hết hàng và đang bật đặt trước."
         primaryAction={{
           label: "Xem sản phẩm",
           to: "/shop",
@@ -143,7 +142,7 @@ export default function PreOrderPage() {
     return (
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="rounded-[28px] border border-border bg-white p-12 text-center shadow-sm">
-          <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
           <p className="text-muted-foreground">Đang tải sản phẩm đặt trước...</p>
         </div>
       </div>
@@ -169,7 +168,7 @@ export default function PreOrderPage() {
       <StateCard
         icon={AlertCircle}
         title="Sản phẩm chưa hỗ trợ đặt trước"
-        description="Không có biến thể nào của sản phẩm này đang bật preorder trong inventory."
+        description="Không có biến thể nào của sản phẩm này đang hết hàng và bật đặt trước trong kho."
         primaryAction={{
           label: "Quay lại sản phẩm",
           to: numericProductId ? `/product/${numericProductId}` : "/shop",
@@ -212,8 +211,7 @@ export default function PreOrderPage() {
               <p className="mb-5 leading-7 text-muted-foreground">{state.product.description}</p>
 
               <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm leading-6 text-orange-900">
-                Flow này dùng API thật của backend: chỉ tạo preorder khi số lượng đặt lớn hơn tồn kho và variant bật
-                `IsPreOrderAllowed`, sau đó checkout bằng `POST /api/orders/checkout`.
+                Bạn đang đặt trước biến thể đã hết hàng. Thời gian nhập lại sẽ hiển thị theo thông tin kho nếu có.
               </div>
             </div>
           </section>
@@ -222,7 +220,7 @@ export default function PreOrderPage() {
             <div className="mb-6">
               <h2 className="mb-2 text-2xl">Chọn biến thể đặt trước</h2>
               <p className="text-sm text-muted-foreground">
-                Chỉ hiển thị các biến thể được bật preorder trong inventory.
+                Chỉ hiển thị các biến thể đã hết hàng và bật đặt trước trong kho.
               </p>
             </div>
 
@@ -247,7 +245,7 @@ export default function PreOrderPage() {
                         </p>
                       </div>
                       <span className="rounded-full bg-orange-100 px-3 py-1 text-xs text-orange-700">
-                        {Number(variant.quantity ?? 0) > 0 ? `Preorder nếu > ${Number(variant.quantity ?? 0)}` : "Hết hàng"}
+                        Hết hàng
                       </span>
                     </div>
 
@@ -315,13 +313,6 @@ export default function PreOrderPage() {
               </div>
             </div>
 
-            {selectedVariant && !canCreatePreOrder ? (
-              <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-                Biến thể này còn {Number(selectedVariant.quantity ?? 0)} sản phẩm. Theo requirement, preorder chỉ áp dụng
-                khi hết hàng hoặc số lượng đặt lớn hơn tồn kho. Với số lượng hiện tại, hãy dùng luồng mua hàng có sẵn.
-              </div>
-            ) : null}
-
             <button
               type="button"
               onClick={handleAddPreOrder}
@@ -330,8 +321,8 @@ export default function PreOrderPage() {
             >
               {isSubmitting ? (
                 <>
-                  <div className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                  Đang tạo preorder...
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Đang tạo đặt trước...
                 </>
               ) : (
                 <>
@@ -354,7 +345,7 @@ function StateCard({ icon: Icon, title, description, primaryAction, secondaryAct
         <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
           <Icon className="mx-auto mb-5 h-16 w-16 text-primary" />
           <h1 className="mb-3 text-3xl">{title}</h1>
-          <p className="mx-auto mb-8 max-w-2xl text-muted-foreground leading-7">{description}</p>
+          <p className="mx-auto mb-8 max-w-2xl leading-7 text-muted-foreground">{description}</p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link
               to={primaryAction.to}
@@ -388,22 +379,16 @@ function Row({ label, value, accent = false }) {
 
 function getPreOrderVariants(product) {
   const variants = Array.isArray(product?.variants) ? product.variants : [];
-  const hasReadyVariant = variants.some(
-    (variant) => Boolean(variant?.isReadyAvailable) || Number(variant?.quantity ?? 0) > 0,
-  );
-
-  if (hasReadyVariant) {
-    return [];
-  }
-
-  return variants.filter((variant) => Boolean(variant?.isPreOrderAllowed));
+  return variants.filter(isOutOfStockPreOrderVariant);
 }
 
 function isPreOrderQuantity(variant, quantity) {
-  const availableQuantity = Number(variant?.quantity ?? 0);
   const requestedQuantity = Number(quantity ?? 0);
+  return isOutOfStockPreOrderVariant(variant) && requestedQuantity > 0;
+}
 
-  return Boolean(variant?.isPreOrderAllowed) && requestedQuantity > Math.max(0, availableQuantity);
+function isOutOfStockPreOrderVariant(variant) {
+  return Boolean(variant?.isPreOrderAllowed) && Number(variant?.quantity ?? 0) <= 0;
 }
 
 function clampQuantity(value) {

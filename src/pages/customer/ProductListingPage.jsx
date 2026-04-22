@@ -7,7 +7,8 @@ import { useProductListingPage } from "@/hooks/shop/useProductListingPage";
 function ProductListingPage() {
   const { title, routeNotice, products, categories, filters, sortOptions, pageInfo, ui, actions } = useProductListingPage();
 
-  return <div className="bg-white">
+  return (
+    <div className="bg-white">
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="flex gap-12">
           <FilterSidebar
@@ -28,7 +29,9 @@ function ProductListingPage() {
           <div className="flex-1">
             <div className="flex items-center justify-between gap-4 mb-6">
               <div>
-                <h1 className="text-2xl mb-1" style={{ fontWeight: 700 }}>{title}</h1>
+                <h1 className="text-2xl mb-1" style={{ fontWeight: 700 }}>
+                  {title}
+                </h1>
                 <p className="text-sm text-muted-foreground">
                   Hiển thị {products.length} / {pageInfo.totalItems} sản phẩm
                 </p>
@@ -40,20 +43,26 @@ function ProductListingPage() {
                   onChange={(event) => actions.setSort(event.target.value)}
                   className="rounded-lg border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:border-primary"
                 >
-                  {sortOptions.map((option) => <option key={option.value} value={option.value}>
+                  {sortOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
                       {option.label}
-                    </option>)}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
 
-            {routeNotice && <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {routeNotice ? (
+              <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
                 {routeNotice}
-              </div>}
+              </div>
+            ) : null}
 
-            {filters.search && <div className="mb-6 rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground">
+            {filters.search ? (
+              <div className="mb-6 rounded-lg border border-border bg-secondary px-4 py-3 text-sm text-foreground">
                 Kết quả tìm kiếm cho: <span style={{ fontWeight: 600 }}>{filters.search}</span>
-              </div>}
+              </div>
+            ) : null}
 
             <div className="bg-[#F5F1E8] rounded-sm p-8 mb-8 flex items-center justify-between">
               <div className="flex-1">
@@ -77,17 +86,20 @@ function ProductListingPage() {
               <div className="w-48 h-48 rounded-full overflow-hidden flex items-center justify-center">
                 <img
                   src="https://images.unsplash.com/photo-1764740113465-dc9e6b28cc9e?crop=center&fit=crop&w=300&h=300"
-                  alt="Promotion"
+                  alt="Khuyến mãi"
                   className="w-full h-full object-cover"
                 />
               </div>
             </div>
 
-            {ui.isError && <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-800">
+            {ui.isError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-800">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
                   <div>
-                    <p className="mb-2" style={{ fontWeight: 600 }}>Không thể tải danh sách sản phẩm</p>
+                    <p className="mb-2" style={{ fontWeight: 600 }}>
+                      Không thể tải danh sách sản phẩm
+                    </p>
                     <p className="text-sm mb-4">{ui.error}</p>
                     <button
                       type="button"
@@ -98,18 +110,24 @@ function ProductListingPage() {
                     </button>
                   </div>
                 </div>
-              </div>}
+              </div>
+            ) : null}
 
-            {ui.isLoading && <div className="grid grid-cols-3 gap-x-6 gap-y-10">
-                {Array.from({ length: 6 }).map((_, index) => <div key={index} className="animate-pulse">
+            {ui.isLoading ? (
+              <div className="grid grid-cols-3 gap-x-6 gap-y-10">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="animate-pulse">
                     <div className="aspect-[4/3] rounded-lg bg-secondary mb-3" />
                     <div className="h-4 rounded bg-secondary mb-2" />
                     <div className="h-4 w-2/3 rounded bg-secondary mb-2" />
                     <div className="h-3 w-1/2 rounded bg-secondary" />
-                  </div>)}
-              </div>}
+                  </div>
+                ))}
+              </div>
+            ) : null}
 
-            {!ui.isLoading && !ui.isError && ui.isEmpty && <div className="rounded-xl border border-border bg-secondary/40 p-10 text-center">
+            {!ui.isLoading && !ui.isError && ui.isEmpty ? (
+              <div className="rounded-xl border border-border bg-secondary/40 p-10 text-center">
                 <h3 className="mb-2">Không tìm thấy sản phẩm phù hợp</h3>
                 <p className="text-sm text-muted-foreground mb-4">
                   Hãy thử đổi bộ lọc hoặc xóa tìm kiếm hiện tại.
@@ -121,14 +139,19 @@ function ProductListingPage() {
                 >
                   Xóa bộ lọc
                 </button>
-              </div>}
+              </div>
+            ) : null}
 
-            {!ui.isLoading && !ui.isError && !ui.isEmpty && <>
+            {!ui.isLoading && !ui.isError && !ui.isEmpty ? (
+              <>
                 <div className="grid grid-cols-3 gap-x-6 gap-y-10">
-                  {products.map((product) => <ProductCard key={product.id} {...product} />)}
+                  {products.map((product) => (
+                    <ProductCard key={product.id} {...product} />
+                  ))}
                 </div>
 
-                {pageInfo.totalPages > 1 && <div className="mt-12 flex items-center justify-center gap-3">
+                {pageInfo.totalPages > 1 ? (
+                  <div className="mt-12 flex items-center justify-center gap-3">
                     <button
                       type="button"
                       onClick={() => actions.goToPage(pageInfo.page - 1)}
@@ -148,14 +171,15 @@ function ProductListingPage() {
                     >
                       Trang sau
                     </button>
-                  </div>}
-              </>}
+                  </div>
+                ) : null}
+              </>
+            ) : null}
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }
 
-export {
-  ProductListingPage as default
-};
+export { ProductListingPage as default };

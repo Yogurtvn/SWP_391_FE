@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import {
   Box,
   ChevronDown,
@@ -20,12 +20,12 @@ import { useAdminProductsPage } from "@/hooks/admin/useAdminProductsPage";
 const COLOR_OPTIONS = [
   { name: "Den", code: "#000000" },
   { name: "Nau", code: "#8B4513" },
-  { name: "Xanh navy", code: "#1E3A8A" },
+  { name: "Xảnh navy", code: "#1E3A8A" },
   { name: "Xam", code: "#808080" },
   { name: "Vang gold", code: "#FFD700" },
   { name: "Bac", code: "#C0C0C0" },
   { name: "Do", code: "#DC2626" },
-  { name: "Xanh la", code: "#16A34A" },
+  { name: "Xảnh la", code: "#16A34A" },
   { name: "Hong", code: "#EC4899" },
   { name: "Be", code: "#D2B48C" },
 ];
@@ -93,7 +93,7 @@ export default function AdminProductsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isCreateMởdalOpen, setIsCreateMởdalOpen] = useState(false);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -130,21 +130,21 @@ export default function AdminProductsPage() {
 
   const activeFilterCount = [typeFilter, stockFilter, availabilityFilter].filter((value) => value !== "all").length;
 
-  function openCreateModal() {
+  function openCreateMởdal() {
     actions.resetCreateProductBuilder();
-    setIsCreateModalOpen(true);
+    setIsCreateMởdalOpen(true);
   }
 
-  function closeCreateModal() {
+  function closeCreateMởdal() {
     actions.resetCreateProductBuilder();
-    setIsCreateModalOpen(false);
+    setIsCreateMởdalOpen(false);
   }
 
   async function handleCreateProduct(event) {
     const created = await actions.createProduct(event);
 
     if (created?.productId) {
-      setIsCreateModalOpen(false);
+      setIsCreateMởdalOpen(false);
     }
   }
 
@@ -160,9 +160,9 @@ export default function AdminProductsPage() {
         <div className="rounded-2xl border-2 border-gray-300 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
             <div>
-              <h1 className="mb-2 text-3xl font-bold text-gray-900">Quan Ly San Pham</h1>
+              <h1 className="mb-2 text-3xl font-bold text-gray-900">Quản Lý Sản Phẩm</h1>
               <p className="text-gray-600">
-                Tong so: <span className="font-bold text-primary">{filteredProducts.length}</span> san pham
+                Tổng số: <span className="font-bold text-primary">{filteredProducts.length}</span> sản phẩm
               </p>
             </div>
 
@@ -172,15 +172,15 @@ export default function AdminProductsPage() {
                 onClick={actions.retry}
                 className="inline-flex items-center justify-center rounded-xl border-2 border-gray-300 bg-white px-4 py-3 font-semibold text-gray-900 transition hover:bg-gray-50"
               >
-                Tai lai
+                Tải lại
               </button>
               <button
                 type="button"
-                onClick={openCreateModal}
+                onClick={openCreateMởdal}
                 className="inline-flex items-center gap-2 rounded-xl border-2 border-primary bg-primary px-6 py-3 font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary/90"
               >
                 <Plus className="h-5 w-5" />
-                Them San Pham
+                Thêm Sản Phẩm
               </button>
             </div>
           </div>
@@ -197,7 +197,7 @@ export default function AdminProductsPage() {
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Tim kiem theo ten, SKU, mau sac..."
+              placeholder="Tìm kiếm theo tên, SKU, màu sắc..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               className="w-full rounded-xl border-2 border-gray-300 py-3 pl-12 pr-4 text-base text-gray-900 transition-all placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -211,7 +211,7 @@ export default function AdminProductsPage() {
               className="inline-flex items-center gap-2 rounded-lg border-2 border-gray-300 px-4 py-2 font-medium text-gray-900 transition hover:bg-gray-50"
             >
               <Filter className="h-4 w-4" />
-              Bo Loc
+              Bộ Lọc
               {activeFilterCount > 0 ? (
                 <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-white">{activeFilterCount}</span>
               ) : null}
@@ -228,7 +228,7 @@ export default function AdminProductsPage() {
                 }}
                 className="text-sm font-medium text-primary hover:underline"
               >
-                Xoa bo loc
+                Xóa bộ lọc
               </button>
             ) : null}
           </div>
@@ -236,13 +236,13 @@ export default function AdminProductsPage() {
           {showFilters ? (
             <div className="mt-4 grid gap-4 border-t-2 border-gray-200 pt-4 md:grid-cols-3">
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-700">Loai san pham</label>
+                <label className="mb-2 block text-sm font-bold text-gray-700">Loại sản phẩm</label>
                 <select
                   value={typeFilter}
                   onChange={(event) => setTypeFilter(event.target.value)}
                   className="w-full rounded-lg border-2 border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
                 >
-                  <option value="all">Tat ca</option>
+                  <option value="all">Tất cả</option>
                   <option value="Frame">Frame</option>
                   <option value="Sunglasses">Sunglasses</option>
                   <option value="Lens">Lens</option>
@@ -250,16 +250,16 @@ export default function AdminProductsPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-700">Ton kho</label>
+                <label className="mb-2 block text-sm font-bold text-gray-700">Tồn kho</label>
                 <select
                   value={stockFilter}
                   onChange={(event) => setStockFilter(event.target.value)}
                   className="w-full rounded-lg border-2 border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
                 >
-                  <option value="all">Tat ca</option>
-                  <option value="good">Tu 20 tro len</option>
+                  <option value="all">Tất cả</option>
+                  <option value="good">Từ 20 trở lên</option>
                   <option value="low">Duoi 20</option>
-                  <option value="out">Het hang</option>
+                  <option value="out">Hết hàng</option>
                 </select>
               </div>
 
@@ -270,9 +270,9 @@ export default function AdminProductsPage() {
                   onChange={(event) => setAvailabilityFilter(event.target.value)}
                   className="w-full rounded-lg border-2 border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
                 >
-                  <option value="all">Tat ca</option>
-                  <option value="available">Dang ban</option>
-                  <option value="inactive">Ngung ban</option>
+                  <option value="all">Tất cả</option>
+                  <option value="available">Đang bán</option>
+                  <option value="inactive">Ngừng bán</option>
                 </select>
               </div>
             </div>
@@ -284,12 +284,12 @@ export default function AdminProductsPage() {
             <table className="w-full min-w-[1080px]">
               <thead className="border-b-2 border-gray-300 bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">San pham</th>
+                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Sản phẩm</th>
                   <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">SKU</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Loai</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Gia</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Mau sac</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Ton kho</th>
+                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Loại</th>
+                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Giá</th>
+                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Màu sắc</th>
+                  <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Tồn kho</th>
                   <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">Thao tac</th>
                 </tr>
               </thead>
@@ -297,7 +297,7 @@ export default function AdminProductsPage() {
                 {ui.isLoading ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                      Dang tai san pham...
+                      Đang tải sản phẩm...
                     </td>
                   </tr>
                 ) : null}
@@ -305,7 +305,7 @@ export default function AdminProductsPage() {
                 {!ui.isLoading && filteredProducts.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                      Khong tim thay san pham nao
+                      Không tìm thấy sản phẩm nào
                     </td>
                   </tr>
                 ) : null}
@@ -345,14 +345,14 @@ export default function AdminProductsPage() {
                                     : "bg-emerald-100 text-emerald-700"
                                 }`}
                               >
-                                {product.isActive === false ? "Ngung ban" : "Dang ban"}
+                                {product.isActive === false ? "Ngừng bán" : "Đang bán"}
                               </span>
                             </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-5 text-sm font-semibold text-gray-700">
-                        {ui.isLoadingSummaries ? "Dang tai..." : summary.primarySku}
+                        {ui.isLoadingSummaries ? "Đang tải..." : summary.primarySku}
                       </td>
                       <td className="px-6 py-5">
                         <span className={`rounded-full border-2 px-3 py-1 text-xs font-bold ${getProductBadgeColor(product.productType)}`}>
@@ -392,24 +392,24 @@ export default function AdminProductsPage() {
                             type="button"
                             onClick={() => actions.viewDetail(product)}
                             className="rounded-lg border-2 border-transparent p-2 text-primary transition hover:border-primary hover:bg-orange-50"
-                            title="Chi tiet"
+                            title="Chi tiết"
                           >
                             <Eye className="h-5 w-5" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => actions.openEditModal(product)}
+                            onClick={() => actions.openEditMởdal(product)}
                             className="rounded-lg border-2 border-transparent p-2 text-sky-600 transition hover:border-sky-400 hover:bg-sky-50"
-                            title="Chinh sua"
+                            title="Chỉnh sửa"
                             disabled={ui.isLoadingEditProduct}
                           >
                             <Pencil className="h-5 w-5" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => actions.openVariantModal(product)}
+                            onClick={() => actions.openVariantMởdal(product)}
                             className="rounded-lg border-2 border-transparent p-2 text-primary transition hover:border-primary hover:bg-orange-50"
-                            title="Them variant"
+                            title="Thêm variant"
                           >
                             <Layers3 className="h-5 w-5" />
                           </button>
@@ -421,7 +421,7 @@ export default function AdminProductsPage() {
                                 ? "text-green-600 hover:border-green-400"
                                 : "text-amber-600 hover:border-amber-400"
                             }`}
-                            title={product.isActive === false ? "Mo ban" : "Ngung ban"}
+                            title={product.isActive === false ? "Mở bán" : "Ngừng bán"}
                           >
                             <Power className="h-5 w-5" />
                           </button>
@@ -429,7 +429,7 @@ export default function AdminProductsPage() {
                             type="button"
                             onClick={() => actions.deleteProduct(product)}
                             className="rounded-lg border-2 border-transparent p-2 text-red-500 transition hover:border-red-400 hover:bg-red-50"
-                            title="Xoa"
+                            title="Xóa"
                           >
                             <Trash2 className="h-5 w-5" />
                           </button>
@@ -444,19 +444,19 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {ui.isEditModalOpen ? (
+      {ui.isEditMởdalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-2xl border-2 border-gray-300 bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b-2 border-gray-300 bg-white p-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Chinh Sua San Pham</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Chỉnh Sửa Sản Phẩm</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Chinh sua thong tin, hinh anh va variant trong cung mot modal.
+                  Chỉnh sửa thông tin, hình ảnh và variant trong cùng một modal.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => actions.closeEditModal()}
+                onClick={() => actions.closeEditMởdal()}
                 className="rounded-lg border-2 border-transparent p-2 transition hover:border-gray-300 hover:bg-gray-100"
                 disabled={ui.isUpdatingProduct}
               >
@@ -466,7 +466,7 @@ export default function AdminProductsPage() {
 
             <form onSubmit={actions.submitEditProduct} className="p-6">
               {ui.detailLoading && !productDetail ? (
-                <p className="text-sm text-gray-500">Dang tai du lieu san pham...</p>
+                <p className="text-sm text-gray-500">Đang tải dữ liệu sản phẩm...</p>
               ) : (
                 <>
                   <div className="mb-6">
@@ -481,7 +481,7 @@ export default function AdminProductsPage() {
                       <div className="grid gap-4 md:grid-cols-2">
                         <div>
                           <label className="mb-2 block text-sm font-bold text-gray-700">
-                            Ten san pham <span className="text-red-500">*</span>
+                            Tên sản phẩm <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
@@ -494,7 +494,7 @@ export default function AdminProductsPage() {
 
                         <div>
                           <label className="mb-2 block text-sm font-bold text-gray-700">
-                            Danh muc <span className="text-red-500">*</span>
+                            Danh mục <span className="text-red-500">*</span>
                           </label>
                           <select
                             value={editForm.categoryId}
@@ -502,7 +502,7 @@ export default function AdminProductsPage() {
                             className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
                             required
                           >
-                            <option value="">Chon danh muc</option>
+                            <option value="">Chọn danh mục</option>
                             {categories.map((category) => (
                               <option key={category.categoryId} value={category.categoryId}>
                                 {category.categoryName}
@@ -515,7 +515,7 @@ export default function AdminProductsPage() {
                       <div className="grid gap-4 md:grid-cols-3">
                         <div>
                           <label className="mb-2 block text-sm font-bold text-gray-700">
-                            Loai san pham <span className="text-red-500">*</span>
+                            Loại sản phẩm <span className="text-red-500">*</span>
                           </label>
                           <select
                             value={editForm.productType}
@@ -530,7 +530,7 @@ export default function AdminProductsPage() {
 
                         <div>
                           <label className="mb-2 block text-sm font-bold text-gray-700">
-                            Gia (VND) <span className="text-red-500">*</span>
+                            Giá (VND) <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="number"
@@ -548,12 +548,12 @@ export default function AdminProductsPage() {
                             checked={editForm.prescriptionCompatible}
                             onChange={(event) => actions.setEditFormField("prescriptionCompatible", event.target.checked)}
                           />
-                          Ho tro kinh thuoc
+                          Hỗ trợ kính thuốc
                         </label>
                       </div>
 
                       <div>
-                        <label className="mb-2 block text-sm font-bold text-gray-700">Mo ta</label>
+                        <label className="mb-2 block text-sm font-bold text-gray-700">Mô tả</label>
                         <textarea
                           value={editForm.description}
                           onChange={(event) => actions.setEditFormField("description", event.target.value)}
@@ -570,19 +570,19 @@ export default function AdminProductsPage() {
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                           <ImageIcon className="h-4 w-4 text-primary" />
                         </div>
-                        Hinh Anh San Pham
+                        Hình Ảnh Sản Phẩm
                       </h3>
 
                       <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-400 px-5 py-3 font-medium text-gray-700 transition hover:bg-gray-50">
                         <Upload className="h-5 w-5" />
-                        Tai len hinh anh
+                        Tải lên hình ảnh
                         <input type="file" multiple accept="image/*" className="hidden" onChange={actions.uploadImages} />
                       </label>
                     </div>
 
                     {(productDetail?.images ?? []).length === 0 ? (
                       <div className="rounded-xl border-2 border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
-                        San pham chua co hinh anh.
+                        Sản phẩm chưa có hình ảnh.
                       </div>
                     ) : (
                       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -596,7 +596,7 @@ export default function AdminProductsPage() {
                             <div className="mt-3 flex items-center justify-between gap-3 text-sm text-gray-500">
                               <span>#{image.imageId} - order {image.displayOrder}</span>
                               <span className={image.isPrimary ? "font-bold text-primary" : ""}>
-                                {image.isPrimary ? "Anh chinh" : "Anh phu"}
+                                {image.isPrimary ? "Ảnh chinh" : "Ảnh phu"}
                               </span>
                             </div>
                             <div className="mt-4 flex flex-wrap gap-2">
@@ -605,14 +605,14 @@ export default function AdminProductsPage() {
                                 onClick={() => actions.setPrimaryImage(image)}
                                 className="rounded-xl border-2 border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-50"
                               >
-                                Dat anh chinh
+                                Đặt ảnh chính
                               </button>
                               <button
                                 type="button"
                                 onClick={() => actions.deleteImage(image)}
                                 className="rounded-xl border-2 border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-50"
                               >
-                                Xoa anh
+                                Xóa ảnh
                               </button>
                             </div>
                           </div>
@@ -627,13 +627,13 @@ export default function AdminProductsPage() {
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                           <Palette className="h-4 w-4 text-primary" />
                         </div>
-                        Variant Va Ton Kho
+                        Variant Và Tồn Kho
                       </h3>
 
                       <button
                         type="button"
                         onClick={() =>
-                          actions.openVariantModal({
+                          actions.openVariantMởdal({
                             productId: editForm.productId,
                             productName: editForm.productName,
                             basePrice: editForm.basePrice,
@@ -642,13 +642,13 @@ export default function AdminProductsPage() {
                         className="inline-flex items-center gap-2 rounded-xl border-2 border-primary bg-primary px-5 py-3 font-bold text-white transition hover:bg-primary/90"
                       >
                         <Plus className="h-4 w-4" />
-                        Them variant
+                        Thêm variant
                       </button>
                     </div>
 
                     {editVariants.length === 0 ? (
                       <div className="rounded-xl border-2 border-dashed border-gray-300 px-4 py-8 text-center text-sm text-gray-500">
-                        San pham chua co variant.
+                        Sản phẩm chưa có variant.
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -661,7 +661,7 @@ export default function AdminProductsPage() {
                               <div className="mb-4 flex items-center justify-between gap-3">
                                 <div>
                                   <p className="text-base font-bold text-gray-900">Variant #{variant.variantId}</p>
-                                  <p className="text-sm text-gray-500">Cap nhat SKU, mau, kich thuoc, gia va ton kho.</p>
+                                  <p className="text-sm text-gray-500">Cập nhật SKU, màu, kích thước, giá và tồn kho.</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <button
@@ -670,7 +670,7 @@ export default function AdminProductsPage() {
                                     className="rounded-xl border-2 border-primary bg-primary px-4 py-2 text-sm font-bold text-white transition hover:bg-primary/90 disabled:opacity-60"
                                     disabled={isSaving || isDeleting}
                                   >
-                                    {isSaving ? "Dang luu..." : "Luu variant"}
+                                    {isSaving ? "Đang lưu..." : "Lưu variant"}
                                   </button>
                                   <button
                                     type="button"
@@ -678,7 +678,7 @@ export default function AdminProductsPage() {
                                     className="rounded-xl border-2 border-red-300 bg-white px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50 disabled:opacity-60"
                                     disabled={isSaving || isDeleting}
                                   >
-                                    {isDeleting ? "Dang xoa..." : "Xoa variant"}
+                                    {isDeleting ? "Đang xóa..." : "Xóa variant"}
                                   </button>
                                 </div>
                               </div>
@@ -695,7 +695,7 @@ export default function AdminProductsPage() {
                                 </div>
 
                                 <div>
-                                  <label className="mb-2 block text-sm font-bold text-gray-700">Mau sac</label>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Màu sắc</label>
                                   <input
                                     type="text"
                                     value={variant.color}
@@ -725,7 +725,7 @@ export default function AdminProductsPage() {
                                 </div>
 
                                 <div>
-                                  <label className="mb-2 block text-sm font-bold text-gray-700">Gia</label>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Giá</label>
                                   <input
                                     type="number"
                                     min="0"
@@ -736,7 +736,7 @@ export default function AdminProductsPage() {
                                 </div>
 
                                 <div>
-                                  <label className="mb-2 block text-sm font-bold text-gray-700">Ton kho</label>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Tồn kho</label>
                                   <input
                                     type="number"
                                     min="0"
@@ -759,15 +759,15 @@ export default function AdminProductsPage() {
                       className="flex-1 rounded-xl border-2 border-primary bg-primary py-3 text-lg font-bold text-white transition hover:bg-primary/90 disabled:opacity-60"
                       disabled={ui.isUpdatingProduct}
                     >
-                      {ui.isUpdatingProduct ? "Dang cap nhat..." : "Luu thong tin san pham"}
+                      {ui.isUpdatingProduct ? "Đang cập nhật..." : "Lưu thông tin sản phẩm"}
                     </button>
                     <button
                       type="button"
-                      onClick={() => actions.closeEditModal()}
+                      onClick={() => actions.closeEditMởdal()}
                       className="flex-1 rounded-xl border-2 border-gray-300 py-3 text-lg font-bold transition hover:bg-gray-50"
                       disabled={ui.isUpdatingProduct}
                     >
-                      Dong
+                      Đóng
                     </button>
                   </div>
                 </>
@@ -777,19 +777,19 @@ export default function AdminProductsPage() {
         </div>
       ) : null}
 
-      {isCreateModalOpen ? (
+      {isCreateMởdalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-2xl border-2 border-gray-300 bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-center justify-between border-b-2 border-gray-300 bg-white p-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Them San Pham Moi</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Thêm Sản Phẩm Mới</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Tao thong tin san pham co ban, sau do them mau sac, ton kho va hinh anh trong cung mot modal.
+                  Tạo thông tin sản phẩm cơ bản, sau đó thêm màu sắc, tồn kho và hình ảnh trong cùng một modal.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={closeCreateModal}
+                onClick={closeCreateMởdal}
                 className="rounded-lg border-2 border-transparent p-2 transition hover:border-gray-300 hover:bg-gray-100"
               >
                 <X className="h-6 w-6" />
@@ -808,19 +808,19 @@ export default function AdminProductsPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-gray-700">Ten san pham <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Tên sản phẩm <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         value={form.productName}
                         onChange={(event) => actions.setFormField("productName", event.target.value)}
-                        placeholder="VD: Gong kinh chu nhat co dien"
+                        placeholder="VD: Gọng kính chữ nhật cổ điển"
                         className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         required
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-gray-700">SKU goc <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">SKU gốc <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         value={form.sku}
@@ -829,16 +829,16 @@ export default function AdminProductsPage() {
                         className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         required
                       />
-                      <p className="mt-1 text-xs text-gray-500">Moi mau se tu sinh SKU rieng tu SKU goc nay.</p>
+                      <p className="mt-1 text-xs text-gray-500">Mỗi màu sẽ tự sinh SKU riêng từ SKU gốc này.</p>
                     </div>
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-bold text-gray-700">Mo ta <span className="text-red-500">*</span></label>
+                    <label className="mb-2 block text-sm font-bold text-gray-700">Mô tả <span className="text-red-500">*</span></label>
                     <textarea
                       value={form.description}
                       onChange={(event) => actions.setFormField("description", event.target.value)}
-                      placeholder="Mo ta chi tiet ve san pham..."
+                      placeholder="Mô tả chi tiết về sản phẩm..."
                       rows={4}
                       className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                       required
@@ -847,14 +847,14 @@ export default function AdminProductsPage() {
 
                   <div className="grid gap-4 md:grid-cols-3">
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-gray-700">Danh muc <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Danh mục <span className="text-red-500">*</span></label>
                       <select
                         value={form.categoryId}
                         onChange={(event) => actions.setFormField("categoryId", event.target.value)}
                         className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
                         required
                       >
-                        <option value="">Chon danh muc</option>
+                        <option value="">Chọn danh mục</option>
                         {categories.map((category) => (
                           <option key={category.categoryId} value={category.categoryId}>
                             {category.categoryName}
@@ -864,7 +864,7 @@ export default function AdminProductsPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-gray-700">Loai san pham <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Loại sản phẩm <span className="text-red-500">*</span></label>
                       <select
                         value={form.productType}
                         onChange={(event) => actions.setFormField("productType", event.target.value)}
@@ -877,7 +877,7 @@ export default function AdminProductsPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-gray-700">Gia (VND) <span className="text-red-500">*</span></label>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Giá (VND) <span className="text-red-500">*</span></label>
                       <input
                         type="number"
                         min="0"
@@ -896,7 +896,7 @@ export default function AdminProductsPage() {
                       checked={form.prescriptionCompatible}
                       onChange={(event) => actions.setFormField("prescriptionCompatible", event.target.checked)}
                     />
-                    Ho tro kinh thuoc
+                    Hỗ trợ kính thuốc
                   </label>
                 </div>
               </div>
@@ -906,7 +906,7 @@ export default function AdminProductsPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                     <Palette className="h-4 w-4 text-primary" />
                   </div>
-                  Mau Sac & Ton Kho
+                  Màu Sắc & Tồn Kho
                 </h3>
 
                 {draftVariants.length > 0 ? (
@@ -923,7 +923,7 @@ export default function AdminProductsPage() {
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-gray-900">{draft.colorName}</p>
                           <p className="text-sm text-gray-600">
-                            SKU: {draft.sku} | Ton kho: {draft.quantity} | Hinh anh: {draft.imageFiles.length}
+                            SKU: {draft.sku} | Tồn kho: {draft.quantity} | Hình ảnh: {draft.imageFiles.length}
                           </p>
                           {draft.size || draft.frameType ? (
                             <p className="text-xs text-gray-500">
@@ -947,13 +947,13 @@ export default function AdminProductsPage() {
                 <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4">
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-gray-700">Mau sac</label>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Màu sắc</label>
                       <select
                         value={currentColorForm.colorName}
                         onChange={(event) => handleColorSelect(event.target.value)}
                         className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
                       >
-                        <option value="">Chon mau</option>
+                        <option value="">Chọn màu</option>
                         {COLOR_OPTIONS.map((color) => (
                           <option key={color.name} value={color.name}>
                             {color.name}
@@ -963,7 +963,7 @@ export default function AdminProductsPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-gray-700">Ma mau</label>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Mã màu</label>
                       <input
                         type="color"
                         value={currentColorForm.colorCode}
@@ -973,7 +973,7 @@ export default function AdminProductsPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-gray-700">Ton kho</label>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Tồn kho</label>
                       <input
                         type="number"
                         min="0"
@@ -998,7 +998,7 @@ export default function AdminProductsPage() {
 
                   <div className="mt-4 grid gap-4 xl:grid-cols-[1fr_auto]">
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-gray-700">Frame type / ghi chu variant</label>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Kiểu gọng / ghi chú variant</label>
                       <input
                         type="text"
                         value={currentColorForm.frameType}
@@ -1011,7 +1011,7 @@ export default function AdminProductsPage() {
                     <div className="self-end">
                       <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-400 px-5 py-3 font-medium text-gray-700 transition hover:bg-white">
                         <Upload className="h-5 w-5" />
-                        Tai len hinh anh
+                        Tải lên hình ảnh
                         <input
                           type="file"
                           accept="image/*"
@@ -1052,7 +1052,7 @@ export default function AdminProductsPage() {
                     onClick={actions.addDraftVariant}
                     className="mt-4 w-full rounded-xl border-2 border-primary bg-primary px-4 py-3 text-base font-bold text-white transition hover:bg-primary/90"
                   >
-                    + Them mau nay
+                    + Thêm màu này
                   </button>
                 </div>
               </div>
@@ -1063,11 +1063,11 @@ export default function AdminProductsPage() {
                   className="flex-1 rounded-xl border-2 border-primary bg-primary py-3 text-lg font-bold text-white transition hover:bg-primary/90 disabled:opacity-60"
                   disabled={ui.isCreatingProduct}
                 >
-                  {ui.isCreatingProduct ? "Dang tao..." : "Them San Pham"}
+                  {ui.isCreatingProduct ? "Đang tạo..." : "Thêm Sản Phẩm"}
                 </button>
                 <button
                   type="button"
-                  onClick={closeCreateModal}
+                  onClick={closeCreateMởdal}
                   className="flex-1 rounded-xl border-2 border-gray-300 py-3 text-lg font-bold transition hover:bg-gray-50"
                   disabled={ui.isCreatingProduct}
                 >
@@ -1079,7 +1079,7 @@ export default function AdminProductsPage() {
         </div>
       ) : null}
 
-      {ui.isDetailModalOpen && productDetail ? (
+      {ui.isDetailMởdalOpen && productDetail ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
           <div className="max-h-[90vh] w-full max-w-6xl overflow-auto rounded-[1.75rem] bg-white p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
@@ -1088,7 +1088,7 @@ export default function AdminProductsPage() {
                 <p className="mt-1 text-base text-slate-500">
                   {productDetail.productType} - {formatCurrency(productDetail.basePrice)}
                 </p>
-                <p className="mt-2 text-base text-slate-600">{productDetail.description || "Khong co mo ta."}</p>
+                <p className="mt-2 text-base text-slate-600">{productDetail.description || "Không có mô tả."}</p>
                 <p className="mt-2 text-sm font-medium text-slate-500">
                   Prescription compatible: {productDetail.prescriptionCompatible ? "Yes" : "No"}
                 </p>
@@ -1098,25 +1098,25 @@ export default function AdminProductsPage() {
                 onClick={actions.clearDetail}
                 className="rounded-xl border-2 border-gray-300 bg-white px-5 py-3 font-semibold text-gray-900 transition hover:bg-gray-50"
               >
-                Dong
+                Đóng
               </button>
             </div>
 
-            {ui.detailLoading ? <p className="mt-4 text-sm text-slate-500">Dang tai chi tiet...</p> : null}
+            {ui.detailLoading ? <p className="mt-4 text-sm text-slate-500">Đang tải chi tiết...</p> : null}
 
             <div className="mt-6 grid gap-6 xl:grid-cols-2">
               <section className="rounded-2xl border border-slate-200 p-5">
                 <div className="mb-5 flex items-center justify-between gap-3">
-                  <h3 className="text-xl font-bold text-gray-900">Anh san pham</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Ảnh sản phẩm</h3>
                   <label className="rounded-xl border-2 border-slate-900 bg-slate-900 px-4 py-3 font-bold text-white transition hover:bg-slate-800">
-                    Upload anh
+                    Upload ảnh
                     <input type="file" multiple accept="image/*" className="hidden" onChange={actions.uploadImages} />
                   </label>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
                   {(productDetail.images ?? []).length === 0 ? (
-                    <p className="text-sm text-slate-500">Chua co anh.</p>
+                    <p className="text-sm text-slate-500">Chưa có ảnh.</p>
                   ) : (
                     (productDetail.images ?? []).map((image) => (
                       <div key={image.imageId} className="rounded-2xl border border-slate-200 p-4">
@@ -1135,14 +1135,14 @@ export default function AdminProductsPage() {
                             onClick={() => actions.setPrimaryImage(image)}
                             className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50"
                           >
-                            Dat anh chinh
+                            Đặt ảnh chính
                           </button>
                           <button
                             type="button"
                             onClick={() => actions.deleteImage(image)}
                             className="rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-50"
                           >
-                            Xoa anh
+                            Xóa ảnh
                           </button>
                         </div>
                       </div>
@@ -1159,7 +1159,7 @@ export default function AdminProductsPage() {
                       <tr>
                         <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Variant ID</th>
                         <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">SKU</th>
-                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Gia</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Giá</th>
                         <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Color</th>
                         <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Size</th>
                       </tr>
@@ -1168,7 +1168,7 @@ export default function AdminProductsPage() {
                       {(productDetail.variants ?? []).length === 0 ? (
                         <tr>
                           <td colSpan={5} className="px-4 py-8 text-center text-base text-slate-500">
-                            Chua co variant.
+                            Chưa có variant.
                           </td>
                         </tr>
                       ) : (
@@ -1191,11 +1191,11 @@ export default function AdminProductsPage() {
         </div>
       ) : null}
 
-      {ui.isVariantModalOpen ? (
+      {ui.isVariantMởdalOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
           <form onSubmit={actions.submitVariant} className="w-full max-w-3xl rounded-[1.75rem] bg-white p-6 shadow-2xl">
-            <h2 className="text-2xl font-bold text-slate-950">Tao variant</h2>
-            <p className="mt-1 text-base text-slate-500">San pham: {variantForm.productName}</p>
+            <h2 className="text-2xl font-bold text-slate-950">Tạo variant</h2>
+            <p className="mt-1 text-base text-slate-500">Sản phẩm: {variantForm.productName}</p>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <input
@@ -1212,7 +1212,7 @@ export default function AdminProductsPage() {
                 name="price"
                 value={variantForm.price}
                 onChange={(event) => actions.setVariantField("price", event.target.value)}
-                placeholder="Gia"
+                placeholder="Giá"
                 className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 required
               />
@@ -1222,7 +1222,7 @@ export default function AdminProductsPage() {
                 name="quantity"
                 value={variantForm.quantity}
                 onChange={(event) => actions.setVariantField("quantity", event.target.value)}
-                placeholder="So luong ton kho ban dau"
+                placeholder="Số lượng tồn kho ban đầu"
                 className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                 required
               />
@@ -1230,7 +1230,7 @@ export default function AdminProductsPage() {
                 name="color"
                 value={variantForm.color}
                 onChange={(event) => actions.setVariantField("color", event.target.value)}
-                placeholder="Mau sac"
+                placeholder="Màu sắc"
                 className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <input
@@ -1252,7 +1252,7 @@ export default function AdminProductsPage() {
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={actions.closeVariantModal}
+                onClick={actions.closeVariantMởdal}
                 className="rounded-xl border-2 border-gray-300 bg-white px-5 py-3 font-semibold text-gray-900 transition hover:bg-gray-50"
                 disabled={ui.isCreatingVariant}
               >
@@ -1263,7 +1263,7 @@ export default function AdminProductsPage() {
                 className="rounded-xl border-2 border-slate-900 bg-slate-900 px-5 py-3 font-bold text-white transition hover:bg-slate-800 disabled:opacity-60"
                 disabled={ui.isCreatingVariant}
               >
-                {ui.isCreatingVariant ? "Dang tao..." : "Tao variant"}
+                {ui.isCreatingVariant ? "Đang tạo..." : "Tạo variant"}
               </button>
             </div>
           </form>

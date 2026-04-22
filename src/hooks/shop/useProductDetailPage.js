@@ -156,12 +156,10 @@ export function useProductDetailPage() {
     }
 
     const activeVariant = resolvedVariant ?? product.selectedVariant ?? null;
+    const variants = Array.isArray(product.variants) ? product.variants : [];
     const availabilityStatus = activeVariant ? resolveCartAvailabilityStatus(activeVariant) : product.availabilityStatus;
-    const isCompletelyOutOfStock = isProductCompletelyOutOfStock(product);
-    const canPreOrder =
-      isCompletelyOutOfStock &&
-      availabilityStatus === "preorder" &&
-      Boolean(activeVariant?.isPreOrderAllowed);
+    const activeVariantCanPreOrder = isOutOfStockPreOrderVariant(activeVariant);
+    const hasPreOrderVariant = variants.some(isOutOfStockPreOrderVariant) || Boolean(product.canPreOrder);
 
     return {
       ...product,
@@ -170,7 +168,8 @@ export function useProductDetailPage() {
       availabilityStatus,
       inStock: availabilityStatus === "available",
       isPreOrderAllowed: Boolean(activeVariant?.isPreOrderAllowed),
-      canPreOrder,
+      canPreOrder: activeVariantCanPreOrder,
+      hasPreOrderVariant,
       prescriptionCompatible: resolvePrescriptionCompatibility(product, eligibilityState, Boolean(mockProduct)),
       prescriptionEligibilityReason: eligibilityState?.data?.reason || eligibilityState?.error || "",
     };
@@ -178,12 +177,12 @@ export function useProductDetailPage() {
 
   async function addCurrentProductToCart(openCartDrawer) {
     if (!resolvedProduct || resolvedProduct.availabilityStatus !== "available") {
-      toast.error("Sản phẩm nay hien chua san sang de mua.");
+      toast.error("Sản phẩm này hiện chưa sẵn sàng để mua.");
       return false;
     }
 
     if (!resolvedProduct.selectedVariant?.variantId) {
-      toast.error("Sản phẩm nay chua co variant hop le de goi cart API.");
+      toast.error("Sản phẩm này chưa có variant hợp lệ để gọi cart API.");
       return false;
     }
 
@@ -195,7 +194,7 @@ export function useProductDetailPage() {
         view: createCartItemView(resolvedProduct, resolvedProduct.selectedVariant),
       });
 
-      toast.success("Da them vao giỏ hàng!");
+      toast.success("Đã thêm vào giỏ hàng!");
 
       if (openCartDrawer) {
         openDrawer();
@@ -278,7 +277,7 @@ export function useProductDetailPage() {
       },
       goToPrescriptionFlow: () => {
         if (!resolvedProduct?.prescriptionCompatible) {
-          toast.error(resolvedProduct?.prescriptionEligibilityReason || "San pham nay hien khong ho tro kinh theo toa.");
+          toast.error(resolvedProduct?.prescriptionEligibilityReason || "Sản phẩm này hiện không hỗ trợ kính theo toa.");
           return;
         }
 
@@ -291,14 +290,14 @@ export function useProductDetailPage() {
       },
       goBackToShop: () => navigate("/shop"),
       goToPreOrder: () => {
-        if (!resolvedProduct?.canPreOrder) {
-          toast.error("Chỉ sản phẩm đã hết hàng hoàn toàn mới được đặt trước.");
+        if (!resolvedProduct?.hasPreOrderVariant) {
+          toast.error("Chỉ biến thể đã hết hàng và bật pre-order mới được đặt trước.");
           return;
         }
 
         navigate(`/preorder/${id}`, {
           state: {
-            selectedVariantId: resolvedProduct?.selectedVariant?.variantId ?? null,
+            selectedVariantId: resolvedProduct?.canPreOrder ? resolvedProduct?.selectedVariant?.variantId ?? null : null,
           },
         });
       },
@@ -333,14 +332,11 @@ function resolvePrescriptionCompatibility(product, eligibilityState, isMockProdu
   return eligibilityState.status === "succeeded" && Boolean(eligibilityState.data?.isEligible);
 }
 
-function isProductCompletelyOutOfStock(product) {
-  const variants = Array.isArray(product?.variants) ? product.variants : [];
-
-  if (variants.length === 0) {
-    return !product?.inStock && product?.availabilityStatus !== "available";
-  }
-
-  return variants.every((variant) => !variant?.isReadyAvailable && Number(variant?.quantity ?? 0) <= 0);
+function isOutOfStockPreOrderVariant(variant) {
+  return (
+    Boolean(variant?.isPreOrderAllowed) &&
+    Number(variant?.quantity ?? 0) <= 0
+  );
 }
 
 function normalizeMockProduct(product) {
@@ -394,11 +390,11 @@ function mapMockProductToCard(product) {
 function mapMockTypeToLabel(type) {
   switch (type) {
     case "sunglasses":
-      return "Kinh Ram";
+      return "Kính Râm";
     case "lenses-only":
-      return "Trong Kinh";
+      return "Tròng Kính";
     default:
-      return "Gong Kinh";
+      return "Gọng Kính";
   }
 }
 

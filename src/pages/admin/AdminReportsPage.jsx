@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+﻿import { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
 import { selectAuthState } from "@/store/auth/authSlice";
@@ -49,7 +49,7 @@ export default function AdminReportsPage() {
 
   const fetchReports = useCallback(async () => {
     if (!accessToken) {
-      setError("Khong co access token.");
+      setError("Không có access token.");
       return;
     }
 
@@ -74,7 +74,7 @@ export default function AdminReportsPage() {
       setPrescriptionsSummary(prescriptions);
       setPreOrdersSummary(preOrders);
     } catch (requestError) {
-      setError(requestError?.message || "Khong tai duoc bao cao.");
+      setError(requestError?.message || "Không tải được báo cáo.");
     } finally {
       setLoading(false);
     }
@@ -86,10 +86,10 @@ export default function AdminReportsPage() {
 
   return (
     <AdminPageShell
-      title="Bao Cao"
+      title="Báo Cáo"
       actions={
         <button type="button" onClick={fetchReports} className={adminStyles.secondaryButton}>
-          Tai lai
+          Tải lại
         </button>
       }
     >
@@ -117,7 +117,7 @@ export default function AdminReportsPage() {
         </AdminSection>
       </div>
 
-      {loading ? <p className="text-sm font-medium text-slate-500">Dang tai...</p> : null}
+      {loading ? <p className="text-sm font-medium text-slate-500">Đang tải...</p> : null}
     </AdminPageShell>
   );
 }

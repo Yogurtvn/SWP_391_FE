@@ -1,4 +1,4 @@
-import {
+﻿import {
   CheckCircle,
   Clock3,
   Eye,
@@ -32,8 +32,8 @@ function normalizeValue(value) {
 function getTypeLabel(type) {
   const normalized = normalizeValue(type);
 
-  if (normalized === "ready" || normalized === "regular") return "Don thuong";
-  if (normalized === "prescription") return "Don kinh";
+  if (normalized === "ready" || normalized === "regular") return "Đơn thường";
+  if (normalized === "prescription") return "Đơn kính";
   if (normalized === "preorder") return "Pre-order";
   return type || "-";
 }
@@ -80,15 +80,15 @@ export default function AdminOrdersPage() {
       <div className="mx-auto max-w-7xl space-y-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="rounded-2xl border-2 border-orange-300 bg-white p-6 shadow-sm xl:flex-1">
-            <h1 className="mb-2 text-3xl font-bold text-gray-900">Quan Ly Don Hang</h1>
-            <p className="font-medium text-gray-600">Xac nhan, duyet don kinh va pre-order</p>
+            <h1 className="mb-2 text-3xl font-bold text-gray-900">Quản Lý Đơn Hàng</h1>
+            <p className="font-medium text-gray-600">Xác nhận, duyệt đơn kính và pre-order</p>
           </div>
           <button
             type="button"
             onClick={actions.retry}
             className="inline-flex items-center justify-center rounded-2xl border-2 border-orange-300 bg-white px-5 py-3 font-bold text-gray-900 shadow-sm transition hover:bg-orange-50"
           >
-            Tai lai
+            Tải lại
           </button>
         </div>
 
@@ -106,7 +106,7 @@ export default function AdminOrdersPage() {
                 type="text"
                 value={filters.search}
                 onChange={(event) => actions.setFilter("search", event.target.value)}
-                placeholder="Tim kiem theo ma don hoac ten khach hang..."
+                placeholder="Tìm kiếm theo mã đơn hoặc tên khách hàng..."
                 className="w-full rounded-xl border-2 border-gray-300 py-3 pl-12 pr-4 text-base text-gray-900 transition-all placeholder:text-gray-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-200"
               />
             </div>
@@ -117,7 +117,7 @@ export default function AdminOrdersPage() {
                 onChange={(event) => actions.setTypeFilter(event.target.value)}
                 className="rounded-xl border-2 border-gray-300 px-4 py-3 font-medium text-gray-900 focus:border-orange-500 focus:outline-none"
               >
-                <option value="all">Tat ca loai don</option>
+                <option value="all">Tất cả loại đơn</option>
                 {orderTypeOptions.map((type) => (
                   <option key={type.value} value={type.value}>
                     {type.label}
@@ -130,14 +130,14 @@ export default function AdminOrdersPage() {
                 onChange={(event) => actions.setFilter("orderStatus", event.target.value)}
                 className="rounded-xl border-2 border-gray-300 px-4 py-3 font-medium text-gray-900 focus:border-orange-500 focus:outline-none"
               >
-                <option value="">Tat ca trang thai</option>
+                <option value="">Tất cả trạng thái</option>
                 <option value="Pending">Cho duyet</option>
-                <option value="Confirmed">Da xac nhan</option>
-                <option value="AwaitingStock">Cho hang</option>
-                <option value="Processing">Dang xu ly</option>
-                <option value="Shipped">Dang giao</option>
-                <option value="Completed">Hoan thanh</option>
-                <option value="Cancelled">Da huy</option>
+                <option value="Confirmed">Đã xác nhận</option>
+                <option value="AwaitingStock">Chờ hàng</option>
+                <option value="Processing">Đang xử lý</option>
+                <option value="Shipped">Đang giao</option>
+                <option value="Completed">Hoan thành</option>
+                <option value="Cancelled">Đã hủy</option>
               </select>
             </div>
           </div>
@@ -149,13 +149,13 @@ export default function AdminOrdersPage() {
               {ui.isLoading ? (
                 <div className="rounded-2xl border-2 border-orange-200 bg-white p-6 text-center">
                   <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-orange-500" />
-                  <p className="font-medium text-gray-600">Dang tai don hang...</p>
+                  <p className="font-medium text-gray-600">Đang tải đơn hàng...</p>
                 </div>
               ) : null}
 
               {!ui.isLoading && orders.length === 0 ? (
                 <div className="rounded-2xl border-2 border-orange-200 bg-white p-6 text-center text-gray-500">
-                  Khong tim thay don hang nao
+                  Không tìm thấy đơn hàng nào
                 </div>
               ) : null}
 
@@ -200,7 +200,7 @@ export default function AdminOrdersPage() {
             {!detailOrder ? (
               <div className="rounded-2xl border-2 border-orange-200 bg-white p-12 text-center">
                 <Eye className="mx-auto mb-4 h-20 w-20 text-orange-400" />
-                <p className="text-lg font-medium text-gray-600">Chon mot don hang de xem chi tiet</p>
+                <p className="text-lg font-medium text-gray-600">Chọn một đơn hàng để xem chi tiết</p>
               </div>
             ) : (
               <div className="overflow-hidden rounded-2xl border-2 border-orange-300 bg-white shadow-sm">
@@ -217,19 +217,19 @@ export default function AdminOrdersPage() {
 
                   <div className="space-y-2 text-sm text-gray-700">
                     <p>
-                      <span className="font-bold text-gray-500">Nguoi nhan:</span> {detailOrder.receiverName || detailOrder.customerName || "-"}
+                      <span className="font-bold text-gray-500">Người nhận:</span> {detailOrder.receiverName || detailOrder.customerName || "-"}
                     </p>
                     <p>
-                      <span className="font-bold text-gray-500">So dien thoai:</span> {detailOrder.receiverPhone || "-"}
+                      <span className="font-bold text-gray-500">Số điện thoại:</span> {detailOrder.receiverPhone || "-"}
                     </p>
                     <p>
-                      <span className="font-bold text-gray-500">Dia chi:</span> {detailOrder.shippingAddress || "-"}
+                      <span className="font-bold text-gray-500">Địa chỉ:</span> {detailOrder.shippingAddress || "-"}
                     </p>
                     <p>
-                      <span className="font-bold text-gray-500">Ngay tao:</span> {formatDateTime(detailOrder.createdAt)}
+                      <span className="font-bold text-gray-500">Ngày tạo:</span> {formatDateTime(detailOrder.createdAt)}
                     </p>
                     <p>
-                      <span className="font-bold text-gray-500">Van chuyen:</span> {detailOrder.shippingStatus || "-"}
+                      <span className="font-bold text-gray-500">Vận chuyển:</span> {detailOrder.shippingStatus || "-"}
                     </p>
                   </div>
                 </div>
@@ -237,13 +237,13 @@ export default function AdminOrdersPage() {
                 {ui.detailLoading && !selectedOrder ? (
                   <div className="p-8 text-center">
                     <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-orange-500" />
-                    <p className="font-medium text-gray-600">Dang tai chi tiet don hang...</p>
+                    <p className="font-medium text-gray-600">Đang tải chi tiết đơn hàng...</p>
                   </div>
                 ) : null}
 
                 {selectedOrder?.items?.length ? (
                   <div className="border-b-2 border-orange-200 p-6">
-                    <h3 className="mb-4 text-lg font-bold text-gray-900">San pham</h3>
+                    <h3 className="mb-4 text-lg font-bold text-gray-900">Sản phẩm</h3>
                     <div className="space-y-3">
                       {selectedOrder.items.map((item) => (
                         <div
@@ -253,42 +253,42 @@ export default function AdminOrdersPage() {
                           <div>
                             <p className="font-bold text-gray-900">{item.productName || "-"}</p>
                             <p className="font-medium text-gray-600">SKU: {item.sku || "-"}</p>
-                            <p className="font-medium text-gray-600">So luong: {item.quantity ?? 0}</p>
+                            <p className="font-medium text-gray-600">Số lượng: {item.quantity ?? 0}</p>
                           </div>
                           <p className="font-bold text-orange-600">{formatCurrency(item.lineTotal ?? item.totalPrice ?? item.unitPrice)}</p>
                         </div>
                       ))}
                     </div>
                     <div className="mt-4 flex items-center justify-between border-t-2 border-gray-200 pt-4">
-                      <span className="font-bold text-gray-900">Tong cong:</span>
+                      <span className="font-bold text-gray-900">Tổng cong:</span>
                       <span className="text-2xl font-bold text-orange-600">{formatCurrency(selectedOrder.totalAmount)}</span>
                     </div>
                   </div>
                 ) : (
                   <div className="border-b-2 border-orange-200 p-6">
                     <div className="rounded-xl border-2 border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                      Khong co du lieu chi tiet san pham trong don nay.
+                      Không có dữ liệu chi tiết sản phẩm trong đơn này.
                     </div>
                   </div>
                 )}
 
                 <div className="border-b-2 border-orange-200 p-6">
-                  <h3 className="mb-4 text-lg font-bold text-gray-900">Thanh toan & giao hang</h3>
+                  <h3 className="mb-4 text-lg font-bold text-gray-900">Thanh toán & giao hàng</h3>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 text-sm">
-                      <p className="mb-2 font-bold text-gray-900">Thanh toan</p>
+                      <p className="mb-2 font-bold text-gray-900">Thanh toán</p>
                       <p className="font-medium text-gray-700">
-                        Phuong thuc: {selectedOrder?.payment?.paymentMethod || detailOrder.paymentMethod || "-"}
+                        Phương thức: {selectedOrder?.payment?.paymentMethod || detailOrder.paymentMethod || "-"}
                       </p>
                       <p className="font-medium text-gray-700">
-                        Trang thai: {selectedOrder?.payment?.paymentStatus || detailOrder.paymentStatus || "-"}
+                        Trạng thái: {selectedOrder?.payment?.paymentStatus || detailOrder.paymentStatus || "-"}
                       </p>
                     </div>
                     <div className="rounded-xl border-2 border-orange-200 bg-orange-50 p-4 text-sm">
-                      <p className="mb-2 font-bold text-gray-900">Giao hang</p>
-                      <p className="font-medium text-gray-700">Ma van don: {detailOrder.shippingCode || "-"}</p>
+                      <p className="mb-2 font-bold text-gray-900">Giáo hàng</p>
+                      <p className="font-medium text-gray-700">Mã vận đơn: {detailOrder.shippingCode || "-"}</p>
                       <p className="font-medium text-gray-700">
-                        Du kien giao: {formatDateTime(detailOrder.expectedDeliveryDate)}
+                        Dự kiến giao: {formatDateTime(detailOrder.expectedDeliveryDate)}
                       </p>
                     </div>
                   </div>
@@ -303,7 +303,7 @@ export default function AdminOrdersPage() {
                       className="flex items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-white px-5 py-3 font-bold text-gray-900 transition hover:bg-gray-50"
                     >
                       <ShoppingBag className="h-5 w-5" />
-                      Trang chi tiet
+                      Trang chi tiết
                     </button>
                     <button
                       type="button"
@@ -311,14 +311,14 @@ export default function AdminOrdersPage() {
                       className="flex items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 font-bold text-white transition hover:bg-green-700"
                     >
                       <CheckCircle className="h-5 w-5" />
-                      Doi trang thai don
+                      Đổi trạng thái đơn
                     </button>
                     <button
                       type="button"
                       onClick={() => actions.updateShippingStatus(detailOrder.orderId)}
                       className="rounded-xl border-2 border-orange-500 px-5 py-3 font-bold text-orange-700 transition hover:bg-orange-100"
                     >
-                      Doi van chuyen
+                      Doi vận chuyển
                     </button>
                   </div>
                 </div>

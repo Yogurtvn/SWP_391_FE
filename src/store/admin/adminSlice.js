@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+﻿import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
   createCategory,
   createLensType,
@@ -75,7 +75,7 @@ function getAdminToken(getState, rejectWithValue) {
   const { auth } = getState();
 
   if (!auth?.accessToken) {
-    return rejectWithValue("Khong co access token.");
+    return rejectWithValue("Không có access token.");
   }
 
   return auth.accessToken;
@@ -106,7 +106,7 @@ export const fetchAdminOrders = createAsyncThunk(
     try {
       return await getAllOrders(filters, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tai duoc danh sach don hang."));
+      return rejectWithValue(getErrorMessage(error, "Không tải được danh sách đơn hàng."));
     }
   },
 );
@@ -138,7 +138,7 @@ export const fetchAdminOrderDetail = createAsyncThunk(
 
       return normalizedOrder;
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tai duoc chi tiet don hang."));
+      return rejectWithValue(getErrorMessage(error, "Không tải được chi tiết đơn hàng."));
     }
   },
 );
@@ -154,7 +154,7 @@ export const patchAdminOrderStatus = createAsyncThunk(
     try {
       return await updateOrderStatus(orderId, payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc trang thai don."));
+      return rejectWithValue(getErrorMessage(error, "Không cập nhật được trạng thái đơn."));
     }
   },
 );
@@ -170,7 +170,7 @@ export const patchAdminShippingStatus = createAsyncThunk(
     try {
       return await updateShippingStatus(orderId, payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc trang thai van chuyen."));
+      return rejectWithValue(getErrorMessage(error, "Không cập nhật được trạng thái vận chuyển."));
     }
   },
 );
@@ -186,7 +186,7 @@ export const fetchAdminLensTypes = createAsyncThunk(
     try {
       return await getLensTypes(params, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tai duoc goi trong kinh."));
+      return rejectWithValue(getErrorMessage(error, "Không tải được gói tròng kính."));
     }
   },
 );
@@ -202,7 +202,7 @@ export const createAdminLensType = createAsyncThunk(
     try {
       return await createLensType(payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tao duoc lens type."));
+      return rejectWithValue(getErrorMessage(error, "Không tạo được lens type."));
     }
   },
 );
@@ -218,7 +218,7 @@ export const updateAdminLensType = createAsyncThunk(
     try {
       return await updateLensType(lensTypeId, payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc lens type."));
+      return rejectWithValue(getErrorMessage(error, "Không cập nhật được lens type."));
     }
   },
 );
@@ -234,7 +234,7 @@ export const toggleAdminLensTypeStatus = createAsyncThunk(
     try {
       return await updateLensTypeStatus(lensTypeId, isActive, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc trang thai lens type."));
+      return rejectWithValue(getErrorMessage(error, "Không cập nhật được trạng thái lens type."));
     }
   },
 );
@@ -250,7 +250,7 @@ export const removeAdminLensType = createAsyncThunk(
     try {
       return await deleteLensType(lensTypeId, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong xoa duoc lens type."));
+      return rejectWithValue(getErrorMessage(error, "Không xóa được lens type."));
     }
   },
 );
@@ -284,7 +284,7 @@ export const fetchAdminInventory = createAsyncThunk(
         receipts: receiptResult?.items ?? [],
       };
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tai duoc ton kho."));
+      return rejectWithValue(getErrorMessage(error, "Không tải được tồn kho."));
     }
   },
 );
@@ -300,7 +300,7 @@ export const saveAdminInventoryQuantity = createAsyncThunk(
     try {
       return await updateInventory(variantId, payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc ton kho."));
+      return rejectWithValue(getErrorMessage(error, "Không cập nhật được tồn kho."));
     }
   },
 );
@@ -316,7 +316,7 @@ export const saveAdminPreOrder = createAsyncThunk(
     try {
       return await updatePreOrder(variantId, payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc pre-order."));
+      return rejectWithValue(getErrorMessage(error, "Không cập nhật được pre-order."));
     }
   },
 );
@@ -332,7 +332,7 @@ export const createAdminReceipt = createAsyncThunk(
     try {
       return await createStockReceipt(payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tao duoc phieu nhap."));
+      return rejectWithValue(getErrorMessage(error, "Không tạo được phiếu nhập."));
     }
   },
 );
@@ -356,7 +356,7 @@ export const fetchAdminProducts = createAsyncThunk(
         categories: categoryResult?.items ?? [],
       };
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tai duoc du lieu san pham."));
+      return rejectWithValue(getErrorMessage(error, "Không tải được dữ liệu sản phẩm."));
     }
   },
 );
@@ -381,7 +381,7 @@ export const fetchAdminProductDetail = createAsyncThunk(
         images: Array.isArray(imageResult) ? imageResult : imageResult?.items ?? detail?.images ?? [],
       };
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tai duoc chi tiet san pham."));
+      return rejectWithValue(getErrorMessage(error, "Không tải được chi tiết sản phẩm."));
     }
   },
 );
@@ -397,7 +397,7 @@ export const createAdminCategory = createAsyncThunk(
     try {
       return await createCategory(payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tao duoc danh muc."));
+      return rejectWithValue(getErrorMessage(error, "Không tạo được danh mục."));
     }
   },
 );
@@ -413,7 +413,7 @@ export const createAdminProduct = createAsyncThunk(
     try {
       return await createProduct(payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tao duoc san pham."));
+      return rejectWithValue(getErrorMessage(error, "Không tạo được sản phẩm."));
     }
   },
 );
@@ -429,7 +429,7 @@ export const updateAdminProduct = createAsyncThunk(
     try {
       return await updateProduct(productId, payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc san pham."));
+      return rejectWithValue(getErrorMessage(error, "Không cập nhật được sản phẩm."));
     }
   },
 );
@@ -445,7 +445,7 @@ export const createAdminVariant = createAsyncThunk(
     try {
       return await createProductVariant(productId, payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong tao duoc variant."));
+      return rejectWithValue(getErrorMessage(error, "Không tạo được variant."));
     }
   },
 );
@@ -461,7 +461,7 @@ export const updateAdminVariant = createAsyncThunk(
     try {
       return await updateVariant(variantId, payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc variant."));
+      return rejectWithValue(getErrorMessage(error, "Không cập nhật được variant."));
     }
   },
 );
@@ -477,7 +477,7 @@ export const removeAdminVariant = createAsyncThunk(
     try {
       return await deleteVariant(variantId, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong xoa duoc variant."));
+      return rejectWithValue(getErrorMessage(error, "Không xóa được variant."));
     }
   },
 );
@@ -499,14 +499,14 @@ export const toggleAdminProductStatus = createAsyncThunk(
       const inventories = inventoryResult?.items ?? [];
 
       if (inventories.length === 0) {
-        throw new Error("San pham chua co variant trong kho.");
+        throw new Error("Sản phẩm chưa có variant trong kho.");
       }
 
       if (!product.isActive) {
         const hasStock = inventories.some((item) => Number(item.quantity ?? 0) > 0);
 
         if (!hasStock) {
-          throw new Error("San pham chua co ton kho de mo ban.");
+          throw new Error("Sản phẩm chưa có tồn kho để mở bán.");
         }
 
         return await updateProductStatus(product.productId, true, token);
@@ -525,7 +525,7 @@ export const toggleAdminProductStatus = createAsyncThunk(
 
       return await updateProductStatus(product.productId, false, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong doi duoc trang thai san pham."));
+      return rejectWithValue(getErrorMessage(error, "Không đổi được trạng thái sản phẩm."));
     }
   },
 );
@@ -541,7 +541,7 @@ export const removeAdminProduct = createAsyncThunk(
     try {
       return await deleteProduct(productId, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong xoa duoc san pham."));
+      return rejectWithValue(getErrorMessage(error, "Không xóa được sản phẩm."));
     }
   },
 );
@@ -557,7 +557,7 @@ export const uploadAdminProductImages = createAsyncThunk(
     try {
       return await uploadProductImages(productId, files, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong upload duoc anh san pham."));
+      return rejectWithValue(getErrorMessage(error, "Không upload được ảnh sản phẩm."));
     }
   },
 );
@@ -573,7 +573,7 @@ export const setAdminPrimaryProductImage = createAsyncThunk(
     try {
       return await updateProductImageMetadata(productId, imageId, payload, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong cap nhat duoc anh chinh."));
+      return rejectWithValue(getErrorMessage(error, "Không cập nhật được ảnh chính."));
     }
   },
 );
@@ -589,7 +589,7 @@ export const removeAdminProductImage = createAsyncThunk(
     try {
       return await deleteProductImage(productId, imageId, token);
     } catch (error) {
-      return rejectWithValue(getErrorMessage(error, "Khong xoa duoc anh."));
+      return rejectWithValue(getErrorMessage(error, "Không xóa được ảnh."));
     }
   },
 );
@@ -624,7 +624,7 @@ const adminSlice = createSlice({
         state.orders = {
           ...initialPagedState,
           status: "failed",
-          error: action.payload ?? "Khong tai duoc danh sach don hang.",
+          error: action.payload ?? "Không tải được danh sách đơn hàng.",
         };
       })
       .addCase(fetchAdminOrderDetail.pending, (state) => {
@@ -638,7 +638,7 @@ const adminSlice = createSlice({
       })
       .addCase(fetchAdminOrderDetail.rejected, (state, action) => {
         state.currentOrder.status = "failed";
-        state.currentOrder.error = action.payload ?? "Khong tai duoc chi tiet don hang.";
+        state.currentOrder.error = action.payload ?? "Không tải được chi tiết đơn hàng.";
         state.currentOrder.data = null;
       })
       .addCase(fetchAdminLensTypes.pending, (state) => {
@@ -654,7 +654,7 @@ const adminSlice = createSlice({
         state.lenses = {
           ...initialPagedState,
           status: "failed",
-          error: action.payload ?? "Khong tai duoc goi trong kinh.",
+          error: action.payload ?? "Không tải được gói tròng kính.",
         };
       })
       .addCase(fetchAdminInventory.pending, (state) => {
@@ -671,7 +671,7 @@ const adminSlice = createSlice({
         state.inventory.items = [];
         state.inventory.receipts = [];
         state.inventory.status = "failed";
-        state.inventory.error = action.payload ?? "Khong tai duoc ton kho.";
+        state.inventory.error = action.payload ?? "Không tải được tồn kho.";
       })
       .addCase(fetchAdminProducts.pending, (state) => {
         state.products.status = "loading";
@@ -687,7 +687,7 @@ const adminSlice = createSlice({
         state.products.items = [];
         state.products.categories = [];
         state.products.status = "failed";
-        state.products.error = action.payload ?? "Khong tai duoc du lieu san pham.";
+        state.products.error = action.payload ?? "Không tải được dữ liệu sản phẩm.";
       })
       .addCase(fetchAdminProductDetail.pending, (state) => {
         state.currentProduct.status = "loading";
@@ -700,7 +700,7 @@ const adminSlice = createSlice({
       })
       .addCase(fetchAdminProductDetail.rejected, (state, action) => {
         state.currentProduct.status = "failed";
-        state.currentProduct.error = action.payload ?? "Khong tai duoc chi tiet san pham.";
+        state.currentProduct.error = action.payload ?? "Không tải được chi tiết sản phẩm.";
         state.currentProduct.data = null;
       });
   },

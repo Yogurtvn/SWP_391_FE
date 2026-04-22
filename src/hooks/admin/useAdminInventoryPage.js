@@ -153,7 +153,7 @@ export function useAdminInventoryPage() {
     }
 
     if (Number.isNaN(quantityReceived) || quantityReceived <= 0) {
-      await popupAlert("Số lượng nhập phai lon hon 0.");
+      await popupAlert("Số lượng nhập phải lớn hơn 0.");
       return;
     }
 

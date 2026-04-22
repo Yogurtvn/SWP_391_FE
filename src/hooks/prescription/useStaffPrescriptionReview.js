@@ -134,7 +134,7 @@ export function useStaffPrescriptionReview() {
     }
 
     if (!actionNote.trim()) {
-      setLocalActionError("Vui long nhap ghi chu cho khach hang.");
+      setLocalActionError("Vui lòng nhập ghi chú cho khách hàng.");
       return;
     }
 

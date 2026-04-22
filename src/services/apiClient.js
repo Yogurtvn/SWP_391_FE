@@ -231,7 +231,7 @@ async function requestNewAccessToken() {
   }
 
   if (!payload?.accessToken) {
-    throw new ApiError("Khong nhan duoc access token moi.", response.status || 401);
+    throw new ApiError("Không nhận được access token mới.", response.status || 401);
   }
 
   updateStoredAccessToken(payload.accessToken);

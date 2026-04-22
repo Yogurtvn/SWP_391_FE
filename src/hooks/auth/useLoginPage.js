@@ -36,7 +36,7 @@ export function useLoginPage() {
 
     async function setupGoogleLogin() {
       if (!googleClientId) {
-        setError("Thieu Google client id de khoi tao dang nhap Google.");
+        setError("Thiếu Google client id để khởi tạo đăng nhập Google.");
         return;
       }
 
@@ -127,7 +127,7 @@ export function useLoginPage() {
 
 async function handleGoogleLogin(credential, helpers) {
   if (!credential) {
-    helpers.setError("Google khong tra ve credential hop le.");
+    helpers.setError("Google không trả về credential hợp lệ.");
     return;
   }
 

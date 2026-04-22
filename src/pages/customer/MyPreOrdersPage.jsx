@@ -86,7 +86,7 @@ export default function MyPreOrdersPage() {
           <StatePanel
             icon={Package}
             title="Chưa có pre-order nào"
-            description="Hãy chọn sản phẩm có nút Đặt Trước để tạo đơn preorder thật qua cart và checkout."
+            description="Hãy chọn sản phẩm có nút Đặt Trước để tạo đơn pre-order thật qua cart và checkout."
             link={{
               label: "Xem sản phẩm",
               to: "/shop",
@@ -188,7 +188,7 @@ function StatePanel({ icon: Icon, title, description, action, link, loading = fa
   return (
     <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
       {loading ? (
-        <div className="mx-auto mb-5 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+        <div className="mx-auto mb-5 h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
       ) : (
         <Icon className="mx-auto mb-5 h-16 w-16 text-primary" />
       )}

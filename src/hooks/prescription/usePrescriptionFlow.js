@@ -134,17 +134,17 @@ export function usePrescriptionFlow() {
     }
 
     if (!flow.product?.prescriptionCompatible) {
-      setFormError("San pham nay khong con ho tro kinh theo toa.");
+      setFormError("Sản phẩm này không còn hỗ trợ kính theo toa.");
       return;
     }
 
     if (!selectedVariant?.variantId) {
-      setFormError("Khong tim thay bien the hop le.");
+      setFormError("Không tìm thấy biến thể hợp lệ.");
       return;
     }
 
     if (!selectedLensType?.lensTypeId) {
-      setFormError("Vui long chon loai trong kinh.");
+      setFormError("Vui lòng chọn loại tròng kính.");
       return;
     }
 
@@ -178,7 +178,7 @@ export function usePrescriptionFlow() {
 
       navigate("/cart");
     } catch (error) {
-      setFormError(error?.message || error || "Khong the them kinh theo toa vao gio hang.");
+      setFormError(error?.message || error || "Không thể thêm kính theo toa vào giỏ hàng.");
     }
   }
 
@@ -245,16 +245,16 @@ export function usePrescriptionFlow() {
 
 function validatePrescriptionForm(formState) {
   const requiredDecimalFields = [
-    { key: "rightSph", label: "SPH mat phai" },
-    { key: "rightCyl", label: "CYL mat phai" },
-    { key: "leftSph", label: "SPH mat trai" },
-    { key: "leftCyl", label: "CYL mat trai" },
+    { key: "rightSph", label: "SPH mắt phải" },
+    { key: "rightCyl", label: "CYL mắt phải" },
+    { key: "leftSph", label: "SPH mắt trái" },
+    { key: "leftCyl", label: "CYL mắt trái" },
     { key: "pd", label: "PD" },
   ];
 
   for (const field of requiredDecimalFields) {
     if (!Number.isFinite(parseDecimal(formState[field.key]))) {
-      return `${field.label} phai la so hop le.`;
+      return `${field.label} phải là số hợp lệ.`;
     }
   }
 
@@ -262,11 +262,11 @@ function validatePrescriptionForm(formState) {
   const leftAxis = parseInteger(formState.leftAxis);
 
   if (!Number.isInteger(rightAxis) || rightAxis < 0 || rightAxis > 180 || !Number.isInteger(leftAxis) || leftAxis < 0 || leftAxis > 180) {
-    return "AXIS phai nam trong khoang 0-180.";
+    return "AXIS phải nằm trong khoảng 0-180.";
   }
 
   if (parseDecimal(formState.pd) <= 0) {
-    return "PD phai lon hon 0.";
+    return "PD phải lớn hơn 0.";
   }
 
   return "";

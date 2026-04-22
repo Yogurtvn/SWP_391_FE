@@ -28,7 +28,7 @@ export default function PrescriptionFlow() {
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="rounded-[28px] border border-border bg-white p-8 shadow-sm">
           <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-          <p className="text-center text-muted-foreground">Dang tai luong kinh theo toa...</p>
+          <p className="text-center text-muted-foreground">Đang tải luồng kính theo toa...</p>
         </div>
       </div>
     );
@@ -37,8 +37,8 @@ export default function PrescriptionFlow() {
   if (ui.error || !product) {
     return (
       <StateCard
-        title="Chua the dat kinh theo toa"
-        description={ui.error || "Khong the tai thong tin san pham."}
+        title="Chưa thể đặt kính theo toa"
+        description={ui.error || "Không thể tải thông tin sản phẩm."}
       />
     );
   }
@@ -51,7 +51,7 @@ export default function PrescriptionFlow() {
         className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Quay lai san pham
+        Quay lại sản phẩm
       </button>
 
       <div className="mb-8 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
@@ -65,7 +65,7 @@ export default function PrescriptionFlow() {
             <div className="min-w-0 flex-1">
               <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs text-emerald-700">
                 <Check className="h-3.5 w-3.5" />
-                Ho tro kinh theo toa
+                Hỗ trợ kính theo toa
               </p>
               <h1 className="text-3xl">{product.name}</h1>
               <p className="mt-2 text-muted-foreground leading-7">{product.description}</p>
@@ -74,11 +74,11 @@ export default function PrescriptionFlow() {
 
           <form onSubmit={actions.submit} className="space-y-8">
             <section>
-              <h2 className="mb-4 text-xl">1. Gong kinh</h2>
+              <h2 className="mb-4 text-xl">1. Gọng kính</h2>
 
               {(product.colors ?? []).length > 0 && (
                 <div className="mb-5">
-                  <p className="mb-3 text-sm">Mau sac</p>
+                  <p className="mb-3 text-sm">Màu sắc</p>
                   <div className="flex flex-wrap gap-3">
                     {product.colors.map((color) => (
                       <button
@@ -98,7 +98,7 @@ export default function PrescriptionFlow() {
 
               {(product.sizes ?? []).length > 0 && (
                 <div>
-                  <p className="mb-3 text-sm">Kich thuoc</p>
+                  <p className="mb-3 text-sm">Kích thước</p>
                   <div className="flex flex-wrap gap-3">
                     {product.sizes.map((size) => (
                       <button
@@ -118,7 +118,7 @@ export default function PrescriptionFlow() {
             </section>
 
             <section>
-              <h2 className="mb-4 text-xl">2. Goi trong kinh</h2>
+              <h2 className="mb-4 text-xl">2. Gói tròng kính</h2>
 
               <div className="grid gap-3 md:grid-cols-2">
                 {lensTypes.map((lensType) => (
@@ -145,15 +145,15 @@ export default function PrescriptionFlow() {
             </section>
 
             <section>
-              <h2 className="mb-4 text-xl">3. Thong so toa kinh</h2>
+              <h2 className="mb-4 text-xl">3. Thông số toa kính</h2>
 
               <div className="grid gap-4 md:grid-cols-3">
-                <NumericField label="SPH mat phai" value={formState.rightSph} onChange={(value) => actions.updateField("rightSph", value)} placeholder="-1.25" />
-                <NumericField label="CYL mat phai" value={formState.rightCyl} onChange={(value) => actions.updateField("rightCyl", value)} placeholder="0.00" />
-                <NumericField label="AXIS mat phai" value={formState.rightAxis} onChange={(value) => actions.updateField("rightAxis", value)} placeholder="0" />
-                <NumericField label="SPH mat trai" value={formState.leftSph} onChange={(value) => actions.updateField("leftSph", value)} placeholder="-1.00" />
-                <NumericField label="CYL mat trai" value={formState.leftCyl} onChange={(value) => actions.updateField("leftCyl", value)} placeholder="0.00" />
-                <NumericField label="AXIS mat trai" value={formState.leftAxis} onChange={(value) => actions.updateField("leftAxis", value)} placeholder="0" />
+                <NumericField label="SPH mắt phải" value={formState.rightSph} onChange={(value) => actions.updateField("rightSph", value)} placeholder="-1.25" />
+                <NumericField label="CYL mắt phải" value={formState.rightCyl} onChange={(value) => actions.updateField("rightCyl", value)} placeholder="0.00" />
+                <NumericField label="AXIS mắt phải" value={formState.rightAxis} onChange={(value) => actions.updateField("rightAxis", value)} placeholder="0" />
+                <NumericField label="SPH mắt trái" value={formState.leftSph} onChange={(value) => actions.updateField("leftSph", value)} placeholder="-1.00" />
+                <NumericField label="CYL mắt trái" value={formState.leftCyl} onChange={(value) => actions.updateField("leftCyl", value)} placeholder="0.00" />
+                <NumericField label="AXIS mắt trái" value={formState.leftAxis} onChange={(value) => actions.updateField("leftAxis", value)} placeholder="0" />
               </div>
 
               <div className="mt-4">
@@ -162,11 +162,11 @@ export default function PrescriptionFlow() {
             </section>
 
             <section>
-              <h2 className="mb-4 text-xl">4. Chat lieu va coating</h2>
+              <h2 className="mb-4 text-xl">4. Chất liệu và coating</h2>
 
               {pricingOptions.lensMaterials.length > 0 && (
                 <div className="mb-5">
-                  <p className="mb-3 text-sm">Chat lieu trong</p>
+                  <p className="mb-3 text-sm">Chất liệu tròng</p>
                   <div className="grid gap-3 md:grid-cols-2">
                     {pricingOptions.lensMaterials.map((option) => (
                       <button
@@ -211,12 +211,12 @@ export default function PrescriptionFlow() {
             </section>
 
             <section>
-              <h2 className="mb-4 text-xl">5. Anh toa va ghi chu</h2>
+              <h2 className="mb-4 text-xl">5. Ảnh toa và ghi chú</h2>
 
               <div className="mb-4 rounded-2xl border border-dashed border-border p-5">
                 <label className="flex cursor-pointer flex-col items-center justify-center gap-3 text-center">
                   <Upload className="h-8 w-8 text-primary" />
-                  <span className="text-sm">{imageFileName || "Chon anh toa kinh"}</span>
+                  <span className="text-sm">{imageFileName || "Chọn ảnh toa kính"}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -242,11 +242,11 @@ export default function PrescriptionFlow() {
               </div>
 
               <label className="block">
-                <span className="mb-2 block text-sm">Ghi chu</span>
+                <span className="mb-2 block text-sm">Ghi chú</span>
                 <textarea
                   value={formState.notes}
                   onChange={(event) => actions.updateField("notes", event.target.value)}
-                  placeholder="Ghi chu them cho don kinh"
+                  placeholder="Ghi chú thêm cho đơn kính"
                   rows={4}
                   className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none transition-colors focus:border-primary"
                 />
@@ -269,17 +269,17 @@ export default function PrescriptionFlow() {
                 {ui.isSubmitting || ui.imageUpload.status === "loading" ? (
                   <>
                     <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    Dang them vao gio...
+                    Đang thêm vào giỏ...
                   </>
                 ) : pricing.status === "loading" ? (
                   <>
                     <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    Dang tinh gia...
+                    Đang tính giá...
                   </>
                 ) : (
                   <>
                     <ShoppingCart className="h-4 w-4" />
-                    Them vao gio
+                    Thêm vào giỏ
                   </>
                 )}
               </button>
@@ -289,7 +289,7 @@ export default function PrescriptionFlow() {
                   to="/login"
                   className="inline-flex items-center gap-2 rounded-2xl border border-border px-6 py-3 transition-colors hover:bg-secondary"
                 >
-                  Dang nhap
+                  Đăng nhập
                 </Link>
               )}
             </div>
@@ -302,26 +302,26 @@ export default function PrescriptionFlow() {
               <Eye className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl">Tom tat</h2>
-              <p className="text-sm text-muted-foreground">Kiem tra truoc khi them vao gio.</p>
+              <h2 className="text-xl">Tóm tắt</h2>
+              <p className="text-sm text-muted-foreground">Kiểm tra trước khi thêm vào giỏ.</p>
             </div>
           </div>
 
           <div className="space-y-4">
-            <SummaryRow label="Gong" value={product.name} />
-            <SummaryRow label="Bien the" value={`${selectedColor || selectedVariant?.color || "Mac dinh"} / ${selectedSize || selectedVariant?.size || "Free size"}`} />
-            <SummaryRow label="Trong" value={selectedLensType?.lensName || "Chua chon"} />
-            <SummaryRow label="Chat lieu" value={selectedLensMaterialOption?.label || "Mac dinh"} />
-            <SummaryRow label="Coating" value={selectedCoatings.length > 0 ? selectedCoatings.join(", ") : "Khong"} />
-            {imageFileName ? <SummaryRow label="Anh toa" value={imageFileName} /> : null}
+            <SummaryRow label="Gọng" value={product.name} />
+            <SummaryRow label="Biến thể" value={`${selectedColor || selectedVariant?.color || "Mặc định"} / ${selectedSize || selectedVariant?.size || "Free size"}`} />
+            <SummaryRow label="Tròng" value={selectedLensType?.lensName || "Chưa chọn"} />
+            <SummaryRow label="Chất liệu" value={selectedLensMaterialOption?.label || "Mặc định"} />
+            <SummaryRow label="Coating" value={selectedCoatings.length > 0 ? selectedCoatings.join(", ") : "Không"} />
+            {imageFileName ? <SummaryRow label="Ảnh toa" value={imageFileName} /> : null}
 
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-              <PriceRow label="Gia gong" value={pricing.framePrice || selectedVariant?.price || 0} />
-              <PriceRow label="Gia trong" value={pricing.lensBasePrice || selectedLensType?.price || 0} />
-              <PriceRow label="Chat lieu" value={pricing.materialPrice} />
+              <PriceRow label="Giá gọng" value={pricing.framePrice || selectedVariant?.price || 0} />
+              <PriceRow label="Giá tròng" value={pricing.lensBasePrice || selectedLensType?.price || 0} />
+              <PriceRow label="Chất liệu" value={pricing.materialPrice} />
               <PriceRow label="Coating" value={pricing.coatingPrice} />
               <div className="mt-3 flex items-center justify-between border-t border-emerald-200 pt-3 text-base">
-                <span>Tong</span>
+                <span>Tổng</span>
                 <span className="font-semibold">{formatCurrency(totalPrice)}</span>
               </div>
             </div>

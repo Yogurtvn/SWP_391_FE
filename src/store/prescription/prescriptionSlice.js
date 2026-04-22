@@ -77,7 +77,7 @@ function requireToken(getState, rejectWithValue) {
   const { auth } = getState();
 
   if (!auth?.accessToken) {
-    return rejectWithValue("Vui long dang nhap.");
+    return rejectWithValue("Vui lòng đăng nhập.");
   }
 
   return auth.accessToken;
@@ -89,7 +89,7 @@ export const loadPrescriptionFlow = createAsyncThunk(
     const numericProductId = Number.parseInt(String(productId ?? ""), 10);
 
     if (!Number.isFinite(numericProductId) || numericProductId <= 0) {
-      return rejectWithValue("Khong tim thay san pham hop le.");
+      return rejectWithValue("Không tìm thấy sản phẩm hợp lệ.");
     }
 
     try {
@@ -101,11 +101,11 @@ export const loadPrescriptionFlow = createAsyncThunk(
       ]);
 
       if (!eligibility?.isEligible || !product?.prescriptionCompatible) {
-        throw new Error(eligibility?.reason || "San pham nay hien khong ho tro kinh theo toa.");
+        throw new Error(eligibility?.reason || "Sản phẩm này hiện không hỗ trợ kính theo toa.");
       }
 
       if (!Array.isArray(lensTypes) || lensTypes.length === 0) {
-        throw new Error("Chua co goi trong kinh dang hoat dong.");
+        throw new Error("Chưa có gói tròng kính đang hoạt động.");
       }
 
       return {
@@ -115,7 +115,7 @@ export const loadPrescriptionFlow = createAsyncThunk(
         pricingOptions,
       };
     } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Khong the tai luong kinh theo toa."));
+      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể tải luồng kính theo toa."));
     }
   },
 );
@@ -126,13 +126,13 @@ export const fetchProductPrescriptionEligibility = createAsyncThunk(
     const numericProductId = Number.parseInt(String(productId ?? ""), 10);
 
     if (!Number.isFinite(numericProductId) || numericProductId <= 0) {
-      return rejectWithValue("Khong tim thay san pham hop le.");
+      return rejectWithValue("Không tìm thấy sản phẩm hợp lệ.");
     }
 
     try {
       return await getPrescriptionEligibility(numericProductId);
     } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Khong the kiem tra ho tro kinh theo toa."));
+      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể kiểm tra hỗ trợ kính theo toa."));
     }
   },
 );
@@ -143,7 +143,7 @@ export const fetchPrescriptionPricing = createAsyncThunk(
     try {
       return await calculatePrescriptionPricing(payload);
     } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Khong the tinh gia kinh theo toa."));
+      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể tính giá kính theo toa."));
     }
   },
 );
@@ -159,7 +159,7 @@ export const uploadPrescriptionImageFile = createAsyncThunk(
     try {
       return await uploadPrescriptionImage(file, token);
     } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Khong the upload anh toa kinh."));
+      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể upload ảnh toa kính."));
     }
   },
 );
@@ -170,7 +170,7 @@ export const submitPrescriptionCartItem = createAsyncThunk(
     const { auth } = getState();
 
     if (!auth?.accessToken || auth?.user?.role !== "customer") {
-      return rejectWithValue("Vui long dang nhap bang tai khoan khach hang.");
+      return rejectWithValue("Vui lòng đăng nhập bằng tài khoản khách hàng.");
     }
 
     try {
@@ -200,7 +200,7 @@ export const submitPrescriptionCartItem = createAsyncThunk(
 
       return { prescriptionImageUrl };
     } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Khong the them kinh theo toa vao gio hang."));
+      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể thêm kính theo toa vào giỏ hàng."));
     }
   },
 );
@@ -216,7 +216,7 @@ export const fetchStaffPrescriptions = createAsyncThunk(
     try {
       return await getPrescriptions(filters, token);
     } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Khong the tai danh sach toa kinh."));
+      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể tải danh sách toa kính."));
     }
   },
 );
@@ -232,7 +232,7 @@ export const fetchStaffPrescriptionDetail = createAsyncThunk(
     try {
       return await getPrescriptionById(prescriptionId, token);
     } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Khong the tai chi tiet toa kinh."));
+      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể tải chi tiết toa kính."));
     }
   },
 );
@@ -248,7 +248,7 @@ export const patchStaffPrescriptionReview = createAsyncThunk(
     try {
       return await reviewPrescription(prescriptionId, payload, token);
     } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Khong the cap nhat trang thai."));
+      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể cập nhật trạng thái."));
     }
   },
 );
@@ -264,7 +264,7 @@ export const patchStaffPrescriptionMoreInfo = createAsyncThunk(
     try {
       return await requestPrescriptionMoreInfo(prescriptionId, payload, token);
     } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Khong the yeu cau bo sung thong tin."));
+      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể yêu cầu bổ sung thông tin."));
     }
   },
 );
@@ -291,7 +291,7 @@ export const resubmitCustomerPrescription = createAsyncThunk(
         token,
       );
     } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Khong the gui lai toa kinh."));
+      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể gửi lại toa kính."));
     }
   },
 );
@@ -337,7 +337,7 @@ const prescriptionSlice = createSlice({
       .addCase(fetchProductPrescriptionEligibility.rejected, (state, action) => {
         state.productEligibility[String(action.meta.arg)] = {
           status: "failed",
-          error: action.payload ?? "Khong the kiem tra ho tro kinh theo toa.",
+          error: action.payload ?? "Không thể kiểm tra hỗ trợ kính theo toa.",
           data: null,
         };
       })
@@ -368,7 +368,7 @@ const prescriptionSlice = createSlice({
         state.flow = {
           ...initialState.flow,
           status: "failed",
-          error: action.payload ?? "Khong the tai luong kinh theo toa.",
+          error: action.payload ?? "Không thể tải luồng kính theo toa.",
         };
       })
       .addCase(fetchPrescriptionPricing.pending, (state) => {
@@ -391,7 +391,7 @@ const prescriptionSlice = createSlice({
         state.flow.pricing = {
           ...initialState.flow.pricing,
           status: "failed",
-          error: action.payload ?? "Khong the tinh gia kinh theo toa.",
+          error: action.payload ?? "Không thể tính giá kính theo toa.",
         };
       })
       .addCase(uploadPrescriptionImageFile.pending, (state) => {
@@ -408,7 +408,7 @@ const prescriptionSlice = createSlice({
       })
       .addCase(uploadPrescriptionImageFile.rejected, (state, action) => {
         state.flow.imageUpload.status = "failed";
-        state.flow.imageUpload.error = action.payload ?? "Khong the upload anh toa kinh.";
+        state.flow.imageUpload.error = action.payload ?? "Không thể upload ảnh toa kính.";
       })
       .addCase(submitPrescriptionCartItem.pending, (state) => {
         state.flow.submitStatus = "loading";
@@ -420,7 +420,7 @@ const prescriptionSlice = createSlice({
       })
       .addCase(submitPrescriptionCartItem.rejected, (state, action) => {
         state.flow.submitStatus = "failed";
-        state.flow.submitError = action.payload ?? "Khong the them kinh theo toa vao gio hang.";
+        state.flow.submitError = action.payload ?? "Không thể thêm kính theo toa vào giỏ hàng.";
       })
       .addCase(fetchStaffPrescriptions.pending, (state) => {
         state.staffList.status = "loading";
@@ -443,7 +443,7 @@ const prescriptionSlice = createSlice({
         state.staffList = {
           ...initialPagedState,
           status: "failed",
-          error: action.payload ?? "Khong the tai danh sach toa kinh.",
+          error: action.payload ?? "Không thể tải danh sách toa kính.",
         };
       })
       .addCase(fetchStaffPrescriptionDetail.pending, (state) => {
@@ -461,7 +461,7 @@ const prescriptionSlice = createSlice({
         state.staffDetail = {
           data: null,
           status: "failed",
-          error: action.payload ?? "Khong the tai chi tiet toa kinh.",
+          error: action.payload ?? "Không thể tải chi tiết toa kính.",
         };
       })
       .addCase(patchStaffPrescriptionReview.pending, startStaffAction)
@@ -485,7 +485,7 @@ const prescriptionSlice = createSlice({
       .addCase(resubmitCustomerPrescription.rejected, (state, action) => {
         state.resubmit[String(action.meta.arg.prescriptionId)] = {
           status: "failed",
-          error: action.payload ?? "Khong the gui lai toa kinh.",
+          error: action.payload ?? "Không thể gửi lại toa kính.",
         };
       });
   },
@@ -503,7 +503,7 @@ function finishStaffAction(state) {
 
 function failStaffAction(state, action) {
   state.staffAction.status = "failed";
-  state.staffAction.error = action.payload ?? "Khong the cap nhat toa kinh.";
+  state.staffAction.error = action.payload ?? "Không thể cập nhật toa kính.";
 }
 
 function normalizeOptional(value) {

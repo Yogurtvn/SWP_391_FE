@@ -19,23 +19,18 @@ export async function updateMyProfile(token, payload) {
 
 export function createProfileUpdatePayload(profileForm) {
   return {
-    fullName: [normalizeText(profileForm?.firstName), normalizeText(profileForm?.lastName)]
-      .filter(Boolean)
-      .join(" "),
+    fullName: normalizeText(profileForm?.fullName),
     phone: normalizeText(profileForm?.phone),
   };
 }
 
 export function normalizeProfile(profile) {
   const normalizedFullName = normalizeText(profile?.fullName) ?? "";
-  const { firstName, lastName } = splitFullName(normalizedFullName);
 
   return {
     userId: Number(profile?.userId ?? 0),
     email: normalizeText(profile?.email) ?? "",
     fullName: normalizedFullName,
-    firstName,
-    lastName,
     phone: normalizeText(profile?.phone) ?? "",
   };
 }
@@ -50,31 +45,6 @@ export function getProfileErrorMessage(error, fallbackMessage) {
   }
 
   return fallbackMessage;
-}
-
-function splitFullName(fullName) {
-  const normalizedValue = normalizeText(fullName) ?? "";
-
-  if (!normalizedValue) {
-    return {
-      firstName: "",
-      lastName: "",
-    };
-  }
-
-  const segments = normalizedValue.split(/\s+/);
-
-  if (segments.length === 1) {
-    return {
-      firstName: segments[0],
-      lastName: "",
-    };
-  }
-
-  return {
-    firstName: segments.slice(0, -1).join(" "),
-    lastName: segments.at(-1) ?? "",
-  };
 }
 
 function normalizeText(value) {

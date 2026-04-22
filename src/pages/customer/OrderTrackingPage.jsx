@@ -36,10 +36,10 @@ export default function OrderTrackingPage() {
     return (
       <StateCard
         icon={Package}
-        title="Can dang nhap de xem don hang"
-        description="Chi tiet don hang chi hien thi cho tai khoan da dang nhap."
-        primaryAction={{ label: "Dang nhap", to: "/login" }}
-        secondaryAction={{ label: "Quay lai cua hang", to: "/shop" }}
+        title="Cần đăng nhập để xem đơn hàng"
+        description="Chi tiết đơn hàng chỉ hiển thị cho tài khoản đã đăng nhập."
+        primaryAction={{ label: "Đăng nhập", to: "/login" }}
+        secondaryAction={{ label: "Quay lại cửa hàng", to: "/shop" }}
       />
     );
   }
@@ -50,7 +50,7 @@ export default function OrderTrackingPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-center px-4">
           <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
             <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <p className="text-muted-foreground">Dang tai chi tiet don hang...</p>
+            <p className="text-muted-foreground">Đang tải chi tiết đơn hàng...</p>
           </div>
         </div>
       </div>
@@ -65,8 +65,8 @@ export default function OrderTrackingPage() {
             <div className="mb-6 flex items-start gap-4 rounded-2xl border border-red-200 bg-red-50 p-5">
               <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-red-600" />
               <div>
-                <h1 className="mb-2 text-2xl">Khong the mo don hang</h1>
-                <p className="text-sm leading-6 text-red-700">{ui.error || "Chi tiet don hang chua san sang."}</p>
+                <h1 className="mb-2 text-2xl">Không thể mở đơn hàng</h1>
+                <p className="text-sm leading-6 text-red-700">{ui.error || "Chi tiết đơn hàng chưa sẵn sàng."}</p>
               </div>
             </div>
 
@@ -76,10 +76,10 @@ export default function OrderTrackingPage() {
                 onClick={actions.retry}
                 className="rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
               >
-                Tai lai
+                Tải lại
               </button>
               <Link to="/shop" className="rounded-xl border border-border px-5 py-3 transition-colors hover:bg-secondary">
-                Quay lai cua hang
+                Quay lại cửa hàng
               </Link>
             </div>
           </div>
@@ -148,7 +148,7 @@ export default function OrderTrackingPage() {
     } catch (error) {
       setResubmitValidationErrors((current) => ({
         ...current,
-        [key]: resolveErrorMessage(error, "Khong the gui lai toa kinh."),
+        [key]: resolveErrorMessage(error, "Không thể gửi lại toa kính."),
       }));
     }
   }
@@ -171,19 +171,19 @@ export default function OrderTrackingPage() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <Link to="/shop" className="mb-4 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
-          Quay lai cua hang
+          Quay lại cửa hàng
         </Link>
 
         <div className="mb-8 rounded-[28px] border border-border bg-white p-8 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="mb-2 text-sm uppercase tracking-[0.24em] text-muted-foreground">{order.orderTypeLabel}</p>
-              <h1 className="mb-2 text-3xl">Don hang #{order.orderId}</h1>
-              <p className="text-muted-foreground">Dat luc {order.createdAtLabel}</p>
+              <h1 className="mb-2 text-3xl">Đơn hàng #{order.orderId}</h1>
+              <p className="text-muted-foreground">Đặt lúc {order.createdAtLabel}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge tone={getOrderTone(order.orderStatus)}>{order.orderStatusLabel}</Badge>
-              <Badge tone={getPaymentTone(order.payment?.paymentStatus)}>{order.payment?.paymentStatusLabel ?? "Chua co thanh toan"}</Badge>
+              <Badge tone={getPaymentTone(order.payment?.paymentStatus)}>{order.payment?.paymentStatusLabel ?? "Chưa có thanh toán"}</Badge>
               <Badge tone={getShippingTone(order.shippingStatus)}>{order.shippingStatusLabel}</Badge>
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function OrderTrackingPage() {
         <div className="grid gap-8 lg:grid-cols-[1.35fr_0.9fr]">
           <div className="space-y-8">
             <section className="rounded-[28px] border border-border bg-white p-8 shadow-sm">
-              <SectionTitle icon={Clock3} title="Lich su trang thai" subtitle="Cap nhat moi nhat cua don hang." />
+              <SectionTitle icon={Clock3} title="Lịch sử trạng thái" subtitle="Cập nhật mới nhất của đơn hàng." />
 
               <div className="space-y-5">
                 {(order.statusHistory.length > 0 ? order.statusHistory : [createFallbackHistory(order)]).map((history, index, items) => (
@@ -210,7 +210,7 @@ export default function OrderTrackingPage() {
                         <p>{history.orderStatusLabel}</p>
                         <span className="text-sm text-muted-foreground">{history.updatedAtLabel}</span>
                       </div>
-                      <p className="mt-1 text-sm text-muted-foreground">Cap nhat boi: {history.updatedByName}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">Cập nhật bởi: {history.updatedByName}</p>
                       {history.note ? <p className="mt-2 text-sm leading-6 text-foreground/80">{history.note}</p> : null}
                     </div>
                   </div>
@@ -219,7 +219,7 @@ export default function OrderTrackingPage() {
             </section>
 
             <section className="rounded-[28px] border border-border bg-white p-8 shadow-sm">
-              <SectionTitle icon={Package} title="San pham trong don" subtitle={`${order.itemCount} san pham tu checkout.`} />
+              <SectionTitle icon={Package} title="Sản phẩm trong đơn" subtitle={`${order.itemCount} sản phẩm từ checkout.`} />
 
               <div className="space-y-4">
                 {order.items.map((item) => (
@@ -228,13 +228,13 @@ export default function OrderTrackingPage() {
                       <div>
                         <p>{item.productName}</p>
                         <p className="mt-1 text-sm text-muted-foreground">
-                          SKU {item.sku || "Dang cap nhat"} - Mau {item.selectedColor}
+                          SKU {item.sku || "Đang cập nhật"} - Màu {item.selectedColor}
                         </p>
-                        <p className="mt-1 text-sm text-muted-foreground">So luong {item.quantity}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Số lượng {item.quantity}</p>
                         {order.orderType === "preOrder" ? (
                           <div className="mt-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-900">
-                            <p>Don dat truoc dang cho hang ve kho.</p>
-                            {item.expectedRestockDate ? <p>Du kien co hang: {formatDate(item.expectedRestockDate)}</p> : null}
+                            <p>Đơn đặt trước đang chờ hàng về kho.</p>
+                            {item.expectedRestockDate ? <p>Dự kiến có hàng: {formatDate(item.expectedRestockDate)}</p> : null}
                             {item.preOrderNote ? <p>{item.preOrderNote}</p> : null}
                           </div>
                         ) : null}
@@ -270,7 +270,7 @@ export default function OrderTrackingPage() {
 
           <aside className="space-y-8">
             <section className="rounded-[28px] border border-border bg-white p-8 shadow-sm">
-              <SectionTitle icon={MapPin} title="Thong tin giao hang" subtitle="Nguoi nhan va dia chi da luu." />
+              <SectionTitle icon={MapPin} title="Thông tin giao hàng" subtitle="Người nhận và địa chỉ đã lưu." />
 
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
@@ -288,7 +288,7 @@ export default function OrderTrackingPage() {
                   <div className="flex items-start gap-3">
                     <Truck className="mt-0.5 h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p>Ma van don</p>
+                      <p>Mã vận đơn</p>
                       <p className="text-muted-foreground">{order.shippingCode}</p>
                     </div>
                   </div>
@@ -297,21 +297,21 @@ export default function OrderTrackingPage() {
             </section>
 
             <section className="rounded-[28px] border border-border bg-white p-8 shadow-sm">
-              <SectionTitle icon={CreditCard} title="Thanh toan" subtitle="Thong tin thanh toan hien tai." />
+              <SectionTitle icon={CreditCard} title="Thanh toán" subtitle="Thông tin thanh toán hiện tại." />
 
               <div className="space-y-3 text-sm">
-                <Row label="Tong tien" value={formatCurrency(order.totalAmount)} />
-                <Row label="Trang thai don" value={order.orderStatusLabel} />
-                <Row label="Trang thai giao" value={order.shippingStatusLabel} />
-                <Row label="Cap nhat cuoi" value={order.updatedAtLabel} />
+                <Row label="Tổng tiền" value={formatCurrency(order.totalAmount)} />
+                <Row label="Trạng thái đơn" value={order.orderStatusLabel} />
+                <Row label="Trạng thái giao" value={order.shippingStatusLabel} />
+                <Row label="Cập nhật cuối" value={order.updatedAtLabel} />
                 {order.payment ? (
                   <>
                     <Row label="Payment" value={order.payment.paymentMethodLabel} />
-                    <Row label="Trang thai thanh toan" value={order.payment.paymentStatusLabel} />
-                    <Row label="Thanh toan luc" value={order.payment.paidAtLabel} />
+                    <Row label="Trạng thái thanh toán" value={order.payment.paymentStatusLabel} />
+                    <Row label="Thanh toán lúc" value={order.payment.paidAtLabel} />
                   </>
                 ) : (
-                  <Row label="Payment" value="Chua co ban ghi thanh toan" />
+                  <Row label="Payment" value="Chưa có bản ghi thanh toán" />
                 )}
               </div>
             </section>
@@ -339,13 +339,13 @@ function PrescriptionPanel({ item, form, file, state, onFieldChange, onFileChang
       </div>
 
       <div className="grid gap-3 text-sm md:grid-cols-2">
-        <EyeSummary title="Mat phai" eye={prescription.rightEye} />
-        <EyeSummary title="Mat trai" eye={prescription.leftEye} />
+        <EyeSummary title="Mắt phải" eye={prescription.rightEye} />
+        <EyeSummary title="Mắt trái" eye={prescription.leftEye} />
       </div>
 
       <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
         <Row label="PD" value={`${prescription.pd} mm`} />
-        <Row label="Chat lieu" value={prescription.lensMaterial || "Mac dinh"} />
+        <Row label="Chất liệu" value={prescription.lensMaterial || "Mặc định"} />
       </div>
 
       {prescription.coatings.length > 0 ? (
@@ -366,7 +366,7 @@ function PrescriptionPanel({ item, form, file, state, onFieldChange, onFileChang
           className="mt-4 inline-flex items-center gap-2 text-sm text-primary hover:underline"
         >
           <FileImage className="h-4 w-4" />
-          Mo anh toa
+          Mở ảnh toa
         </a>
       ) : null}
 
@@ -374,32 +374,32 @@ function PrescriptionPanel({ item, form, file, state, onFieldChange, onFileChang
         <form onSubmit={(event) => onSubmit(event, prescription)} className="mt-5 rounded-2xl bg-secondary/60 p-4">
           <div className="mb-4 flex items-center gap-2 text-sm text-amber-800">
             <RefreshCw className="h-4 w-4" />
-            Bo sung thong tin theo yeu cau cua staff.
+            Bổ sung thông tin theo yêu cầu của staff.
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
-            <Input label="SPH phai" value={form.rightSph} onChange={(value) => onFieldChange(prescription.prescriptionId, "rightSph", value)} />
-            <Input label="CYL phai" value={form.rightCyl} onChange={(value) => onFieldChange(prescription.prescriptionId, "rightCyl", value)} />
-            <Input label="AXIS phai" value={form.rightAxis} onChange={(value) => onFieldChange(prescription.prescriptionId, "rightAxis", value)} />
-            <Input label="SPH trai" value={form.leftSph} onChange={(value) => onFieldChange(prescription.prescriptionId, "leftSph", value)} />
-            <Input label="CYL trai" value={form.leftCyl} onChange={(value) => onFieldChange(prescription.prescriptionId, "leftCyl", value)} />
-            <Input label="AXIS trai" value={form.leftAxis} onChange={(value) => onFieldChange(prescription.prescriptionId, "leftAxis", value)} />
+            <Input label="SPH phải" value={form.rightSph} onChange={(value) => onFieldChange(prescription.prescriptionId, "rightSph", value)} />
+            <Input label="CYL phải" value={form.rightCyl} onChange={(value) => onFieldChange(prescription.prescriptionId, "rightCyl", value)} />
+            <Input label="AXIS phải" value={form.rightAxis} onChange={(value) => onFieldChange(prescription.prescriptionId, "rightAxis", value)} />
+            <Input label="SPH trái" value={form.leftSph} onChange={(value) => onFieldChange(prescription.prescriptionId, "leftSph", value)} />
+            <Input label="CYL trái" value={form.leftCyl} onChange={(value) => onFieldChange(prescription.prescriptionId, "leftCyl", value)} />
+            <Input label="AXIS trái" value={form.leftAxis} onChange={(value) => onFieldChange(prescription.prescriptionId, "leftAxis", value)} />
           </div>
 
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <Input label="PD" value={form.pd} onChange={(value) => onFieldChange(prescription.prescriptionId, "pd", value)} />
             <label className="block">
-              <span className="mb-2 block text-sm">Anh moi</span>
+              <span className="mb-2 block text-sm">Ảnh mới</span>
               <span className="flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-white px-4 py-3 text-sm">
                 <Upload className="h-4 w-4" />
-                {file?.name || "Chon anh"}
+                {file?.name || "Chọn ảnh"}
                 <input type="file" accept="image/*" className="hidden" onChange={(event) => onFileChange(event.target.files?.[0] ?? null)} />
               </span>
             </label>
           </div>
 
           <label className="mt-3 block">
-            <span className="mb-2 block text-sm">Ghi chu</span>
+            <span className="mb-2 block text-sm">Ghi chú</span>
             <textarea
               value={form.notes}
               onChange={(event) => onFieldChange(prescription.prescriptionId, "notes", event.target.value)}
@@ -409,14 +409,14 @@ function PrescriptionPanel({ item, form, file, state, onFieldChange, onFileChang
           </label>
 
           {state?.error ? <p className="mt-3 text-sm text-red-600">{state.error}</p> : null}
-          {state?.status === "succeeded" ? <p className="mt-3 text-sm text-emerald-700">Da gui lai toa kinh.</p> : null}
+          {state?.status === "succeeded" ? <p className="mt-3 text-sm text-emerald-700">Đã gửi lại toa kính.</p> : null}
 
           <button
             type="submit"
             disabled={state?.status === "loading"}
             className="mt-4 rounded-xl bg-primary px-5 py-3 text-sm text-white hover:bg-primary/90 disabled:opacity-60"
           >
-            {state?.status === "loading" ? "Dang gui..." : "Gui lai toa kinh"}
+            {state?.status === "loading" ? "Đang gửi..." : "Gửi lại toa kính"}
           </button>
         </form>
       ) : null}
@@ -506,7 +506,7 @@ function createFallbackHistory(order) {
     historyId: 0,
     orderStatus: order.orderStatus,
     orderStatusLabel: order.orderStatusLabel,
-    updatedByName: "He thong",
+    updatedByName: "Hệ thống",
     note: "",
     updatedAtLabel: order.updatedAtLabel,
   };
@@ -587,18 +587,18 @@ function validatePrescriptionForm(formState) {
   ];
 
   if (values.some((value) => !Number.isFinite(parseDecimal(value)))) {
-    return "Vui long nhap day du thong so toa.";
+    return "Vui lòng nhập đầy đủ thông số toa.";
   }
 
   const rightAxis = parseInteger(formState.rightAxis);
   const leftAxis = parseInteger(formState.leftAxis);
 
   if (!Number.isInteger(rightAxis) || rightAxis < 0 || rightAxis > 180 || !Number.isInteger(leftAxis) || leftAxis < 0 || leftAxis > 180) {
-    return "AXIS phai nam trong khoang 0-180.";
+    return "AXIS phải nằm trong khoảng 0-180.";
   }
 
   if (parseDecimal(formState.pd) <= 0) {
-    return "PD phai lon hon 0.";
+    return "PD phải lớn hơn 0.";
   }
 
   return "";
@@ -646,7 +646,7 @@ function formatDate(value) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "chua cap nhat";
+    return "chưa cập nhật";
   }
 
   return new Intl.DateTimeFormat("vi-VN", {

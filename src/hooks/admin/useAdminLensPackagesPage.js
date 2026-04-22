@@ -83,7 +83,7 @@ export function useAdminLensPackagesPage() {
           name: "description",
           label: "Mô tả",
           type: "textarea",
-          placeholder: "Mô tả goi trong kinh...",
+          placeholder: "Mô tả gói tròng kính...",
         },
       ],
       initialValues: {

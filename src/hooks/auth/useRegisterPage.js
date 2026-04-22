@@ -33,7 +33,7 @@ export function useRegisterPage() {
     setError("");
 
     if (form.password !== form.confirmPassword) {
-      setError("Mật khẩu nhap lai khong khop.");
+      setError("Mật khẩu nhập lại không khớp.");
       return;
     }
 

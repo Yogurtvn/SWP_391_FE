@@ -62,7 +62,7 @@ export function buildOrderSummary({ checkoutResult, cartItems, orderType, shippi
     paymentStatusLabel: getPaymentStatusLabel(checkoutResult?.payment?.paymentStatus ?? "pending"),
     itemCount,
     total: Number(checkoutResult?.totalAmount ?? fallbackTotal),
-    customerName: normalizeText(shippingInfo?.fullName) ?? "Khách hang Vision Direct",
+    customerName: normalizeText(shippingInfo?.fullName) ?? "Khách hàng Vision Direct",
     phone: normalizeText(shippingInfo?.phone) ?? "Chưa cập nhật",
     email: normalizeText(shippingInfo?.email) ?? "Chưa cập nhật",
     shippingAddress: composeShippingAddress(shippingInfo) || "Địa chỉ giao hàng sẽ được cập nhật sau.",
@@ -114,7 +114,7 @@ export function normalizeOrderDetail(order) {
         orderStatusLabel: getOrderStatusLabel(history?.orderStatus),
         updatedByUserId: Number(history?.updatedByUserId ?? 0),
         updatedByName: history?.updatedByName?.trim() || "Hệ thống",
-        note: history?.note?.trim() || "",
+        note: translateOrderHistoryNote(history?.note),
         updatedAt: history?.updatedAt ?? null,
         updatedAtLabel: formatDateTime(history?.updatedAt),
       }))
@@ -127,7 +127,7 @@ export function normalizeOrderDetail(order) {
     orderStatus: order?.orderStatus ?? "",
     orderStatusLabel: getOrderStatusLabel(order?.orderStatus),
     totalAmount: Number(order?.totalAmount ?? 0),
-    receiverName: order?.receiverName?.trim() || "Khách hang Vision Direct",
+    receiverName: order?.receiverName?.trim() || "Khách hàng Vision Direct",
     receiverPhone: order?.receiverPhone?.trim() || "Chưa cập nhật",
     shippingAddress: order?.shippingAddress?.trim() || "Chưa cập nhật",
     shippingCode: order?.shippingCode?.trim() || "",
@@ -209,9 +209,9 @@ export function getOrderTypeLabel(orderType) {
     case "ready":
       return "Đơn hàng có sẵn";
     case "preorder":
-      return "Don đặt trước";
+      return "Đơn đặt trước";
     case "prescription":
-      return "Don kinh theo toa";
+      return "Đơn kính theo toa";
     default:
       return "Đơn hàng";
   }
@@ -220,19 +220,19 @@ export function getOrderTypeLabel(orderType) {
 export function getOrderStatusLabel(orderStatus) {
   switch (String(orderStatus ?? "").trim().toLowerCase()) {
     case "pending":
-      return "Cho xac nhan";
+      return "Chờ xác nhận";
     case "confirmed":
-      return "Da xac nhan";
+      return "Đã xác nhận";
     case "awaitingstock":
-      return "Cho bo sung hang";
+      return "Chờ bổ sung hàng";
     case "processing":
       return "Đang xử lý";
     case "shipped":
       return "Đang giao hàng";
     case "completed":
-      return "Hoan tat";
+      return "Hoàn tất";
     case "cancelled":
-      return "Da huy";
+      return "Đã hủy";
     default:
       return "Đang cập nhật";
   }
@@ -241,15 +241,15 @@ export function getOrderStatusLabel(orderStatus) {
 export function getShippingStatusLabel(shippingStatus) {
   switch (String(shippingStatus ?? "").trim().toLowerCase()) {
     case "pending":
-      return "Chưan bi giao";
+      return "Chuẩn bị giao";
     case "picking":
-      return "Đang lay hang";
+      return "Đang lấy hàng";
     case "delivering":
       return "Đang giao";
     case "delivered":
-      return "Da giao";
+      return "Đã giao";
     case "failed":
-      return "Giao that bai";
+      return "Giao thất bại";
     default:
       return "Chưa giao hàng";
   }
@@ -262,14 +262,14 @@ export function getDisplayOrderStatus(orderStatus, shippingStatus) {
   if (normalizedOrderStatus === "cancelled") {
     return {
       key: "cancelled",
-      label: "Da huy",
+      label: "Đã hủy",
     };
   }
 
   if (normalizedShippingStatus === "delivered") {
     return {
       key: "delivered",
-      label: "Da giao hàng",
+      label: "Đã giao hàng",
     };
   }
 
@@ -304,9 +304,25 @@ export function getPaymentStatusLabel(paymentStatus) {
     case "completed":
       return "Đã thanh toán";
     case "failed":
-      return "Thanh toán that bai";
+      return "Thanh toán thất bại";
     default:
       return "Chờ thanh toán";
+  }
+}
+
+function translateOrderHistoryNote(note) {
+  const normalizedNote = normalizeText(note);
+
+  if (!normalizedNote) {
+    return "";
+  }
+
+  switch (normalizedNote.toLowerCase()) {
+    case "order created.":
+    case "order created":
+      return "Đơn hàng đã được tạo.";
+    default:
+      return normalizedNote;
   }
 }
 
@@ -391,7 +407,7 @@ function normalizeOrderSummary(summary, detail, preview) {
     statusLabel: displayStatus.label,
     totalAmount: Number(summary?.totalAmount ?? 0),
     itemCount,
-    receiverName: summary?.receiverName?.trim() || detail?.receiverName || "Khách hang Vision Direct",
+    receiverName: summary?.receiverName?.trim() || detail?.receiverName || "Khách hàng Vision Direct",
     paymentMethod: summary?.paymentMethod ?? detail?.payment?.paymentMethod ?? null,
     paymentMethodLabel: getPaymentMethodLabel(summary?.paymentMethod ?? detail?.payment?.paymentMethod),
     paymentStatus: summary?.paymentStatus ?? detail?.payment?.paymentStatus ?? null,

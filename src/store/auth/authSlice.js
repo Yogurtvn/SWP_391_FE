@@ -43,7 +43,7 @@ export const login = createAsyncThunk(
     try {
       return await loginUser(credentials);
     } catch (error) {
-      return rejectWithValue(getAuthErrorMessage(error, "Email hoặc mat khau khong dung."));
+      return rejectWithValue(getAuthErrorMessage(error, "Email hoặc mật khẩu không đúng."));
     }
   },
 );

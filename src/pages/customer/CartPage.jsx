@@ -44,7 +44,7 @@ function CartPage() {
     }
 
     if (item.hasPrescription) {
-      toast.error("San pham theo toa chi ho tro so luong 1. Hay sua thong tin toa neu can.");
+      toast.error("Sản phẩm theo toa chỉ hỗ trợ số lượng 1. Hãy sửa thông tin toa nếu cần.");
       return;
     }
 
@@ -460,7 +460,7 @@ function PrescriptionEditor({ item, form, error, isSaving, onChange, onClose, on
         </div>
 
         <label className="mt-4 block">
-          <span className="mb-2 block text-sm">Ghi chu</span>
+          <span className="mb-2 block text-sm">Ghi chú</span>
           <textarea
             value={form.notes}
             onChange={(event) => onChange("notes", event.target.value)}
@@ -508,7 +508,7 @@ function validatePrescriptionEditForm(form) {
   const requiredValues = [form.rightSph, form.rightCyl, form.leftSph, form.leftCyl, form.pd];
 
   if (requiredValues.some((value) => !Number.isFinite(parseDecimal(value)))) {
-    return "Vui long nhap day du thong so toa.";
+    return "Vui lòng nhập đầy đủ thông số toa.";
   }
 
   const rightAxis = parseInteger(form.rightAxis);

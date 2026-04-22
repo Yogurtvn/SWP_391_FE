@@ -73,15 +73,15 @@ export default function LoginPage() {
   >
               {ui.loading ? <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Đang dang nhap...</span>
+                  <span>Đang đăng nhập...</span>
                 </> : <>
                   <LogIn className="w-5 h-5" />
-                  <span>Đang Nhap</span>
+                  <span>Đăng Nhập</span>
                 </>}
             </button>
 
             <div className="text-center text-sm text-muted-foreground">
-              <span>Chưa co tài khoản? </span>
+              <span>Chưa có tài khoản? </span>
               <button type="button" onClick={actions.goToRegisterPage} className="font-medium text-primary hover:underline">
                 Đăng ký
               </button>
@@ -107,17 +107,17 @@ export default function LoginPage() {
 
               {ui.googleLoading && <div className="flex items-center justify-center gap-2 text-sm text-primary">
                   <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                  <span>Đang xac thuc tài khoản Google...</span>
+                  <span>Đang xác thực tài khoản Google...</span>
                 </div>}
 
               <p className="text-xs text-center text-muted-foreground">
-                Google login su dung backend that va se tao tài khoản customer neu email chua ton tai.
+                Google login sử dụng backend thật và sẽ tạo tài khoản customer nếu email chưa tồn tại.
               </p>
             </div>
           </div>
 
           <div className="mt-8 pt-6 border-t border-border">
-            <p className="text-sm text-muted-foreground mb-3">Tài khoản demo cho giao dien:</p>
+            <p className="text-sm text-muted-foreground mb-3">Tài khoản demo cho giao diện:</p>
             <div className="space-y-2 text-sm">
               <div className="p-3 bg-secondary rounded-lg">
                 <p className="mb-1">

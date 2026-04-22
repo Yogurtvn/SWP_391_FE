@@ -83,7 +83,7 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm mb-2">Nhap lai mat khau</label>
+              <label className="block text-sm mb-2">Nhập lại mật khẩu</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <input
@@ -91,7 +91,7 @@ export default function RegisterPage() {
     value={form.confirmPassword}
     onChange={(event) => setFormValue("confirmPassword", event.target.value)}
     className="w-full pl-10 pr-12 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
-    placeholder="Nhap lai mat khau"
+    placeholder="Nhập lại mật khẩu"
     required
   />
                 <button

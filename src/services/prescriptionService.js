@@ -92,19 +92,19 @@ export function getPrescriptionApiErrorMessage(error, fallbackMessage) {
 export function getPrescriptionStatusLabel(status) {
   switch (String(status ?? "").trim().toLowerCase()) {
     case "submitted":
-      return "Cho kiem tra";
+      return "Chờ kiểm tra";
     case "reviewing":
-      return "Dang kiem tra";
+      return "Đang kiểm tra";
     case "needmoreinfo":
-      return "Can bo sung";
+      return "Cần bổ sung";
     case "approved":
-      return "Da duyet";
+      return "Đã duyệt";
     case "rejected":
-      return "Tu choi";
+      return "Từ chối";
     case "inproduction":
-      return "Dang san xuat";
+      return "Đang sản xuất";
     default:
-      return "Dang cap nhat";
+      return "Đang cập nhật";
   }
 }
 
@@ -232,13 +232,13 @@ function normalizePrice(value) {
 
 function formatDateTime(value) {
   if (!value) {
-    return "Chua cap nhat";
+    return "Chưa cập nhật";
   }
 
   const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Chua cap nhat";
+    return "Chưa cập nhật";
   }
 
   return new Intl.DateTimeFormat("vi-VN", {

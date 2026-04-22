@@ -113,7 +113,7 @@ describe("pre-order checkout flow helpers", () => {
       orderId: 1005,
       orderType: "preOrder",
       orderStatus: "awaitingStock",
-      orderStatusLabel: "Cho bo sung hang",
+      orderStatusLabel: "Chờ bổ sung hàng",
       paymentStatus: "pending",
       total: 780000,
     });

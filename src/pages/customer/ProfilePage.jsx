@@ -4,7 +4,7 @@ import { Clock, Eye, Package, Settings, User } from "lucide-react";
 import { useProfilePage } from "@/hooks/profile/useProfilePage";
 
 export default function ProfilePage() {
-  const { activeTab, profile, accountForm, recentOrders, ui, actions } = useProfilePage();
+  const { activeTab, profile, accountForm, recentOrders, preOrders, prescriptions, ui, actions } = useProfilePage();
 
   async function handleSaveProfile() {
     try {
@@ -110,15 +110,57 @@ export default function ProfilePage() {
           ) : null}
 
           {activeTab === "prescriptions" ? (
-            <PlaceholderSection
-              title="Đơn Kính Đã Lưu"
-              description="FE này chưa được map API đơn kính. Hiện tại backend và UI cho tab này chưa được nối data thật."
-            />
+            <section>
+              <div className="mb-6 flex items-center justify-between gap-4">
+                <h2>Đơn Kính Đã Lưu</h2>
+                <Link to="/orders" className="text-sm text-primary hover:underline">
+                  Xem đơn hàng
+                </Link>
+              </div>
+
+              {ui.prescriptionsError ? (
+                <ErrorCard message={ui.prescriptionsError} onRetry={actions.retryPrescriptions} />
+              ) : ui.prescriptionsLoading ? (
+                <LoadingCard message="Đang tải danh sách đơn kính..." />
+              ) : prescriptions.length === 0 ? (
+                <EmptyCard
+                  title="Bạn chưa có đơn kính nào"
+                  description="Các đơn kính theo toa sẽ hiển thị tại đây sau khi bạn đặt kính."
+                  actionLabel="Chọn gọng kính"
+                  actionTo="/shop/eyeglasses"
+                />
+              ) : (
+                <div className="space-y-4">
+                  {prescriptions.map((prescription) => (
+                    <Link
+                      key={`${prescription.prescriptionId}-${prescription.orderId}`}
+                      to={prescription.orderId ? `/orders/${prescription.orderId}` : "/orders"}
+                      className="block rounded-xl bg-secondary p-6 transition-colors hover:bg-muted"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                          <p className="mb-1">Đơn kính #{prescription.prescriptionId}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {prescription.lensTypeCode || "Tròng kính"} · {prescription.createdAtLabel || "Chưa cập nhật"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="mb-1">{formatCurrency(prescription.totalLensPrice)}</p>
+                          <span className={`inline-block rounded-full px-3 py-1 text-xs ${getPrescriptionStatusColor(prescription.prescriptionStatus)}`}>
+                            {prescription.prescriptionStatusLabel}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
           ) : null}
 
           {activeTab === "pre-orders" ? (
-            <div>
-              <div className="mb-6 flex items-center justify-between">
+            <section>
+              <div className="mb-6 flex items-center justify-between gap-4">
                 <h2>Pre-orders</h2>
                 <Link
                   to="/profile/pre-orders"
@@ -127,11 +169,48 @@ export default function ProfilePage() {
                   Xem chi tiết
                 </Link>
               </div>
-              <PlaceholderSection
-                title="Pre-order"
-                description="Tab này đang giữ link sang trang pre-order riêng. Nếu bạn muốn, mình có thể map tiếp pre-order API sau."
-              />
-            </div>
+
+              {ui.preOrdersError ? (
+                <ErrorCard message={ui.preOrdersError} onRetry={actions.retryOrders} />
+              ) : ui.preOrdersLoading ? (
+                <LoadingCard message="Đang tải danh sách pre-order..." />
+              ) : preOrders.length === 0 ? (
+                <EmptyCard
+                  title="Bạn chưa có pre-order nào"
+                  description="Các đơn đặt trước thật từ backend sẽ hiển thị tại đây."
+                  actionLabel="Xem sản phẩm"
+                  actionTo="/shop"
+                />
+              ) : (
+                <div className="space-y-4">
+                  {preOrders.map((order) => (
+                    <Link
+                      key={order.orderId}
+                      to={`/orders/${order.orderId}`}
+                      className="block rounded-xl bg-secondary p-6 transition-colors hover:bg-muted"
+                    >
+                      <div className="flex items-center gap-6">
+                        <img
+                          src={order.firstItemImage}
+                          alt={order.firstItemName}
+                          className="h-16 w-16 rounded-lg object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="mb-1">Pre-order #{order.orderId}</p>
+                          <p className="text-sm text-muted-foreground">{order.createdAtLabel}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="mb-1">{formatCurrency(order.totalAmount)}</p>
+                          <span className={`inline-block rounded-full px-3 py-1 text-xs ${getStatusColor(order.statusKey)}`}>
+                            {order.statusLabel}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </section>
           ) : null}
 
           {activeTab === "account" ? (
@@ -143,25 +222,14 @@ export default function ProfilePage() {
               <div className="space-y-6 rounded bg-secondary p-6">
                 {ui.profileLoading && !profile ? <LoadingCard message="Đang tải thông tin tài khoản..." compact /> : null}
 
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-sm">Họ</label>
-                    <input
-                      type="text"
-                      value={accountForm.firstName}
-                      onChange={(event) => actions.setAccountField("firstName", event.target.value)}
-                      className="w-full rounded-lg border border-border bg-white px-4 py-3 focus:border-primary focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm">Tên</label>
-                    <input
-                      type="text"
-                      value={accountForm.lastName}
-                      onChange={(event) => actions.setAccountField("lastName", event.target.value)}
-                      className="w-full rounded-lg border border-border bg-white px-4 py-3 focus:border-primary focus:outline-none"
-                    />
-                  </div>
+                <div>
+                  <label className="mb-2 block text-sm">Họ và tên</label>
+                  <input
+                    type="text"
+                    value={accountForm.fullName}
+                    onChange={(event) => actions.setAccountField("fullName", event.target.value)}
+                    className="w-full rounded-lg border border-border bg-white px-4 py-3 focus:border-primary focus:outline-none"
+                  />
                 </div>
 
                 <div>
@@ -197,10 +265,17 @@ export default function ProfilePage() {
           ) : null}
 
           {activeTab === "settings" ? (
-            <PlaceholderSection
-              title="Cài Đặt"
-              description="Trang settings vẫn đang là UI mock riêng. Nếu cần, mình có thể tiếp tục map dữ liệu thật cho trang này sau."
-            />
+            <section>
+              <h2 className="mb-6">Cài Đặt</h2>
+              <div className="rounded-xl bg-secondary p-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <InfoRow label="Email đăng nhập" value={accountForm.email || profile?.email || "Chưa cập nhật"} />
+                  <InfoRow label="Số điện thoại" value={accountForm.phone || profile?.phone || "Chưa cập nhật"} />
+                  <InfoRow label="Tên tài khoản" value={accountForm.fullName || profile?.fullName || "Chưa cập nhật"} />
+                  <InfoRow label="Mã người dùng" value={profile?.userId ? `#${profile.userId}` : "Chưa cập nhật"} />
+                </div>
+              </div>
+            </section>
           ) : null}
         </div>
       </div>
@@ -263,15 +338,6 @@ function EmptyCard({ title, description, actionLabel, actionTo }) {
   );
 }
 
-function PlaceholderSection({ title, description }) {
-  return (
-    <div className="rounded-xl bg-secondary p-8">
-      <h2 className="mb-3">{title}</h2>
-      <p className="text-sm text-muted-foreground">{description}</p>
-    </div>
-  );
-}
-
 function getStatusColor(statusKey) {
   switch (statusKey) {
     case "delivered":
@@ -282,6 +348,29 @@ function getStatusColor(statusKey) {
       return "bg-red-100 text-red-700";
     default:
       return "bg-amber-100 text-amber-700";
+  }
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="rounded-lg bg-white p-4">
+      <p className="mb-1 text-sm text-muted-foreground">{label}</p>
+      <p>{value}</p>
+    </div>
+  );
+}
+
+function getPrescriptionStatusColor(status) {
+  switch (String(status ?? "").trim().toLowerCase()) {
+    case "approved":
+    case "inproduction":
+      return "bg-green-100 text-green-700";
+    case "needmoreinfo":
+      return "bg-amber-100 text-amber-700";
+    case "rejected":
+      return "bg-red-100 text-red-700";
+    default:
+      return "bg-blue-100 text-blue-700";
   }
 }
 

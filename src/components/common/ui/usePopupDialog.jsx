@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const DEFAULT_STATE = {
   isOpen: false,
@@ -32,6 +32,78 @@ function isEmptyValue(field, value) {
   }
 
   return String(value).trim().length === 0;
+}
+
+function StyledSelectField({ value, options, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef(null);
+  const selectedOption = options.find((option) => option.value === value) ?? options[0] ?? null;
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!wrapperRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="relative mt-2">
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="flex h-12 w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
+      >
+        {selectedOption ? (
+          selectedOption.className ? (
+            <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${selectedOption.className}`}>
+              {selectedOption.label}
+            </span>
+          ) : (
+            <span>{selectedOption.label}</span>
+          )
+        ) : (
+          <span>-</span>
+        )}
+        <span className="text-slate-500">{isOpen ? "▴" : "▾"}</span>
+      </button>
+
+      {isOpen ? (
+        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-slate-300 bg-white shadow-lg">
+          {options.map((option) => {
+            const isActive = option.value === selectedOption?.value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`flex w-full items-center px-4 py-2.5 text-left transition ${
+                  isActive ? "bg-orange-50" : "hover:bg-slate-50"
+                }`}
+              >
+                {option.className ? (
+                  <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${option.className}`}>
+                    {option.label}
+                  </span>
+                ) : (
+                  <span className="text-sm text-slate-700">{option.label}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export function usePopupDialog() {
@@ -131,7 +203,7 @@ export function usePopupDialog() {
     for (const field of state.fields) {
       const value = state.formValues[field.name];
 
-      if (isEmptyValue(field, value)) {
+      if (field.required && isEmptyValue(field, value)) {
         setState((currentState) => ({
           ...currentState,
           formError: field.validationMessage || `${field.label || field.name} là bắt buộc.`,
@@ -170,13 +242,26 @@ export function usePopupDialog() {
     }
 
     if (field.type === "select") {
+      const options = field.options ?? [];
+      const hasStyledOptions = options.some((option) => typeof option.className === "string" && option.className.trim().length > 0);
+
+      if (hasStyledOptions) {
+        return (
+          <StyledSelectField
+            value={value}
+            options={options}
+            onChange={(nextValue) => setFormValue(field.name, nextValue)}
+          />
+        );
+      }
+
       return (
         <select
           value={value}
           onChange={(event) => setFormValue(field.name, event.target.value)}
           className="mt-2 h-12 w-full rounded-xl border border-slate-300 px-4 text-sm outline-none transition focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
         >
-          {(field.options ?? []).map((option) => (
+          {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>

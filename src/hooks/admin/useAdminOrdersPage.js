@@ -140,7 +140,10 @@ export function useAdminOrdersPage() {
           label: "Trạng thái đơn",
           type: "select",
           required: true,
-          options: ADMIN_ORDER_STATUSES.map((status) => ({ value: status, label: getOrderStatusPresentation(status).label })),
+          options: ADMIN_ORDER_STATUSES.map((status) => {
+            const presentation = getOrderStatusPresentation(status);
+            return { value: status, label: presentation.label, className: presentation.className };
+          }),
         },
         {
           name: "note",
@@ -165,7 +168,7 @@ export function useAdminOrdersPage() {
           orderId,
           payload: {
             orderStatus: formValues.orderStatus,
-            note: formValues.note?.trim() || "Updated by admin",
+            note: formValues.note?.trim() || undefined,
           },
         }),
       ).unwrap();
@@ -191,7 +194,10 @@ export function useAdminOrdersPage() {
           label: "Trạng thái vận chuyển",
           type: "select",
           required: true,
-          options: ADMIN_SHIPPING_STATUSES.map((status) => ({ value: status, label: getShippingStatusPresentation(status).label })),
+          options: ADMIN_SHIPPING_STATUSES.map((status) => {
+            const presentation = getShippingStatusPresentation(status);
+            return { value: status, label: presentation.label, className: presentation.className };
+          }),
         },
         {
           name: "note",
@@ -216,7 +222,7 @@ export function useAdminOrdersPage() {
           orderId,
           payload: {
             shippingStatus: formValues.shippingStatus,
-            note: formValues.note?.trim() || "Updated by admin",
+            note: formValues.note?.trim() || undefined,
           },
         }),
       ).unwrap();

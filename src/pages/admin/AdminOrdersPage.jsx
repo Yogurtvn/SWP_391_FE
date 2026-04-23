@@ -1,5 +1,6 @@
 ﻿import {
   CheckCircle,
+  ChevronDown,
   Clock3,
   Eye,
   FileText,
@@ -8,8 +9,31 @@
   Search,
   ShoppingBag,
 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { useAdminOrdersPage } from "@/hooks/admin/useAdminOrdersPage";
 import { getOrderStatusPresentation, getShippingStatusPresentation } from "@/utils/orderStatus";
+
+const ORDER_STATUS_FILTERS = [
+  { value: "Pending", label: "Chờ duyệt" },
+  { value: "Confirmed", label: "Đã xác nhận" },
+  { value: "AwaitingStock", label: "Chờ hàng" },
+  { value: "Processing", label: "Đang xử lý" },
+  { value: "Shipped", label: "Đang giao" },
+  { value: "Completed", label: "Hoàn thành" },
+  { value: "Cancelled", label: "Đã hủy" },
+];
+
+const ORDER_STATUS_FILTER_OPTIONS = [
+  {
+    value: "",
+    label: "Tất cả trạng thái",
+    className: "border-slate-300 bg-slate-100 text-slate-700",
+  },
+  ...ORDER_STATUS_FILTERS.map((status) => ({
+    ...status,
+    className: getOrderStatusPresentation(status.value).className,
+  })),
+];
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
@@ -49,6 +73,75 @@ function getTypeIcon(type) {
   if (normalized === "prescription") return FileText;
   if (normalized === "preorder") return Clock3;
   return Package;
+}
+
+function StatusFilterDropdown({ value, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    function handlePointerDown(event) {
+      if (!wrapperRef.current?.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
+  }, []);
+
+  const selectedOption = ORDER_STATUS_FILTER_OPTIONS.find((option) => option.value === value) ?? ORDER_STATUS_FILTER_OPTIONS[0];
+
+  return (
+    <div ref={wrapperRef} className="relative w-full md:w-[17rem]">
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="flex w-full items-center justify-between rounded-xl border-2 border-gray-300 bg-white px-4 py-3 font-medium text-gray-900 focus:border-orange-500 focus:outline-none"
+      >
+        {selectedOption.value ? (
+          <span className={`inline-flex rounded-full border px-3 py-1 text-sm font-bold ${selectedOption.className}`}>
+            {selectedOption.label}
+          </span>
+        ) : (
+          <span>{selectedOption.label}</span>
+        )}
+        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {isOpen ? (
+        <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border-2 border-gray-300 bg-white shadow-lg">
+          {ORDER_STATUS_FILTER_OPTIONS.map((option) => {
+            const isActive = option.value === selectedOption.value;
+
+            return (
+              <button
+                key={option.value || "all"}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`flex w-full items-center px-4 py-2.5 text-left transition ${
+                  isActive ? "bg-orange-50" : "hover:bg-slate-50"
+                }`}
+              >
+                {option.value ? (
+                  <span className={`inline-flex rounded-full border px-3 py-1 text-sm font-bold ${option.className}`}>
+                    {option.label}
+                  </span>
+                ) : (
+                  <span className="text-sm font-semibold text-slate-700">{option.label}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export default function AdminOrdersPage() {
@@ -117,20 +210,7 @@ export default function AdminOrdersPage() {
                 ))}
               </select>
 
-              <select
-                value={filters.orderStatus}
-                onChange={(event) => actions.setFilter("orderStatus", event.target.value)}
-                className="rounded-xl border-2 border-gray-300 px-4 py-3 font-medium text-gray-900 focus:border-orange-500 focus:outline-none"
-              >
-                <option value="">Tất cả trạng thái</option>
-                <option value="Pending">Chờ duyệt</option>
-                <option value="Confirmed">Đã xác nhận</option>
-                <option value="AwaitingStock">Chờ hàng</option>
-                <option value="Processing">Đang xử lý</option>
-                <option value="Shipped">Đang giao</option>
-                <option value="Completed">Hoàn thành</option>
-                <option value="Cancelled">Đã hủy</option>
-              </select>
+              <StatusFilterDropdown value={filters.orderStatus} onChange={(nextStatus) => actions.setFilter("orderStatus", nextStatus)} />
             </div>
           </div>
         </div>

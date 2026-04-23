@@ -11,7 +11,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
+import { AdminErrorBanner, AdminPageShell, AdminPagination, AdminSection, adminStyles } from "@/components/admin/admin-ui";
 import { createUser, getUsers, updateUserStatus } from "@/services/adminService";
 import { selectAuthState } from "@/store/auth/authSlice";
 
@@ -41,11 +41,22 @@ function getRoleLabel(role) {
   }
 }
 
+function formatCreatedDate(user) {
+  const value =
+    user.createdAt ??
+    user.created_at ??
+    user.createdDate ??
+    user.createdOn ??
+    user.createAt ??
+    user.registeredAt;
+  return value ? new Date(value).toLocaleDateString("vi-VN") : "-";
+}
+
 export default function AdminUsersPage() {
   const { accessToken } = useSelector(selectAuthState);
 
   const [users, setUsers] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, pageSize: 15, totalItems: 0, totalPages: 1 });
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 1 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
@@ -189,7 +200,7 @@ export default function AdminUsersPage() {
       }
     >
       <AdminSection subtitle={`Tổng số: ${loading ? "..." : pagination.totalItems} người dùng`}>
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr),220px,220px]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
             <input
@@ -208,8 +219,8 @@ export default function AdminUsersPage() {
           </select>
           <select value={filterStatus} onChange={(event) => setFilterStatus(event.target.value)} className={adminStyles.input}>
             <option value="all">Tất cả trạng thái</option>
-            <option value="active">Hoat dong</option>
-            <option value="inactive">Bi khoa</option>
+            <option value="active">Hoạt động</option>
+            <option value="inactive">Bị khóa</option>
           </select>
         </div>
       </AdminSection>
@@ -227,7 +238,7 @@ export default function AdminUsersPage() {
                 <th className={adminStyles.th}>Vai trò</th>
                 <th className={adminStyles.th}>Trạng thái</th>
                 <th className={adminStyles.th}>Ngày tạo</th>
-                <th className={`${adminStyles.th} text-right`}>Thao tac</th>
+                <th className={`${adminStyles.th} text-right`}>Thao tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -273,11 +284,11 @@ export default function AdminUsersPage() {
                             : "border-slate-200 bg-slate-50 text-slate-600"
                         }`}
                       >
-                        {user.isActive !== false ? "Hoat dong" : "Da khoa"}
+                        {user.isActive !== false ? "Hoạt động" : "Đã khóa"}
                       </span>
                     </td>
                     <td className={adminStyles.td}>
-                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "-"}
+                      {formatCreatedDate(user)}
                     </td>
                     <td className={`${adminStyles.td} text-right`}>
                       <button
@@ -308,31 +319,13 @@ export default function AdminUsersPage() {
           </table>
         </div>
 
-        {!loading && pagination.totalPages > 1 ? (
-          <div className="flex flex-col gap-3 border-t border-slate-200 p-5 md:flex-row md:items-center md:justify-between">
-            <p className="text-sm text-slate-500">
-              Trang {pagination.page} / {pagination.totalPages}
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                className={adminStyles.secondaryButton}
-                disabled={pagination.page <= 1}
-                onClick={() => fetchUsers(pagination.page - 1)}
-              >
-                Truoc
-              </button>
-              <button
-                type="button"
-                className={adminStyles.secondaryButton}
-                disabled={pagination.page >= pagination.totalPages}
-                onClick={() => fetchUsers(pagination.page + 1)}
-              >
-                Sau
-              </button>
-            </div>
-          </div>
-        ) : null}
+        <AdminPagination
+          page={pagination.page}
+          totalPages={pagination.totalPages}
+          onPageChange={(nextPage) => {
+            void fetchUsers(nextPage);
+          }}
+        />
       </AdminSection>
 
       {showMởdal ? (
@@ -375,7 +368,7 @@ export default function AdminUsersPage() {
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="text-sm font-semibold text-[#11284b]">Mãt khau</span>
+                  <span className="text-sm font-semibold text-[#11284b]">Mật khẩu</span>
                   <input
                     required
                     minLength={6}
@@ -383,7 +376,7 @@ export default function AdminUsersPage() {
                     value={formData.password}
                     onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))}
                     className={adminStyles.input}
-                    placeholder="Toi thieu 6 ky tu"
+                    placeholder="Tối thiểu 6 ký tự"
                   />
                 </label>
                 <label className="space-y-2">
@@ -415,7 +408,7 @@ export default function AdminUsersPage() {
                   {submitLoading ? "Đang tạo..." : "Tạo người dùng"}
                 </button>
                 <button type="button" className={adminStyles.secondaryButton} onClick={() => setShowMởdal(false)} disabled={submitLoading}>
-                  Huy
+                  Hủy
                 </button>
               </div>
             </form>

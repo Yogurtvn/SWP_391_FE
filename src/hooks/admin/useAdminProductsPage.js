@@ -418,7 +418,7 @@ export function useAdminProductsPage() {
         ).unwrap();
       }
 
-      const imageFiles = draftVariants.flatMãp((draft) => draft.imageFiles);
+      const imageFiles = draftVariants.flatMap((draft) => draft.imageFiles);
       if (imageFiles.length > 0) {
         await dispatch(uploadAdminProductImages({ productId, files: imageFiles })).unwrap();
       }
@@ -573,7 +573,7 @@ export function useAdminProductsPage() {
         await loadProductForEditing(editForm.productId, true);
       }
 
-      await popupAlert("Cập nhật variant thành cong.");
+      await popupAlert("Cập nhật variant thành công.");
     } catch (error) {
       await popupAlert(error || "Không cập nhật được variant.");
     } finally {
@@ -601,7 +601,7 @@ export function useAdminProductsPage() {
         await loadProductForEditing(editForm.productId, true);
       }
 
-      await popupAlert("Da xóa variant.");
+      await popupAlert("Đã xóa variant.");
     } catch (error) {
       await popupAlert(error || "Không xóa được variant.");
     } finally {
@@ -651,7 +651,7 @@ export function useAdminProductsPage() {
         }),
       ).unwrap();
 
-      await popupAlert("Tạo variant thành cong.");
+      await popupAlert("Tạo variant thành công.");
       setIsVariantMởdalOpen(false);
       setVariantForm(DEFAULT_VARIANT_FORM);
       await dispatch(fetchAdminProducts()).unwrap();

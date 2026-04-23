@@ -1,59 +1,38 @@
-﻿import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
+﻿import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
+import { AdminErrorBanner, AdminPageShell, AdminPagination, adminStyles } from "@/components/admin/admin-ui";
 import { useAdminLensPackagesPage } from "@/hooks/admin/useAdminLensPackagesPage";
 
+const PAGE_SIZE = 10;
+
 export default function AdminLensPackagesPage() {
-  const { items, form, ui, actions, popupElement } = useAdminLensPackagesPage();
+  const { items, ui, actions, popupElement } = useAdminLensPackagesPage();
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const paginatedItems = useMemo(() => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [items, page]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   return (
     <AdminPageShell
       title="Gói Tròng Kính"
       actions={
-        <button type="button" onClick={actions.retry} className={adminStyles.secondaryButton}>
-          Tải lại
-        </button>
+        <>
+          <button type="button" onClick={actions.retry} className={adminStyles.secondaryButton}>
+            Tải lại
+          </button>
+          <button type="button" onClick={actions.createLens} className={adminStyles.primaryButton}>
+            <Plus className="h-4 w-4" />
+            Tạo
+          </button>
+        </>
       }
     >
       <AdminErrorBanner message={ui.error} />
-
-      <AdminSection title="Tạo gói mới">
-        <form onSubmit={actions.createLens} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <input
-              value={form.lensCode}
-              onChange={(event) => actions.setFormField("lensCode", event.target.value)}
-              placeholder="Mã lens"
-              className={adminStyles.input}
-              required
-            />
-            <input
-              value={form.lensName}
-              onChange={(event) => actions.setFormField("lensName", event.target.value)}
-              placeholder="Tên lens"
-              className={adminStyles.input}
-              required
-            />
-            <input
-              type="number"
-              min="0"
-              value={form.price}
-              onChange={(event) => actions.setFormField("price", event.target.value)}
-              placeholder="Giá"
-              className={adminStyles.input}
-              required
-            />
-            <input
-              value={form.description}
-              onChange={(event) => actions.setFormField("description", event.target.value)}
-              placeholder="Mô tả"
-              className={adminStyles.input}
-            />
-          </div>
-
-          <button type="submit" className={adminStyles.primaryButton}>
-            Tạo
-          </button>
-        </form>
-      </AdminSection>
 
       <div className={adminStyles.tableWrapper}>
         <table className={adminStyles.table}>
@@ -64,7 +43,7 @@ export default function AdminLensPackagesPage() {
               <th className={adminStyles.th}>Tên</th>
               <th className={adminStyles.th}>Giá</th>
               <th className={adminStyles.th}>Trạng thái</th>
-              <th className={adminStyles.th}>Thao tac</th>
+              <th className={adminStyles.th}>Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -76,13 +55,13 @@ export default function AdminLensPackagesPage() {
               </tr>
             ) : null}
 
-            {items.map((item) => (
+            {paginatedItems.map((item) => (
               <tr key={item.lensTypeId}>
                 <td className={adminStyles.td}>{item.lensTypeId}</td>
                 <td className={`${adminStyles.td} font-semibold text-slate-950`}>{item.lensCode}</td>
                 <td className={adminStyles.td}>{item.lensName}</td>
-                <td className={adminStyles.td}>{Number(item.price).toLocaleString("vi-VN")} d</td>
-                <td className={adminStyles.td}>{item.isActive ? "Hoat dong" : "Ngung"}</td>
+                <td className={adminStyles.td}>{Number(item.price).toLocaleString("vi-VN")} đ</td>
+                <td className={adminStyles.td}>{item.isActive ? "Hoạt động" : "Ngừng"}</td>
                 <td className={adminStyles.td}>
                   <div className="flex flex-wrap gap-2">
                     <button type="button" onClick={() => actions.editLens(item)} className={adminStyles.smallButton}>
@@ -104,6 +83,12 @@ export default function AdminLensPackagesPage() {
             ))}
           </tbody>
         </table>
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          summary={`Trang ${page} / ${totalPages} - hiển thị ${paginatedItems.length} / ${items.length} gói`}
+        />
       </div>
       {popupElement}
     </AdminPageShell>

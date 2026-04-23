@@ -32,6 +32,7 @@ import OrdersPage from "@/pages/customer/OrdersPage";
 import AdminOrdersPage from "@/pages/admin/AdminOrdersPage";
 import AdminOrderDetailPage from "@/pages/admin/AdminOrderDetailPage";
 import AdminProductsPage from "@/pages/admin/AdminProductsPage";
+import AdminPreOrderVariantsPage from "@/pages/admin/AdminPreOrderVariantsPage";
 import AdminInventoryPage from "@/pages/admin/AdminInventoryPage";
 import AdminLensPackagesPage from "@/pages/admin/AdminLensPackagesPage";
 import AdminReportsPage from "@/pages/admin/AdminReportsPage";
@@ -136,6 +137,7 @@ const router = createBrowserRouter([
       { path: "orders", Component: AdminOrdersPage },
       { path: "orders/:orderId", Component: AdminOrderDetailPage },
       { path: "products", Component: AdminProductsPage },
+      { path: "products/pre-orders", Component: AdminPreOrderVariantsPage },
       { path: "inventory", Component: AdminInventoryPage },
       { path: "lens-packages", Component: AdminLensPackagesPage },
       { path: "reports", Component: AdminReportsPage },

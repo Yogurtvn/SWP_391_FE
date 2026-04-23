@@ -1,5 +1,8 @@
-﻿import { AdminErrorBanner, AdminPageShell, AdminSection, adminStyles } from "@/components/admin/admin-ui";
+﻿import { useEffect, useMemo, useState } from "react";
+import { AdminErrorBanner, AdminPageShell, AdminPagination, AdminSection, adminStyles } from "@/components/admin/admin-ui";
 import { useAdminInventoryPage } from "@/hooks/admin/useAdminInventoryPage";
+
+const PAGE_SIZE = 10;
 
 function formatDateTime(value) {
   if (!value) {
@@ -11,6 +14,18 @@ function formatDateTime(value) {
 
 export default function AdminInventoryPage() {
   const { inventories, receipts, receiptForm, ui, actions, popupElement } = useAdminInventoryPage();
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(inventories.length / PAGE_SIZE));
+  const paginatedInventories = useMemo(
+    () => inventories.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [inventories, page],
+  );
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   return (
     <AdminPageShell
@@ -52,7 +67,7 @@ export default function AdminInventoryPage() {
             />
           </div>
 
-          <button type="submit" className={adminStyles.primaryButton}>
+          <button type="submit" className="rounded-[1.2rem] bg-emerald-600 px-5 py-3 text-base font-bold text-white shadow-[0_12px_24px_rgba(5,150,105,0.2)] transition hover:bg-emerald-700">
             Tạo phiếu nhập
           </button>
         </form>
@@ -68,7 +83,7 @@ export default function AdminInventoryPage() {
               <th className={adminStyles.th}>Pre-order</th>
               <th className={adminStyles.th}>Restock date</th>
               <th className={adminStyles.th}>Pre-order note</th>
-              <th className={adminStyles.th}>Thao tac</th>
+              <th className={adminStyles.th}>Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -80,7 +95,7 @@ export default function AdminInventoryPage() {
               </tr>
             ) : null}
 
-            {inventories.map((item) => (
+            {paginatedInventories.map((item) => (
               <tr key={item.variantId}>
                 <td className={adminStyles.td}>{item.sku || "-"}</td>
                 <td className={`${adminStyles.td} font-semibold text-slate-950`}>{item.variantId}</td>
@@ -93,14 +108,14 @@ export default function AdminInventoryPage() {
                     <button
                       type="button"
                       onClick={() => actions.updateQuantity(item)}
-                      className={adminStyles.smallButton}
+                      className="inline-flex items-center justify-center rounded-[1rem] border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-700 shadow-[0_6px_12px_rgba(14,165,233,0.08)] transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Sửa số lượng
                     </button>
                     <button
                       type="button"
                       onClick={() => actions.editPreOrder(item)}
-                      className={adminStyles.smallButton}
+                      className="inline-flex items-center justify-center rounded-[1rem] border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-bold text-orange-700 shadow-[0_6px_12px_rgba(249,115,22,0.08)] transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Sửa pre-order
                     </button>
@@ -110,6 +125,12 @@ export default function AdminInventoryPage() {
             ))}
           </tbody>
         </table>
+        <AdminPagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          summary={`Trang ${page} / ${totalPages} - hiển thị ${paginatedInventories.length} / ${inventories.length} dòng`}
+        />
       </div>
 
       <AdminSection title="Phiếu nhập gần đây">

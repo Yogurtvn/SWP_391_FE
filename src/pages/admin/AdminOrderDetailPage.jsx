@@ -7,10 +7,23 @@ function formatCurrency(value) {
 
 function formatDateTime(value) {
   if (!value) {
-    return "-";
+    return "";
   }
 
   return new Date(value).toLocaleString("vi-VN");
+}
+
+function hasValue(value) {
+  return value !== null && value !== undefined && String(value).trim() !== "" && String(value).trim() !== "-";
+}
+
+function translateNote(note) {
+  const normalized = String(note || "").trim().toLowerCase();
+
+  if (normalized === "order created.") return "Đơn hàng đã được tạo.";
+  if (normalized === "payment created.") return "Thanh toán đã được tạo.";
+  if (normalized === "updated by admin") return "Admin đã cập nhật.";
+  return note;
 }
 
 function getPillClass(value, type = "default") {
@@ -46,6 +59,10 @@ function getPillClass(value, type = "default") {
 }
 
 function StatusPill({ value, type }) {
+  if (!hasValue(value)) {
+    return null;
+  }
+
   return (
     <span
       className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold capitalize ${getPillClass(value, type)}`}
@@ -56,13 +73,17 @@ function StatusPill({ value, type }) {
 }
 
 function DetailField({ label, value, emphasize = false, children }) {
+  if (!children && !hasValue(value)) {
+    return null;
+  }
+
   return (
     <div className="rounded-[1.35rem] border border-orange-100 bg-[#fffaf4] p-4">
       <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#7a8ba5]">{label}</p>
       {children ? (
         <div className="mt-2">{children}</div>
       ) : (
-        <p className={`mt-2 text-sm ${emphasize ? "font-bold text-[#11284b]" : "text-slate-700"}`}>{value || "-"}</p>
+        <p className={`mt-2 text-sm ${emphasize ? "font-bold text-[#11284b]" : "text-slate-700"}`}>{value}</p>
       )}
     </div>
   );
@@ -103,14 +124,6 @@ export default function AdminOrderDetailPage() {
             >
               Đổi trạng thái đơn
             </button>
-            <button
-              type="button"
-              onClick={actions.updateShippingStatus}
-              disabled={!order}
-              className={adminStyles.secondaryButton}
-            >
-              Doi vận chuyển
-            </button>
           </div>
         </div>
 
@@ -121,21 +134,23 @@ export default function AdminOrderDetailPage() {
           <div className="space-y-6">
             <section className="rounded-[1.8rem] border border-orange-200 bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.06)] md:p-6">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <DetailField label="Loại đơn">
+                {hasValue(order.orderType) ? <DetailField label="Loại đơn">
                   <StatusPill value={order.orderType} />
-                </DetailField>
-                <DetailField label="Trạng thái đơn">
+                </DetailField> : null}
+                {hasValue(order.orderStatus) ? <DetailField label="Trạng thái đơn">
                   <StatusPill value={order.orderStatus} />
-                </DetailField>
-                <DetailField label="Vận chuyển">
+                </DetailField> : null}
+                {hasValue(order.shippingStatus) ? <DetailField label="Vận chuyển">
                   <StatusPill value={order.shippingStatus} type="shipping" />
-                </DetailField>
+                </DetailField> : null}
                 <DetailField label="Tổng tiền" value={formatCurrency(order.totalAmount)} emphasize />
                 <DetailField label="Người nhận" value={order.receiverName} />
                 <DetailField label="Số điện thoại" value={order.receiverPhone} />
+                <DetailField label="Email" value={order.receiverEmail || order.email || order.customerEmail} />
                 <DetailField label="Địa chỉ" value={order.shippingAddress} />
                 <DetailField label="Mã vận đơn" value={order.shippingCode} />
                 <DetailField label="Dự kiến giao" value={formatDateTime(order.expectedDeliveryDate)} />
+                <DetailField label="Ghi chú giao hàng" value={order.shippingNote || order.note} />
                 <DetailField label="Ngày tạo" value={formatDateTime(order.createdAt)} />
                 <DetailField label="Cập nhật" value={formatDateTime(order.updatedAt)} />
               </div>
@@ -154,7 +169,7 @@ export default function AdminOrderDetailPage() {
                       <th className={adminStyles.th}>Màu</th>
                       <th className={adminStyles.th}>SL</th>
                       <th className={adminStyles.th}>Đơn giá</th>
-                      <th className={adminStyles.th}>Thành tien</th>
+                      <th className={adminStyles.th}>Thành tiền</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-orange-100">
@@ -190,11 +205,12 @@ export default function AdminOrderDetailPage() {
                   <div className="space-y-4 text-sm text-slate-700">
                     <div className="grid gap-4 md:grid-cols-2">
                       <DetailField label="Phương thức" value={order.payment.paymentMethod} />
-                      <DetailField label="Trạng thái">
+                      {hasValue(order.payment.paymentStatus) ? <DetailField label="Trạng thái">
                         <StatusPill value={order.payment.paymentStatus} />
-                      </DetailField>
+                      </DetailField> : null}
                       <DetailField label="Số tiền" value={formatCurrency(order.payment.amount)} emphasize />
                       <DetailField label="Đã thanh toán lúc" value={formatDateTime(order.payment.paidAt)} />
+                      <DetailField label="Mã giao dịch" value={order.payment.transactionCode || order.payment.payosOrderCode} />
                     </div>
 
                     <div className="pt-2">
@@ -214,8 +230,10 @@ export default function AdminOrderDetailPage() {
                                 <StatusPill value={history.paymentStatus} />
                                 <p className="text-sm text-slate-500">{formatDateTime(history.createdAt)}</p>
                               </div>
-                              <p className="mt-3 text-sm font-semibold text-[#11284b]">{history.transactionCode || "-"}</p>
-                              {history.notes ? <p className="mt-1 text-sm text-slate-600">{history.notes}</p> : null}
+                              {hasValue(history.transactionCode) ? (
+                                <p className="mt-3 text-sm font-semibold text-[#11284b]">{history.transactionCode}</p>
+                              ) : null}
+                              {history.notes ? <p className="mt-1 text-sm text-slate-600">{translateNote(history.notes)}</p> : null}
                             </li>
                           ))
                         )}
@@ -246,7 +264,7 @@ export default function AdminOrderDetailPage() {
                         <p className="mt-3 text-sm font-semibold text-[#11284b]">
                           {history.updatedByName || `User #${history.updatedByUserId ?? "-"}`}
                         </p>
-                        {history.note ? <p className="mt-1 text-sm text-slate-600">{history.note}</p> : null}
+                        {history.note ? <p className="mt-1 text-sm text-slate-600">{translateNote(history.note)}</p> : null}
                       </li>
                     ))
                   )}

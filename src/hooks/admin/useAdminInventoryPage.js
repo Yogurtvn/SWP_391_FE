@@ -89,7 +89,7 @@ export function useAdminInventoryPage() {
       fields: [
         {
           name: "isPreOrderAllowed",
-          label: "Cho phep pre-order",
+          label: "Cho phép pre-order",
           type: "select",
           required: true,
           options: [

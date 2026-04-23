@@ -37,6 +37,31 @@ export const adminStyles = {
     "rounded-[1.3rem] border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 shadow-[0_8px_18px_rgba(248,113,113,0.08)]",
 };
 
+function buildPaginationItems(page, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1);
+  }
+
+  const items = [1];
+  const start = Math.max(2, page - 1);
+  const end = Math.min(totalPages - 1, page + 1);
+
+  if (start > 2) {
+    items.push("start-ellipsis");
+  }
+
+  for (let value = start; value <= end; value += 1) {
+    items.push(value);
+  }
+
+  if (end < totalPages - 1) {
+    items.push("end-ellipsis");
+  }
+
+  items.push(totalPages);
+  return items;
+}
+
 export function AdminPageShell({ title, actions, children, className }) {
   return (
     <div className={cn(adminStyles.page, className)}>
@@ -76,4 +101,58 @@ export function AdminErrorBanner({ message }) {
   }
 
   return <p className={adminStyles.error}>{message}</p>;
+}
+
+export function AdminPagination({ page, totalPages, onPageChange, summary, className }) {
+  if (totalPages <= 1) {
+    return null;
+  }
+
+  const items = buildPaginationItems(page, totalPages);
+
+  return (
+    <div className={cn("flex flex-col gap-3 border-t border-slate-200 p-5 md:flex-row md:items-center md:justify-between", className)}>
+      <p className="text-sm font-medium text-slate-500">{summary || `Trang ${page} / ${totalPages}`}</p>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          className={adminStyles.secondaryButton}
+          disabled={page <= 1}
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+        >
+          Trước
+        </button>
+
+        {items.map((item) =>
+          typeof item === "number" ? (
+            <button
+              key={item}
+              type="button"
+              onClick={() => onPageChange(item)}
+              className={`inline-flex h-11 min-w-11 items-center justify-center rounded-[1rem] border px-3 text-sm font-bold transition ${
+                item === page
+                  ? "border-orange-500 bg-orange-500 text-white"
+                  : "border-slate-300 bg-white text-[#11284b] hover:border-orange-300 hover:bg-orange-50"
+              }`}
+            >
+              {item}
+            </button>
+          ) : (
+            <span key={item} className="inline-flex h-11 min-w-8 items-center justify-center text-sm font-semibold text-slate-400">
+              ...
+            </span>
+          ),
+        )}
+
+        <button
+          type="button"
+          className={adminStyles.secondaryButton}
+          disabled={page >= totalPages}
+          onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+        >
+          Sau
+        </button>
+      </div>
+    </div>
+  );
 }

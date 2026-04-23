@@ -29,6 +29,10 @@ function normalizeValue(value) {
     .replace(/[\s_-]+/g, "");
 }
 
+function hasValue(value) {
+  return value !== null && value !== undefined && String(value).trim() !== "" && String(value).trim() !== "-";
+}
+
 function getTypeLabel(type) {
   const normalized = normalizeValue(type);
 
@@ -131,12 +135,12 @@ export default function AdminOrdersPage() {
                 className="rounded-xl border-2 border-gray-300 px-4 py-3 font-medium text-gray-900 focus:border-orange-500 focus:outline-none"
               >
                 <option value="">Tất cả trạng thái</option>
-                <option value="Pending">Cho duyet</option>
+                <option value="Pending">Chờ duyệt</option>
                 <option value="Confirmed">Đã xác nhận</option>
                 <option value="AwaitingStock">Chờ hàng</option>
                 <option value="Processing">Đang xử lý</option>
                 <option value="Shipped">Đang giao</option>
-                <option value="Completed">Hoan thành</option>
+                <option value="Completed">Hoàn thành</option>
                 <option value="Cancelled">Đã hủy</option>
               </select>
             </div>
@@ -184,7 +188,9 @@ export default function AdminOrdersPage() {
                       </span>
                     </div>
 
-                    <p className="mb-2 text-sm font-medium text-gray-700">{order.receiverName || order.customerName || "-"}</p>
+                    {hasValue(order.receiverName || order.customerName) ? (
+                      <p className="mb-2 text-sm font-medium text-gray-700">{order.receiverName || order.customerName}</p>
+                    ) : null}
 
                     <div className="flex items-center justify-between gap-3 text-xs text-gray-600">
                       <span className="font-medium">{getTypeLabel(order.orderType)}</span>
@@ -216,21 +222,31 @@ export default function AdminOrdersPage() {
                   </div>
 
                   <div className="space-y-2 text-sm text-gray-700">
-                    <p>
-                      <span className="font-bold text-gray-500">Người nhận:</span> {detailOrder.receiverName || detailOrder.customerName || "-"}
-                    </p>
-                    <p>
-                      <span className="font-bold text-gray-500">Số điện thoại:</span> {detailOrder.receiverPhone || "-"}
-                    </p>
-                    <p>
-                      <span className="font-bold text-gray-500">Địa chỉ:</span> {detailOrder.shippingAddress || "-"}
-                    </p>
-                    <p>
-                      <span className="font-bold text-gray-500">Ngày tạo:</span> {formatDateTime(detailOrder.createdAt)}
-                    </p>
-                    <p>
-                      <span className="font-bold text-gray-500">Vận chuyển:</span> {detailOrder.shippingStatus || "-"}
-                    </p>
+                    {hasValue(detailOrder.receiverName || detailOrder.customerName) ? (
+                      <p>
+                        <span className="font-bold text-gray-500">Người nhận:</span> {detailOrder.receiverName || detailOrder.customerName}
+                      </p>
+                    ) : null}
+                    {hasValue(detailOrder.receiverPhone) ? (
+                      <p>
+                        <span className="font-bold text-gray-500">Số điện thoại:</span> {detailOrder.receiverPhone}
+                      </p>
+                    ) : null}
+                    {hasValue(detailOrder.shippingAddress) ? (
+                      <p>
+                        <span className="font-bold text-gray-500">Địa chỉ:</span> {detailOrder.shippingAddress}
+                      </p>
+                    ) : null}
+                    {hasValue(detailOrder.createdAt) ? (
+                      <p>
+                        <span className="font-bold text-gray-500">Ngày tạo:</span> {formatDateTime(detailOrder.createdAt)}
+                      </p>
+                    ) : null}
+                    {hasValue(detailOrder.shippingStatus) ? (
+                      <p>
+                        <span className="font-bold text-gray-500">Vận chuyển:</span> {detailOrder.shippingStatus}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -260,7 +276,7 @@ export default function AdminOrdersPage() {
                       ))}
                     </div>
                     <div className="mt-4 flex items-center justify-between border-t-2 border-gray-200 pt-4">
-                      <span className="font-bold text-gray-900">Tổng cong:</span>
+                      <span className="font-bold text-gray-900">Tổng cộng:</span>
                       <span className="text-2xl font-bold text-orange-600">{formatCurrency(selectedOrder.totalAmount)}</span>
                     </div>
                   </div>
@@ -275,27 +291,40 @@ export default function AdminOrdersPage() {
                 <div className="border-b-2 border-orange-200 p-6">
                   <h3 className="mb-4 text-lg font-bold text-gray-900">Thanh toán & giao hàng</h3>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 text-sm">
-                      <p className="mb-2 font-bold text-gray-900">Thanh toán</p>
-                      <p className="font-medium text-gray-700">
-                        Phương thức: {selectedOrder?.payment?.paymentMethod || detailOrder.paymentMethod || "-"}
-                      </p>
-                      <p className="font-medium text-gray-700">
-                        Trạng thái: {selectedOrder?.payment?.paymentStatus || detailOrder.paymentStatus || "-"}
-                      </p>
-                    </div>
-                    <div className="rounded-xl border-2 border-orange-200 bg-orange-50 p-4 text-sm">
-                      <p className="mb-2 font-bold text-gray-900">Giáo hàng</p>
-                      <p className="font-medium text-gray-700">Mã vận đơn: {detailOrder.shippingCode || "-"}</p>
-                      <p className="font-medium text-gray-700">
-                        Dự kiến giao: {formatDateTime(detailOrder.expectedDeliveryDate)}
-                      </p>
-                    </div>
+                    {hasValue(selectedOrder?.payment?.paymentMethod || detailOrder.paymentMethod) ||
+                    hasValue(selectedOrder?.payment?.paymentStatus || detailOrder.paymentStatus) ? (
+                      <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 text-sm">
+                        <p className="mb-2 font-bold text-gray-900">Thanh toán</p>
+                        {hasValue(selectedOrder?.payment?.paymentMethod || detailOrder.paymentMethod) ? (
+                          <p className="font-medium text-gray-700">
+                            Phương thức: {selectedOrder?.payment?.paymentMethod || detailOrder.paymentMethod}
+                          </p>
+                        ) : null}
+                        {hasValue(selectedOrder?.payment?.paymentStatus || detailOrder.paymentStatus) ? (
+                          <p className="font-medium text-gray-700">
+                            Trạng thái: {selectedOrder?.payment?.paymentStatus || detailOrder.paymentStatus}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    {detailOrder.shippingCode || detailOrder.expectedDeliveryDate ? (
+                      <div className="rounded-xl border-2 border-orange-200 bg-orange-50 p-4 text-sm">
+                        <p className="mb-2 font-bold text-gray-900">Giao hàng</p>
+                        {detailOrder.shippingCode ? (
+                          <p className="font-medium text-gray-700">Mã vận đơn: {detailOrder.shippingCode}</p>
+                        ) : null}
+                        {detailOrder.expectedDeliveryDate ? (
+                          <p className="font-medium text-gray-700">
+                            Dự kiến giao: {formatDateTime(detailOrder.expectedDeliveryDate)}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
                 <div className="bg-orange-50 p-6">
-                  <h3 className="mb-4 text-lg font-bold text-gray-900">Thao tac</h3>
+                  <h3 className="mb-4 text-lg font-bold text-gray-900">Thao tác</h3>
                   <div className="flex flex-col gap-3 md:flex-row">
                     <button
                       type="button"
@@ -312,13 +341,6 @@ export default function AdminOrdersPage() {
                     >
                       <CheckCircle className="h-5 w-5" />
                       Đổi trạng thái đơn
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => actions.updateShippingStatus(detailOrder.orderId)}
-                      className="rounded-xl border-2 border-orange-500 px-5 py-3 font-bold text-orange-700 transition hover:bg-orange-100"
-                    >
-                      Doi vận chuyển
                     </button>
                   </div>
                 </div>

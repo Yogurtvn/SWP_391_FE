@@ -33,16 +33,18 @@ export function useAdminLensPackagesPage() {
     void dispatch(fetchAdminLensTypes({ page: 1, pageSize: 100, sortBy: "lensCode", sortOrder: "asc" }));
   }, [auth.accessToken, auth.isReady, dispatch]);
 
-  async function createLens(event) {
-    event.preventDefault();
+  async function createLensFromValues(values) {
+    if (!values) {
+      return;
+    }
 
     try {
       await dispatch(
         createAdminLensType({
-          lensCode: form.lensCode.trim(),
-          lensName: form.lensName.trim(),
-          price: Number(form.price || 0),
-          description: form.description.trim() || null,
+          lensCode: values.lensCode.trim(),
+          lensName: values.lensName.trim(),
+          price: Number(values.price || 0),
+          description: values.description.trim() || null,
           isActive: true,
         }),
       ).unwrap();
@@ -51,6 +53,36 @@ export function useAdminLensPackagesPage() {
     } catch (error) {
       await popupAlert(error || "Không tạo được lens type.");
     }
+  }
+
+  async function openCreateLensPopup() {
+    const formValues = await popupForm({
+      title: "Tạo gói tròng kính",
+      message: "Nhập thông tin gói tròng kính mới.",
+      okText: "Tạo",
+      fields: [
+        { name: "lensCode", label: "Mã lens", type: "text", required: true },
+        { name: "lensName", label: "Tên lens", type: "text", required: true },
+        {
+          name: "price",
+          label: "Giá",
+          type: "number",
+          required: true,
+          min: 0,
+          validate: (value) => {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed) || parsed < 0) {
+              return "Giá không hợp lệ.";
+            }
+            return "";
+          },
+        },
+        { name: "description", label: "Mô tả", type: "textarea", placeholder: "Mô tả gói tròng kính..." },
+      ],
+      initialValues: DEFAULT_LENS_FORM,
+    });
+
+    await createLensFromValues(formValues);
   }
 
   async function editLens(item) {
@@ -157,7 +189,7 @@ export function useAdminLensPackagesPage() {
     },
     actions: {
       setFormField: (field, value) => setForm((current) => ({ ...current, [field]: value })),
-      createLens,
+      createLens: openCreateLensPopup,
       editLens,
       toggleLens,
       deleteLens,

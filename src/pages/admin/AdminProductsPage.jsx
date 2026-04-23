@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   ChevronDown,
@@ -15,20 +15,23 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { AdminPagination } from "@/components/admin/admin-ui";
 import { useAdminProductsPage } from "@/hooks/admin/useAdminProductsPage";
 
 const COLOR_OPTIONS = [
-  { name: "Den", code: "#000000" },
-  { name: "Nau", code: "#8B4513" },
-  { name: "Xảnh navy", code: "#1E3A8A" },
-  { name: "Xam", code: "#808080" },
-  { name: "Vang gold", code: "#FFD700" },
-  { name: "Bac", code: "#C0C0C0" },
-  { name: "Do", code: "#DC2626" },
-  { name: "Xảnh la", code: "#16A34A" },
-  { name: "Hong", code: "#EC4899" },
+  { name: "Đen", code: "#000000" },
+  { name: "Nâu", code: "#8B4513" },
+  { name: "Xanh navy", code: "#1E3A8A" },
+  { name: "Xám", code: "#808080" },
+  { name: "Vàng gold", code: "#FFD700" },
+  { name: "Bạc", code: "#C0C0C0" },
+  { name: "Đỏ", code: "#DC2626" },
+  { name: "Xanh lá", code: "#16A34A" },
+  { name: "Hồng", code: "#EC4899" },
   { name: "Be", code: "#D2B48C" },
 ];
+
+const PAGE_SIZE = 10;
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
@@ -94,6 +97,7 @@ export default function AdminProductsPage() {
   const [stockFilter, setStockFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [isCreateMởdalOpen, setIsCreateMởdalOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -129,6 +133,21 @@ export default function AdminProductsPage() {
   }, [availabilityFilter, productSummaries, products, searchQuery, stockFilter, typeFilter]);
 
   const activeFilterCount = [typeFilter, stockFilter, availabilityFilter].filter((value) => value !== "all").length;
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
+  const paginatedProducts = useMemo(
+    () => filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [filteredProducts, page],
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [availabilityFilter, searchQuery, stockFilter, typeFilter]);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   function openCreateMởdal() {
     actions.resetCreateProductBuilder();
@@ -258,13 +277,13 @@ export default function AdminProductsPage() {
                 >
                   <option value="all">Tất cả</option>
                   <option value="good">Từ 20 trở lên</option>
-                  <option value="low">Duoi 20</option>
+                  <option value="low">Dưới 20</option>
                   <option value="out">Hết hàng</option>
                 </select>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-700">Kha dung</label>
+                <label className="mb-2 block text-sm font-bold text-gray-700">Khả dụng</label>
                 <select
                   value={availabilityFilter}
                   onChange={(event) => setAvailabilityFilter(event.target.value)}
@@ -290,7 +309,7 @@ export default function AdminProductsPage() {
                   <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Giá</th>
                   <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Màu sắc</th>
                   <th className="px-6 py-4 text-left text-sm font-bold text-gray-900">Tồn kho</th>
-                  <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">Thao tac</th>
+                  <th className="px-6 py-4 text-right text-sm font-bold text-gray-900">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-gray-200">
@@ -310,7 +329,7 @@ export default function AdminProductsPage() {
                   </tr>
                 ) : null}
 
-                {filteredProducts.map((product) => {
+                {paginatedProducts.map((product) => {
                   const imageUrl = getProductImage(product);
                   const summary = productSummaries[String(product.productId)] ?? {
                     primarySku: "-",
@@ -441,6 +460,13 @@ export default function AdminProductsPage() {
               </tbody>
             </table>
           </div>
+          <AdminPagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            summary={`Trang ${page} / ${totalPages} - hiển thị ${paginatedProducts.length} / ${filteredProducts.length} sản phẩm`}
+            className="border-t-2 border-gray-200 px-6 py-4"
+          />
         </div>
       </div>
 
@@ -802,7 +828,7 @@ export default function AdminProductsPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                     <ImageIcon className="h-4 w-4 text-primary" />
                   </div>
-                  Thong Tin Co Ban
+                  Thông Tin Cơ Bản
                 </h3>
 
                 <div className="space-y-4">
@@ -927,7 +953,7 @@ export default function AdminProductsPage() {
                           </p>
                           {draft.size || draft.frameType ? (
                             <p className="text-xs text-gray-500">
-                              {draft.size ? `Kich thuoc: ${draft.size}` : ""}{draft.size && draft.frameType ? " | " : ""}
+                              {draft.size ? `Kích thước: ${draft.size}` : ""}{draft.size && draft.frameType ? " | " : ""}
                               {draft.frameType ? `Frame type: ${draft.frameType}` : ""}
                             </p>
                           ) : null}
@@ -985,7 +1011,7 @@ export default function AdminProductsPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-bold text-gray-700">Kich thuoc</label>
+                      <label className="mb-2 block text-sm font-bold text-gray-700">Kích thước</label>
                       <input
                         type="text"
                         value={currentColorForm.size}
@@ -1071,7 +1097,7 @@ export default function AdminProductsPage() {
                   className="flex-1 rounded-xl border-2 border-gray-300 py-3 text-lg font-bold transition hover:bg-gray-50"
                   disabled={ui.isCreatingProduct}
                 >
-                  Huy
+                  Hủy
                 </button>
               </div>
             </form>
@@ -1090,7 +1116,7 @@ export default function AdminProductsPage() {
                 </p>
                 <p className="mt-2 text-base text-slate-600">{productDetail.description || "Không có mô tả."}</p>
                 <p className="mt-2 text-sm font-medium text-slate-500">
-                  Prescription compatible: {productDetail.prescriptionCompatible ? "Yes" : "No"}
+                  Hỗ trợ kính thuốc: {productDetail.prescriptionCompatible ? "Có" : "Không"}
                 </p>
               </div>
               <button
@@ -1237,7 +1263,7 @@ export default function AdminProductsPage() {
                 name="size"
                 value={variantForm.size}
                 onChange={(event) => actions.setVariantField("size", event.target.value)}
-                placeholder="Kich thuoc"
+                placeholder="Kích thước"
                 className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
               <input
@@ -1256,7 +1282,7 @@ export default function AdminProductsPage() {
                 className="rounded-xl border-2 border-gray-300 bg-white px-5 py-3 font-semibold text-gray-900 transition hover:bg-gray-50"
                 disabled={ui.isCreatingVariant}
               >
-                Huy
+                Hủy
               </button>
               <button
                 type="submit"

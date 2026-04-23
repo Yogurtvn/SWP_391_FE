@@ -95,7 +95,7 @@ export default function AdminSettingsPage() {
     const isConfirmed = await popupConfirm("Bạn có chắc muốn xóa policy này?", {
       title: "Xác nhận xóa",
       okText: "Xóa",
-      cancelText: "Huy",
+      cancelText: "Hủy",
     });
 
     if (!isConfirmed) {
@@ -151,7 +151,7 @@ export default function AdminSettingsPage() {
               <th className={adminStyles.th}>ID</th>
               <th className={adminStyles.th}>Tieu de</th>
               <th className={adminStyles.th}>Noi dung</th>
-              <th className={adminStyles.th}>Thao tac</th>
+              <th className={adminStyles.th}>Thao tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">

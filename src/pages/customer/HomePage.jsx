@@ -4,16 +4,21 @@ import ProductCard from "@/components/product/ProductCard";
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { products } from "@/constants/products";
-const featuredProducts = products.slice(0, 4).map((p) => ({
+import { getCatalogProducts } from "@/services/catalogService";
+
+const fallbackFeaturedProducts = products.slice(0, 4).map((p) => ({
   id: p.id,
   name: p.name,
   price: p.price,
   image: p.images[0],
   color: p.frameSpecs?.colors[0]?.name || "\u0110en",
+  subtitle: p.frameSpecs?.colors[0]?.name || "\u0110en",
   colors: p.frameSpecs?.colors.map((c) => c.hex) || ["#000000"],
   inStock: p.inStock,
-  product: p
-  // Include full product data
+  canPreOrder: Boolean(p.allowPreOrder),
+  isPreOrderAllowed: Boolean(p.allowPreOrder),
+  availabilityStatus: p.inStock ? "available" : p.allowPreOrder ? "preorder" : "unavailable",
+  product: p,
 }));
 const categories = [
   {
@@ -64,12 +69,46 @@ const heroSlides = [
 ];
 function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [featuredProducts, setFeaturedProducts] = useState(fallbackFeaturedProducts);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
     }, 5e3);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadFeaturedProducts() {
+      try {
+        const response = await getCatalogProducts({
+          page: 1,
+          pageSize: 4,
+          sortBy: "newest",
+          sortOrder: "desc",
+        });
+
+        const mappedProducts = (Array.isArray(response?.items) ? response.items : [])
+          .map(mapCatalogProductToFeaturedCard)
+          .filter(Boolean);
+
+        if (isActive && mappedProducts.length > 0) {
+          setFeaturedProducts(mappedProducts);
+        }
+      } catch {
+        // Keep fallback products when API is unavailable.
+      }
+    }
+
+    void loadFeaturedProducts();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   return <div>
       {
     /* Hero Carousel Section */
@@ -368,3 +407,69 @@ function HomePage() {
 export {
   HomePage as default
 };
+
+function mapCatalogProductToFeaturedCard(item) {
+  if (!item) {
+    return null;
+  }
+
+  const colorNames = Array.from(
+    new Set((Array.isArray(item.variants) ? item.variants : []).map((variant) => variant?.color).filter(Boolean)),
+  );
+  const primaryColor = colorNames[0] || "Đen";
+  const colorSwatches = colorNames.map(resolveColorHex).filter(Boolean);
+
+  return {
+    id: String(item.id ?? item.productId ?? ""),
+    name: item.name || "Sản phẩm",
+    price: Number(item.price ?? 0),
+    image: item.image,
+    color: primaryColor,
+    subtitle: primaryColor,
+    colors: colorSwatches.length > 0 ? colorSwatches : ["#111827"],
+    inStock: Boolean(item.inStock ?? item.isReadyAvailable),
+    canPreOrder: Boolean(item.canPreOrder ?? item.isPreOrderAllowed),
+    isPreOrderAllowed: Boolean(item.isPreOrderAllowed),
+    availabilityStatus: item.availabilityStatus,
+    product: item.product ?? item,
+  };
+}
+
+function resolveColorHex(value) {
+  const rawValue = String(value ?? "").trim();
+
+  if (!rawValue) {
+    return null;
+  }
+
+  if (/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/.test(rawValue)) {
+    return rawValue;
+  }
+
+  const normalized = rawValue
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+  const colorMap = {
+    den: "#111827",
+    trang: "#f3f4f6",
+    xam: "#6b7280",
+    bac: "#c0c0c0",
+    vang: "#facc15",
+    vanggold: "#facc15",
+    nau: "#8b5a2b",
+    do: "#dc2626",
+    doburgundy: "#800020",
+    xanhlam: "#2563eb",
+    xanhduong: "#2563eb",
+    xanhnavy: "#1e3a8a",
+    xanhla: "#16a34a",
+    hong: "#ec4899",
+    beige: "#d2b48c",
+    be: "#d2b48c",
+  };
+
+  return colorMap[normalized] || "#9ca3af";
+}

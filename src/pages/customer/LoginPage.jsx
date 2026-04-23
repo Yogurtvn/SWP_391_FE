@@ -18,7 +18,7 @@ export default function LoginPage() {
   />
             </svg>
           </div>
-          <h1 className="mb-2">Đang Nhap</h1>
+          <h1 className="mb-2">Đăng nhập</h1>
           <p className="text-muted-foreground">Đăng nhập để tiếp tục sử dụng hệ thống</p>
         </div>
 
@@ -91,7 +91,7 @@ export default function LoginPage() {
           <div className="mt-6">
             <div className="flex items-center gap-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
               <div className="flex-1 h-px bg-border" />
-              <span>Hoac</span>
+              <span>Hoặc</span>
               <div className="flex-1 h-px bg-border" />
             </div>
 

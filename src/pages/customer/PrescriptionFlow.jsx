@@ -386,7 +386,7 @@ function StateCard({ title, description }) {
             to="/shop"
             className="rounded-2xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90"
           >
-            Quay ve cua hang
+            Quay về cửa hàng
           </Link>
         </div>
       </div>

@@ -99,9 +99,9 @@ function Header() {
                       <span className="font-semibold">{getDisplayName()}</span>
                       <span className="text-xs text-muted-foreground font-normal">{user.email}</span>
                       <span className="text-xs text-primary font-normal capitalize mt-1">
-                        {user.role === "admin" && "\u{1F451} Admin"}
-                        {user.role === "staff" && "\u2699\uFE0F Staff"}
-                        {user.role === "customer" && "\u{1F464} Kh\xE1ch h\xE0ng"}
+                        {user.role === "admin" && "\u{1F451} Quản trị viên"}
+                        {user.role === "staff" && "\u2699\uFE0F Nhân viên"}
+                        {user.role === "customer" && "\u{1F464} Khách hàng"}
                       </span>
                     </div>
                   </DropdownMenuLabel>

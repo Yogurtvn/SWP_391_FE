@@ -9,6 +9,7 @@
   ShoppingBag,
 } from "lucide-react";
 import { useAdminOrdersPage } from "@/hooks/admin/useAdminOrdersPage";
+import { getOrderStatusPresentation, getShippingStatusPresentation } from "@/utils/orderStatus";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
@@ -48,19 +49,6 @@ function getTypeIcon(type) {
   if (normalized === "prescription") return FileText;
   if (normalized === "preorder") return Clock3;
   return Package;
-}
-
-function getStatusColor(status) {
-  const normalized = normalizeValue(status);
-
-  if (normalized === "pending") return "border-yellow-300 bg-yellow-100 text-yellow-800";
-  if (normalized === "confirmed") return "border-blue-300 bg-blue-100 text-blue-800";
-  if (normalized === "processing") return "border-purple-300 bg-purple-100 text-purple-800";
-  if (normalized === "shipped" || normalized === "delivering") return "border-orange-300 bg-orange-100 text-orange-800";
-  if (normalized === "completed" || normalized === "delivered") return "border-green-300 bg-green-100 text-green-800";
-  if (normalized === "cancelled" || normalized === "failed") return "border-red-300 bg-red-100 text-red-800";
-  if (normalized === "awaitingstock") return "border-amber-300 bg-amber-100 text-amber-800";
-  return "border-gray-300 bg-gray-100 text-gray-800";
 }
 
 export default function AdminOrdersPage() {
@@ -166,6 +154,7 @@ export default function AdminOrdersPage() {
               {orders.map((order) => {
                 const Icon = getTypeIcon(order.orderType);
                 const isSelected = String(selectedOrderId) === String(order.orderId);
+                const statusPresentation = getOrderStatusPresentation(order.orderStatus);
 
                 return (
                   <button
@@ -183,8 +172,8 @@ export default function AdminOrdersPage() {
                         <Icon className="h-4 w-4 text-gray-700" />
                         <span className="text-sm font-bold text-gray-900">#{order.orderId}</span>
                       </div>
-                      <span className={`rounded-lg border-2 px-3 py-1 text-xs font-bold ${getStatusColor(order.orderStatus)}`}>
-                        {order.orderStatus || "-"}
+                      <span className={`rounded-lg border-2 px-3 py-1 text-xs font-bold ${statusPresentation.className}`}>
+                        {statusPresentation.label}
                       </span>
                     </div>
 
@@ -216,8 +205,8 @@ export default function AdminOrdersPage() {
                       <h2 className="mb-2 text-2xl font-bold text-gray-900">#{detailOrder.orderId}</h2>
                       <p className="text-sm font-medium text-gray-600">{getTypeLabel(detailOrder.orderType)}</p>
                     </div>
-                    <span className={`rounded-xl border-2 px-4 py-2 text-sm font-bold ${getStatusColor(detailOrder.orderStatus)}`}>
-                      {detailOrder.orderStatus || "-"}
+                    <span className={`rounded-xl border-2 px-4 py-2 text-sm font-bold ${getOrderStatusPresentation(detailOrder.orderStatus).className}`}>
+                      {getOrderStatusPresentation(detailOrder.orderStatus).label}
                     </span>
                   </div>
 
@@ -244,7 +233,7 @@ export default function AdminOrdersPage() {
                     ) : null}
                     {hasValue(detailOrder.shippingStatus) ? (
                       <p>
-                        <span className="font-bold text-gray-500">Vận chuyển:</span> {detailOrder.shippingStatus}
+                        <span className="font-bold text-gray-500">Vận chuyển:</span> {getShippingStatusPresentation(detailOrder.shippingStatus).label}
                       </p>
                     ) : null}
                   </div>

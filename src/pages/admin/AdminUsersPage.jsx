@@ -31,7 +31,7 @@ function getRoleClassName(role) {
 function getRoleLabel(role) {
   switch ((role ?? "").toLowerCase()) {
     case "admin":
-      return "Admin";
+      return "Quản trị viên";
     case "staff":
       return "Nhân viên";
     case "customer":
@@ -213,7 +213,7 @@ export default function AdminUsersPage() {
           </label>
           <select value={filterRole} onChange={(event) => setFilterRole(event.target.value)} className={adminStyles.input}>
             <option value="all">Tất cả vai trò</option>
-            <option value="Admin">Admin</option>
+            <option value="Admin">Quản trị viên</option>
             <option value="Staff">Nhân viên</option>
             <option value="Customer">Khách hàng</option>
           </select>
@@ -334,7 +334,7 @@ export default function AdminUsersPage() {
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
               <div>
                 <h2 className="text-3xl font-bold text-[#11284b]">Thêm người dùng mới</h2>
-                <p className="mt-1 text-sm text-slate-500">Tạo tài khoản admin hoặc nhân viên mới.</p>
+                <p className="mt-1 text-sm text-slate-500">Tạo tài khoản quản trị viên hoặc nhân viên mới.</p>
               </div>
               <button type="button" className={adminStyles.secondaryButton} onClick={() => setShowMởdal(false)} disabled={submitLoading}>
                 <X className="h-4 w-4" />
@@ -398,7 +398,7 @@ export default function AdminUsersPage() {
                   className={adminStyles.input}
                 >
                   <option value="Staff">Nhân viên</option>
-                  <option value="Admin">Admin</option>
+                  <option value="Admin">Quản trị viên</option>
                 </select>
               </label>
 

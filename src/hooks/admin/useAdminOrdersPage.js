@@ -11,6 +11,7 @@ import {
   selectAdminState,
 } from "@/store/admin/adminSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { getOrderStatusPresentation, getShippingStatusPresentation } from "@/utils/orderStatus";
 
 export const ADMIN_ORDER_STATUSES = [
   "Pending",
@@ -139,7 +140,7 @@ export function useAdminOrdersPage() {
           label: "Trạng thái đơn",
           type: "select",
           required: true,
-          options: ADMIN_ORDER_STATUSES.map((status) => ({ value: status, label: status })),
+          options: ADMIN_ORDER_STATUSES.map((status) => ({ value: status, label: getOrderStatusPresentation(status).label })),
         },
         {
           name: "note",
@@ -190,7 +191,7 @@ export function useAdminOrdersPage() {
           label: "Trạng thái vận chuyển",
           type: "select",
           required: true,
-          options: ADMIN_SHIPPING_STATUSES.map((status) => ({ value: status, label: status })),
+          options: ADMIN_SHIPPING_STATUSES.map((status) => ({ value: status, label: getShippingStatusPresentation(status).label })),
         },
         {
           name: "note",

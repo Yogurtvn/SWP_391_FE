@@ -1,14 +1,41 @@
 import { Check, Eye, FileText, Image as ImageIcon, RefreshCw, Search, X } from "lucide-react";
 import { useStaffPrescriptionReview } from "@/hooks/prescription/useStaffPrescriptionReview";
 
+const STATUS_PRESENTATIONS = {
+  submitted: {
+    label: "Chờ kiểm tra",
+    className: "border border-amber-200 bg-amber-50 text-amber-700",
+  },
+  reviewing: {
+    label: "Đang kiểm tra",
+    className: "border border-sky-200 bg-sky-50 text-sky-700",
+  },
+  needmoreinfo: {
+    label: "Cần bổ sung",
+    className: "border border-orange-200 bg-orange-50 text-orange-700",
+  },
+  approved: {
+    label: "Đã duyệt",
+    className: "border border-emerald-200 bg-emerald-50 text-emerald-700",
+  },
+  rejected: {
+    label: "Từ chối",
+    className: "border border-rose-200 bg-rose-50 text-rose-700",
+  },
+  inproduction: {
+    label: "Đang sản xuất",
+    className: "border border-violet-200 bg-violet-50 text-violet-700",
+  },
+};
+
 const STATUS_FILTERS = [
-  { value: "", label: "Tat ca" },
-  { value: "submitted", label: "Cho kiem tra" },
-  { value: "reviewing", label: "Dang kiem tra" },
-  { value: "needMoreInfo", label: "Can bo sung" },
-  { value: "approved", label: "Da duyet" },
-  { value: "rejected", label: "Tu choi" },
-  { value: "inProduction", label: "Dang san xuat" },
+  { value: "", label: "Tất cả" },
+  { value: "submitted", label: STATUS_PRESENTATIONS.submitted.label },
+  { value: "reviewing", label: STATUS_PRESENTATIONS.reviewing.label },
+  { value: "needMoreInfo", label: STATUS_PRESENTATIONS.needmoreinfo.label },
+  { value: "approved", label: STATUS_PRESENTATIONS.approved.label },
+  { value: "rejected", label: STATUS_PRESENTATIONS.rejected.label },
+  { value: "inProduction", label: STATUS_PRESENTATIONS.inproduction.label },
 ];
 
 function StaffPrescriptionReviewPage() {
@@ -34,8 +61,8 @@ function StaffPrescriptionReviewPage() {
                 <Eye className="h-6 w-6" />
               </div>
               <div>
-                <h1 className="text-3xl">Kiem tra prescription</h1>
-                <p className="text-sm text-muted-foreground">{pendingCount} toa dang can xu ly</p>
+                <h1 className="text-3xl">Kiểm tra toa kính</h1>
+                <p className="text-sm text-muted-foreground">{pendingCount} toa đang cần xử lý</p>
               </div>
             </div>
             <button
@@ -45,7 +72,7 @@ function StaffPrescriptionReviewPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm hover:bg-secondary disabled:opacity-60"
             >
               <RefreshCw className={`h-4 w-4 ${ui.isListLoading ? "animate-spin" : ""}`} />
-              Tai lai
+              Tải lại
             </button>
           </div>
         </div>
@@ -56,7 +83,7 @@ function StaffPrescriptionReviewPage() {
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Tim theo order, prescription, khach hang"
+                placeholder="Tìm theo mã đơn, mã toa, khách hàng"
                 value={searchQuery}
                 onChange={(event) => actions.setSearchQuery(event.target.value)}
                 className="w-full rounded-xl border border-border bg-background py-3 pl-12 pr-4 outline-none focus:border-primary"
@@ -84,9 +111,9 @@ function StaffPrescriptionReviewPage() {
         <div className="grid gap-6 lg:grid-cols-[0.9fr_1.5fr]">
           <div className="space-y-3">
             {ui.isListLoading ? (
-              <LoadingCard text="Dang tai danh sach..." />
+              <LoadingCard text="Đang tải danh sách..." />
             ) : items.length === 0 ? (
-              <EmptyCard text="Khong co prescription phu hop." />
+              <EmptyCard text="Không có toa kính phù hợp." />
             ) : (
               items.map((item) => (
                 <button
@@ -99,19 +126,19 @@ function StaffPrescriptionReviewPage() {
                 >
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-medium">Prescription #{item.prescriptionId}</p>
-                      <p className="text-sm text-muted-foreground">Order #{item.orderId || "N/A"}</p>
+                      <p className="font-medium">Toa #{item.prescriptionId}</p>
+                      <p className="text-sm text-muted-foreground">Đơn #{item.orderId || "N/A"}</p>
                     </div>
                     <StatusBadge status={item.prescriptionStatus} label={item.prescriptionStatusLabel} />
                   </div>
                   <p className="text-sm">{item.customerName}</p>
                   <p className="text-xs text-muted-foreground">{item.customerEmail}</p>
                   <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{item.lensTypeCode || `Lens #${item.lensTypeId}`}</span>
+                    <span>{item.lensTypeCode || `Tròng #${item.lensTypeId}`}</span>
                     {item.prescriptionImageUrl ? (
                       <span className="inline-flex items-center gap-1 text-primary">
                         <ImageIcon className="h-3.5 w-3.5" />
-                        Co anh
+                        Có ảnh
                       </span>
                     ) : null}
                   </div>
@@ -122,7 +149,7 @@ function StaffPrescriptionReviewPage() {
 
           <div>
             {ui.isDetailLoading ? (
-              <LoadingCard text="Dang tai chi tiet..." />
+              <LoadingCard text="Đang tải chi tiết..." />
             ) : detail ? (
               <DetailPanel
                 detail={detail}
@@ -134,7 +161,7 @@ function StaffPrescriptionReviewPage() {
                 onRequestMoreInfo={actions.requestMoreInfo}
               />
             ) : (
-              <EmptyCard text="Chon mot prescription de kiem tra." />
+              <EmptyCard text="Chọn một toa kính để kiểm tra." />
             )}
           </div>
         </div>
@@ -151,8 +178,8 @@ function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, o
       <div className="border-b border-border bg-secondary/50 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <h2 className="text-2xl">Prescription #{detail.prescriptionId}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Order #{detail.orderId || "N/A"}</p>
+            <h2 className="text-2xl">Toa #{detail.prescriptionId}</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Đơn #{detail.orderId || "N/A"}</p>
             <p className="mt-3">{detail.customerName}</p>
             <p className="text-sm text-muted-foreground">{detail.customerEmail}</p>
           </div>
@@ -162,10 +189,10 @@ function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, o
 
       <div className="space-y-6 p-6">
         <section>
-          <SectionTitle icon={FileText} title="Thong so toa" />
+          <SectionTitle icon={FileText} title="Thông số toa" />
           <div className="grid gap-4 md:grid-cols-2">
-            <EyeCard title="Mat phai" eye={detail.rightEye} />
-            <EyeCard title="Mat trai" eye={detail.leftEye} />
+            <EyeCard title="Mắt phải" eye={detail.rightEye} />
+            <EyeCard title="Mắt trái" eye={detail.leftEye} />
           </div>
           <div className="mt-4 rounded-2xl bg-secondary/60 p-4">
             <Row label="PD" value={`${detail.pd} mm`} />
@@ -173,35 +200,35 @@ function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, o
         </section>
 
         <section>
-          <SectionTitle icon={FileText} title="Trong kinh" />
+          <SectionTitle icon={FileText} title="Tròng kính" />
           <div className="grid gap-3 md:grid-cols-2">
-            <RowCard label="Lens" value={detail.lensTypeCode || `#${detail.lensTypeId}`} />
-            <RowCard label="Chat lieu" value={detail.lensMaterial || "Mac dinh"} />
-            <RowCard label="Lens base" value={formatCurrency(detail.lensBasePrice)} />
-            <RowCard label="Material" value={formatCurrency(detail.materialPrice)} />
-            <RowCard label="Coating" value={formatCurrency(detail.coatingPrice)} />
-            <RowCard label="Tong lens" value={formatCurrency(detail.totalLensPrice)} />
+            <RowCard label="Loại tròng" value={detail.lensTypeCode || `#${detail.lensTypeId}`} />
+            <RowCard label="Chất liệu" value={detail.lensMaterial || "Mặc định"} />
+            <RowCard label="Giá tròng cơ bản" value={formatCurrency(detail.lensBasePrice)} />
+            <RowCard label="Giá chất liệu" value={formatCurrency(detail.materialPrice)} />
+            <RowCard label="Giá coating" value={formatCurrency(detail.coatingPrice)} />
+            <RowCard label="Tổng tiền tròng" value={formatCurrency(detail.totalLensPrice)} />
           </div>
-          {detail.coatings.length > 0 ? <p className="mt-3 text-sm text-muted-foreground">Coating: {detail.coatings.join(", ")}</p> : null}
+          {detail.coatings.length > 0 ? <p className="mt-3 text-sm text-muted-foreground">Lớp phủ: {detail.coatings.join(", ")}</p> : null}
         </section>
 
         {detail.prescriptionImageUrl ? (
           <section>
-            <SectionTitle icon={ImageIcon} title="Anh toa" />
+            <SectionTitle icon={ImageIcon} title="Ảnh toa" />
             <a href={detail.prescriptionImageUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-primary hover:underline">
               <ImageIcon className="h-4 w-4" />
-              Mo anh toa
+              Mở ảnh toa
             </a>
           </section>
         ) : null}
 
         <section>
-          <SectionTitle icon={FileText} title="Ghi chu xu ly" />
+          <SectionTitle icon={FileText} title="Ghi chú xử lý" />
           <textarea
             value={actionNote}
             onChange={(event) => setActionNote(event.target.value)}
             rows={4}
-            placeholder="Nhap ghi chu cho review hoac yeu cau bo sung"
+            placeholder="Nhập ghi chú để duyệt hoặc yêu cầu bổ sung"
             className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none focus:border-primary"
           />
           {actionError ? <p className="mt-3 text-sm text-red-600">{actionError}</p> : null}
@@ -211,7 +238,7 @@ function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, o
           {["submitted", "needmoreinfo"].includes(status) ? (
             <ActionButton disabled={saving} onClick={() => onReview("reviewing")}>
               <Eye className="h-4 w-4" />
-              Dang kiem tra
+              Đang kiểm tra
             </ActionButton>
           ) : null}
 
@@ -219,15 +246,15 @@ function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, o
             <>
               <ActionButton disabled={saving} onClick={() => onReview("approved")} tone="success">
                 <Check className="h-4 w-4" />
-                Duyet
+                Duyệt
               </ActionButton>
               <ActionButton disabled={saving} onClick={onRequestMoreInfo} tone="warning">
                 <RefreshCw className="h-4 w-4" />
-                Can bo sung
+                Cần bổ sung
               </ActionButton>
               <ActionButton disabled={saving} onClick={() => onReview("rejected")} tone="danger">
                 <X className="h-4 w-4" />
-                Tu choi
+                Từ chối
               </ActionButton>
             </>
           ) : null}
@@ -235,7 +262,7 @@ function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, o
           {status === "approved" ? (
             <ActionButton disabled={saving} onClick={() => onReview("inProduction")} tone="success">
               <Check className="h-4 w-4" />
-              San xuat
+              Chuyển sản xuất
             </ActionButton>
           ) : null}
         </section>
@@ -305,7 +332,8 @@ function Row({ label, value }) {
 }
 
 function StatusBadge({ status, label }) {
-  return <span className={`rounded-full px-3 py-1 text-sm ${getStatusColor(status)}`}>{label}</span>;
+  const presentation = getStatusPresentation(status, label);
+  return <span className={`rounded-full px-3 py-1 text-sm font-semibold ${presentation.className}`}>{presentation.label}</span>;
 }
 
 function LoadingCard({ text }) {
@@ -326,20 +354,18 @@ function EmptyCard({ text }) {
   );
 }
 
-function getStatusColor(status) {
-  switch (normalizeStatus(status)) {
-    case "approved":
-    case "inproduction":
-      return "bg-emerald-100 text-emerald-700";
-    case "needmoreinfo":
-      return "bg-amber-100 text-amber-700";
-    case "rejected":
-      return "bg-red-100 text-red-700";
-    case "reviewing":
-      return "bg-blue-100 text-blue-700";
-    default:
-      return "bg-slate-100 text-slate-700";
+function getStatusPresentation(status, fallbackLabel) {
+  const normalizedStatus = normalizeStatus(status);
+  const knownPresentation = STATUS_PRESENTATIONS[normalizedStatus];
+
+  if (knownPresentation) {
+    return knownPresentation;
   }
+
+  return {
+    label: fallbackLabel || "Đang cập nhật",
+    className: "border border-slate-200 bg-slate-100 text-slate-700",
+  };
 }
 
 function normalizeStatus(status) {

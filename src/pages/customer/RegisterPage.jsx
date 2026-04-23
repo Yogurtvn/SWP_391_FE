@@ -10,7 +10,7 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4">
             <UserPlus className="w-10 h-10 text-white" />
           </div>
-          <h1 className="mb-2">Đang Ky</h1>
+          <h1 className="mb-2">Đăng ký</h1>
           <p className="text-muted-foreground">Tạo tài khoản khách hàng để mua hàng và theo dõi đơn hàng</p>
         </div>
 
@@ -69,7 +69,7 @@ export default function RegisterPage() {
     value={form.password}
     onChange={(event) => setFormValue("password", event.target.value)}
     className="w-full pl-10 pr-12 py-3 bg-white border border-border rounded-lg focus:outline-none focus:border-primary"
-    placeholder="Nhập mãt khau"
+    placeholder="Nhập mật khẩu"
     required
   />
                 <button
@@ -116,7 +116,7 @@ export default function RegisterPage() {
   >
               {ui.loading ? <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Đang tao tài khoản...</span>
+                  <span>Đang tạo tài khoản...</span>
                 </> : <>
                   <UserPlus className="w-5 h-5" />
                   <span>Tạo tài khoản</span>
@@ -124,7 +124,7 @@ export default function RegisterPage() {
             </button>
 
             <div className="text-center text-sm text-muted-foreground">
-              <span>Da co tài khoản? </span>
+              <span>Đã có tài khoản? </span>
               <button type="button" onClick={actions.goToLoginPage} className="font-medium text-primary hover:underline">
                 Đăng nhập
               </button>

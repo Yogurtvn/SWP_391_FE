@@ -36,6 +36,7 @@ export function useAdminInventoryPage() {
       title: "Sửa số lượng tồn kho",
       message: `SKU: ${item.sku || "-"} | Variant ID: ${item.variantId}`,
       okText: "Lưu",
+      cancelText: "Hủy",
       fields: [
         {
           name: "quantity",
@@ -86,6 +87,7 @@ export function useAdminInventoryPage() {
       title: "Cập nhật pre-order",
       message: `SKU: ${item.sku || "-"} | Variant ID: ${item.variantId}`,
       okText: "Cập nhật",
+      cancelText: "Hủy",
       fields: [
         {
           name: "isPreOrderAllowed",

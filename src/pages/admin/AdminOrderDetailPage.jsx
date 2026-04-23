@@ -1,5 +1,6 @@
 ﻿import { AdminErrorBanner, adminStyles } from "@/components/admin/admin-ui";
 import { useAdminOrderDetailPage } from "@/hooks/admin/useAdminOrderDetailPage";
+import { getOrderStatusPresentation, getShippingStatusPresentation } from "@/utils/orderStatus";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
@@ -22,7 +23,7 @@ function translateNote(note) {
 
   if (normalized === "order created.") return "Đơn hàng đã được tạo.";
   if (normalized === "payment created.") return "Thanh toán đã được tạo.";
-  if (normalized === "updated by admin") return "Admin đã cập nhật.";
+  if (normalized === "updated by admin") return "Quản trị viên đã cập nhật.";
   return note;
 }
 
@@ -61,6 +62,26 @@ function getPillClass(value, type = "default") {
 function StatusPill({ value, type }) {
   if (!hasValue(value)) {
     return null;
+  }
+
+  if (type === "order") {
+    const presentation = getOrderStatusPresentation(value);
+
+    return (
+      <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${presentation.className}`}>
+        {presentation.label}
+      </span>
+    );
+  }
+
+  if (type === "shipping") {
+    const presentation = getShippingStatusPresentation(value);
+
+    return (
+      <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${presentation.className}`}>
+        {presentation.label}
+      </span>
+    );
   }
 
   return (
@@ -138,7 +159,7 @@ export default function AdminOrderDetailPage() {
                   <StatusPill value={order.orderType} />
                 </DetailField> : null}
                 {hasValue(order.orderStatus) ? <DetailField label="Trạng thái đơn">
-                  <StatusPill value={order.orderStatus} />
+                  <StatusPill value={order.orderStatus} type="order" />
                 </DetailField> : null}
                 {hasValue(order.shippingStatus) ? <DetailField label="Vận chuyển">
                   <StatusPill value={order.shippingStatus} type="shipping" />
@@ -258,7 +279,7 @@ export default function AdminOrderDetailPage() {
                     (order.statusHistory ?? []).map((history) => (
                       <li key={history.historyId} className="rounded-[1.2rem] border border-orange-100 bg-[#fffaf4] p-4">
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                          <StatusPill value={history.orderStatus} />
+                          <StatusPill value={history.orderStatus} type="order" />
                           <p className="text-sm text-slate-500">{formatDateTime(history.updatedAt)}</p>
                         </div>
                         <p className="mt-3 text-sm font-semibold text-[#11284b]">

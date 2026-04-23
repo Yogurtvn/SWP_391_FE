@@ -3,10 +3,10 @@ import { useRef, useState } from "react";
 const DEFAULT_STATE = {
   isOpen: false,
   type: "alert",
-  title: "Thong bao",
+  title: "Thông báo",
   message: "",
   okText: "OK",
-  cancelText: "Huy",
+  cancelText: "Hủy",
   inputValue: "",
   placeholder: "",
   fields: [],
@@ -55,9 +55,9 @@ export function usePopupDialog() {
         ...DEFAULT_STATE,
         isOpen: true,
         type: "alert",
-        title: options.title || "Thong bao",
+        title: options.title || "Thông báo",
         message,
-        okText: options.okText || "Dong",
+        okText: options.okText || "Đóng",
       });
     });
   }
@@ -69,10 +69,10 @@ export function usePopupDialog() {
         ...DEFAULT_STATE,
         isOpen: true,
         type: "confirm",
-        title: options.title || "Xac nhan",
+        title: options.title || "Xác nhận",
         message,
-        okText: options.okText || "Xac nhan",
-        cancelText: options.cancelText || "Huy",
+        okText: options.okText || "Xác nhận",
+        cancelText: options.cancelText || "Hủy",
       });
     });
   }
@@ -84,10 +84,10 @@ export function usePopupDialog() {
         ...DEFAULT_STATE,
         isOpen: true,
         type: "prompt",
-        title: options.title || "Nhap thong tin",
+        title: options.title || "Nhập thông tin",
         message,
-        okText: options.okText || "Luu",
-        cancelText: options.cancelText || "Huy",
+        okText: options.okText || "Lưu",
+        cancelText: options.cancelText || "Hủy",
         inputValue: defaultValue,
         placeholder: options.placeholder || "",
       });
@@ -102,10 +102,10 @@ export function usePopupDialog() {
         ...DEFAULT_STATE,
         isOpen: true,
         type: "form",
-        title: options.title || "Cap nhat thong tin",
+        title: options.title || "Cập nhật thông tin",
         message: options.message || "",
-        okText: options.okText || "Luu",
-        cancelText: options.cancelText || "Huy",
+        okText: options.okText || "Lưu",
+        cancelText: options.cancelText || "Hủy",
         fields,
         formValues: buildInitialFormValues(fields, options.initialValues),
       });
@@ -134,7 +134,7 @@ export function usePopupDialog() {
       if (isEmptyValue(field, value)) {
         setState((currentState) => ({
           ...currentState,
-          formError: field.validationMessage || `${field.label || field.name} la bat buoc.`,
+          formError: field.validationMessage || `${field.label || field.name} là bắt buộc.`,
         }));
         return;
       }

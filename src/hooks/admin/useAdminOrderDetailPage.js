@@ -10,6 +10,7 @@ import {
 } from "@/store/admin/adminSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { ADMIN_ORDER_STATUSES, ADMIN_SHIPPING_STATUSES } from "@/hooks/admin/useAdminOrdersPage";
+import { getOrderStatusPresentation, getShippingStatusPresentation } from "@/utils/orderStatus";
 
 export function useAdminOrderDetailPage() {
   const dispatch = useAppDispatch();
@@ -48,7 +49,7 @@ export function useAdminOrderDetailPage() {
           label: "Trạng thái đơn",
           type: "select",
           required: true,
-          options: ADMIN_ORDER_STATUSES.map((status) => ({ value: status, label: status })),
+          options: ADMIN_ORDER_STATUSES.map((status) => ({ value: status, label: getOrderStatusPresentation(status).label })),
         },
         {
           name: "note",
@@ -94,7 +95,7 @@ export function useAdminOrderDetailPage() {
           label: "Trạng thái vận chuyển",
           type: "select",
           required: true,
-          options: ADMIN_SHIPPING_STATUSES.map((status) => ({ value: status, label: status })),
+          options: ADMIN_SHIPPING_STATUSES.map((status) => ({ value: status, label: getShippingStatusPresentation(status).label })),
         },
         {
           name: "note",

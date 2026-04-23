@@ -26,7 +26,7 @@ export default function AdminSettingsPage() {
       const result = await getPolicies({ page: 1, pageSize: 100 }, accessToken);
       setPolicies(result?.items ?? []);
     } catch (requestError) {
-      setError(requestError?.message || "Không tải được policies.");
+      setError(requestError?.message || "Không tải được danh sách chính sách.");
     } finally {
       setLoading(false);
     }
@@ -51,15 +51,15 @@ export default function AdminSettingsPage() {
       setForm({ title: "", content: "" });
       fetchPolicies();
     } catch (requestError) {
-      await popupAlert(requestError?.message || "Không tạo được policy.");
+      await popupAlert(requestError?.message || "Không tạo được chính sách.");
     }
   }
 
   async function handleEdit(policy) {
     const nextTitle = await popupPrompt("Sửa tiêu đề:", policy.title || "", {
-      title: "Chỉnh sửa policy",
-      okText: "Tiep tuc",
-      placeholder: "Tieu de",
+      title: "Chỉnh sửa chính sách",
+      okText: "Tiếp tục",
+      placeholder: "Tiêu đề",
     });
 
     if (nextTitle == null) {
@@ -67,9 +67,9 @@ export default function AdminSettingsPage() {
     }
 
     const nextContent = await popupPrompt("Sửa nội dung:", policy.content || "", {
-      title: "Chỉnh sửa policy",
+      title: "Chỉnh sửa chính sách",
       okText: "Lưu",
-      placeholder: "Noi dung",
+      placeholder: "Nội dung",
     });
 
     if (nextContent == null) {
@@ -87,12 +87,12 @@ export default function AdminSettingsPage() {
       );
       fetchPolicies();
     } catch (requestError) {
-      await popupAlert(requestError?.message || "Không sửa được policy.");
+      await popupAlert(requestError?.message || "Không sửa được chính sách.");
     }
   }
 
   async function handleDelete(policyId) {
-    const isConfirmed = await popupConfirm("Bạn có chắc muốn xóa policy này?", {
+    const isConfirmed = await popupConfirm("Bạn có chắc muốn xóa chính sách này?", {
       title: "Xác nhận xóa",
       okText: "Xóa",
       cancelText: "Hủy",
@@ -106,13 +106,13 @@ export default function AdminSettingsPage() {
       await deletePolicy(policyId, accessToken);
       fetchPolicies();
     } catch (requestError) {
-      await popupAlert(requestError?.message || "Không xóa được policy.");
+      await popupAlert(requestError?.message || "Không xóa được chính sách.");
     }
   }
 
   return (
     <AdminPageShell
-      title="Cài Đặt Chính Sách"
+      title="Cài đặt chính sách"
       actions={
         <button type="button" onClick={fetchPolicies} className={adminStyles.secondaryButton}>
           Tải lại
@@ -121,25 +121,25 @@ export default function AdminSettingsPage() {
     >
       <AdminErrorBanner message={error} />
 
-      <AdminSection title="Tạo policy mới">
+      <AdminSection title="Tạo chính sách mới">
         <form onSubmit={handleCreate} className="space-y-4">
           <input
             value={form.title}
             onChange={(event) => setForm((currentForm) => ({ ...currentForm, title: event.target.value }))}
-            placeholder="Tieu de"
+            placeholder="Tiêu đề"
             className={adminStyles.input}
             required
           />
           <textarea
             value={form.content}
             onChange={(event) => setForm((currentForm) => ({ ...currentForm, content: event.target.value }))}
-            placeholder="Noi dung"
+            placeholder="Nội dung"
             className={adminStyles.textarea}
             required
           />
 
           <button type="submit" className={adminStyles.primaryButton}>
-            Tạo policy
+            Tạo chính sách
           </button>
         </form>
       </AdminSection>
@@ -149,8 +149,8 @@ export default function AdminSettingsPage() {
           <thead className={adminStyles.tableHead}>
             <tr>
               <th className={adminStyles.th}>ID</th>
-              <th className={adminStyles.th}>Tieu de</th>
-              <th className={adminStyles.th}>Noi dung</th>
+              <th className={adminStyles.th}>Tiêu đề</th>
+              <th className={adminStyles.th}>Nội dung</th>
               <th className={adminStyles.th}>Thao tác</th>
             </tr>
           </thead>

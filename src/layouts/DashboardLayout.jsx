@@ -63,7 +63,7 @@ function DashboardLayout() {
         },
         { name: "Quản Lý Kho", path: "/admin/inventory", icon: ClipboardCheck },
         { name: "Gói Tròng Kính", path: "/admin/lens-packages", icon: Layers },
-        { name: "Quản Lý Users", path: "/admin/users", icon: Users },
+        { name: "Quản lý người dùng", path: "/admin/users", icon: Users },
         { name: "Báo Cáo", path: "/admin/reports", icon: BarChart3 },
         { name: "Cài Đặt", path: "/admin/settings", icon: Settings },
       ];
@@ -72,7 +72,7 @@ function DashboardLayout() {
     if (user?.role === "staff") {
       return [
         { name: "Dashboard", path: "/staff/dashboard", icon: LayoutDashboard },
-        { name: "Kiểm Tra Prescription", path: "/staff/prescriptions", icon: Eye },
+        { name: "Kiểm tra toa kính", path: "/staff/prescriptions", icon: Eye },
         { name: "Đơn Hàng", path: "/staff/orders", icon: ShoppingCart },
         { name: "Kho & Nhập Hàng", path: "/staff/inventory", icon: ClipboardCheck },
         { name: "Báo Cáo Công Việc", path: "/staff/reports", icon: FileText },
@@ -94,9 +94,9 @@ function DashboardLayout() {
   };
 
   const roleBadge = useMemo(() => {
-    if (user?.role === "admin") return { label: "Admin", color: "bg-red-100 text-red-700" };
-    if (user?.role === "staff") return { label: "Staff", color: "bg-blue-100 text-blue-700" };
-    return { label: "User", color: "bg-gray-100 text-gray-700" };
+    if (user?.role === "admin") return { label: "Quản trị viên", color: "bg-red-100 text-red-700" };
+    if (user?.role === "staff") return { label: "Nhân viên", color: "bg-blue-100 text-blue-700" };
+    return { label: "Người dùng", color: "bg-gray-100 text-gray-700" };
   }, [user?.role]);
 
   function itemIsActive(item) {
@@ -384,7 +384,7 @@ function DashboardLayout() {
           <div className="flex flex-col items-center justify-between gap-2 text-sm text-gray-600 md:flex-row">
             <p>© 2024 EyeWear. All rights reserved.</p>
             <p>
-              Made with care for optical business | <span className={`rounded px-2 py-1 ${roleBadge.color}`}>{roleBadge.label} Panel</span>
+              Made with care for optical business | <span className={`rounded px-2 py-1 ${roleBadge.color}`}>Bảng {roleBadge.label}</span>
             </p>
           </div>
         </footer>

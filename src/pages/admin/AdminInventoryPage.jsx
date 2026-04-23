@@ -80,9 +80,9 @@ export default function AdminInventoryPage() {
               <th className={adminStyles.th}>SKU</th>
               <th className={adminStyles.th}>Variant ID</th>
               <th className={adminStyles.th}>Số lượng</th>
-              <th className={adminStyles.th}>Pre-order</th>
-              <th className={adminStyles.th}>Restock date</th>
-              <th className={adminStyles.th}>Pre-order note</th>
+              <th className={adminStyles.th}>Cho đặt trước</th>
+              <th className={adminStyles.th}>Ngày dự kiến có hàng</th>
+              <th className={adminStyles.th}>Ghi chú pre-order</th>
               <th className={adminStyles.th}>Thao tác</th>
             </tr>
           </thead>
@@ -138,7 +138,7 @@ export default function AdminInventoryPage() {
           <table className={adminStyles.table}>
             <thead className={adminStyles.tableHead}>
               <tr>
-                <th className={adminStyles.th}>Receipt ID</th>
+                <th className={adminStyles.th}>Mã phiếu nhập</th>
                 <th className={adminStyles.th}>Variant ID</th>
                 <th className={adminStyles.th}>Số lượng nhập</th>
                 <th className={adminStyles.th}>Ngày nhận</th>

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router";
 import {
   AlertCircle,
@@ -9,28 +8,13 @@ import {
   MapPin,
   Package,
   Phone,
-  RefreshCw,
   Truck,
-  Upload,
 } from "lucide-react";
 import { useOrderTracking } from "@/hooks/order/useOrderTracking";
-
-const INITIAL_RESUBMIT_FORM = {
-  rightSph: "",
-  rightCyl: "0",
-  rightAxis: "0",
-  leftSph: "",
-  leftCyl: "0",
-  leftAxis: "0",
-  pd: "",
-  notes: "",
-};
+import { canCustomerCancelOrder } from "@/utils/orderWorkflowPolicy";
 
 export default function OrderTrackingPage() {
-  const { order, prescriptionResubmit, authRequired, ui, actions } = useOrderTracking();
-  const [resubmitForms, setResubmitForms] = useState({});
-  const [resubmitFiles, setResubmitFiles] = useState({});
-  const [resubmitValidationErrors, setResubmitValidationErrors] = useState({});
+  const { order, authRequired, ui, actions } = useOrderTracking();
 
   if (authRequired) {
     return (
@@ -49,7 +33,7 @@ export default function OrderTrackingPage() {
       <div className="min-h-screen bg-secondary/30 py-12">
         <div className="mx-auto flex max-w-5xl items-center justify-center px-4">
           <div className="rounded-[28px] border border-border bg-white px-8 py-16 text-center shadow-sm">
-            <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
             <p className="text-muted-foreground">Đang tải chi tiết đơn hàng...</p>
           </div>
         </div>
@@ -88,82 +72,19 @@ export default function OrderTrackingPage() {
     );
   }
 
-  function getResubmitForm(prescription) {
-    const key = String(prescription.prescriptionId);
-    return (
-      resubmitForms[key] ?? {
-        ...INITIAL_RESUBMIT_FORM,
-        rightSph: String(prescription.rightEye?.sph ?? ""),
-        rightCyl: String(prescription.rightEye?.cyl ?? "0"),
-        rightAxis: String(prescription.rightEye?.axis ?? "0"),
-        leftSph: String(prescription.leftEye?.sph ?? ""),
-        leftCyl: String(prescription.leftEye?.cyl ?? "0"),
-        leftAxis: String(prescription.leftEye?.axis ?? "0"),
-        pd: String(prescription.pd ?? ""),
-        notes: "",
-      }
-    );
-  }
+  const cancelAvailable = canCustomerCancelOrder(order);
 
-  function updateResubmitField(prescriptionId, field, value) {
-    const key = String(prescriptionId);
-    const prescription = order.items.map((item) => item.prescription).find((item) => item?.prescriptionId === prescriptionId);
-
-    clearResubmitFeedback(key);
-    setResubmitForms((current) => ({
-      ...current,
-      [key]: {
-        ...(current[key] ?? getResubmitForm(prescription)),
-        [field]: value,
-      },
-    }));
-  }
-
-  async function handleResubmit(event, prescription) {
-    event.preventDefault();
-
-    const key = String(prescription.prescriptionId);
-    const form = getResubmitForm(prescription);
-    const validationMessage = validatePrescriptionForm(form);
-
-    if (validationMessage) {
-      setResubmitValidationErrors((current) => ({
-        ...current,
-        [key]: validationMessage,
-      }));
+  async function handleCancelOrder() {
+    const reason = window.prompt("Nhập lý do hủy đơn (tuỳ chọn):", "");
+    if (reason === null) {
       return;
     }
 
     try {
-      const nextFile = resubmitFiles[key];
-      clearResubmitFeedback(key);
-      await actions.resubmitPrescription({
-        prescriptionId: prescription.prescriptionId,
-        formState: form,
-        imageFile: nextFile,
-        existingImageUrl: prescription.prescriptionImageUrl,
-      });
-
-      setResubmitFiles((current) => ({ ...current, [key]: null }));
+      await actions.cancelOrder(reason);
     } catch (error) {
-      setResubmitValidationErrors((current) => ({
-        ...current,
-        [key]: resolveErrorMessage(error, "Không thể gửi lại toa kính."),
-      }));
+      window.alert(resolveErrorMessage(error, "Không thể hủy đơn hàng."));
     }
-  }
-
-  function clearResubmitFeedback(key) {
-    setResubmitValidationErrors((current) => {
-      if (!current[key]) {
-        return current;
-      }
-
-      const next = { ...current };
-      delete next[key];
-      return next;
-    });
-    actions.clearPrescriptionResubmit(key);
   }
 
   return (
@@ -185,6 +106,15 @@ export default function OrderTrackingPage() {
               <Badge tone={getOrderTone(order.orderStatus)}>{order.orderStatusLabel}</Badge>
               <Badge tone={getPaymentTone(order.payment?.paymentStatus)}>{order.payment?.paymentStatusLabel ?? "Chưa có thanh toán"}</Badge>
               <Badge tone={getShippingTone(order.shippingStatus)}>{order.shippingStatusLabel}</Badge>
+              {cancelAvailable ? (
+                <button
+                  type="button"
+                  onClick={handleCancelOrder}
+                  className="rounded-full bg-rose-100 px-3 py-1 text-sm text-rose-700 transition-colors hover:bg-rose-200"
+                >
+                  Hủy đơn
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -242,26 +172,7 @@ export default function OrderTrackingPage() {
                       <p className="text-primary">{formatCurrency(item.lineTotal)}</p>
                     </div>
 
-                    {item.prescription ? (
-                      <PrescriptionPanel
-                        item={item}
-                        form={getResubmitForm(item.prescription)}
-                        file={resubmitFiles[String(item.prescription.prescriptionId)]}
-                        state={mergeResubmitState(
-                          prescriptionResubmit[String(item.prescription.prescriptionId)],
-                          resubmitValidationErrors[String(item.prescription.prescriptionId)],
-                        )}
-                        onFieldChange={updateResubmitField}
-                        onFileChange={(file) => {
-                          clearResubmitFeedback(String(item.prescription.prescriptionId));
-                          setResubmitFiles((current) => ({
-                            ...current,
-                            [String(item.prescription.prescriptionId)]: file,
-                          }));
-                        }}
-                        onSubmit={handleResubmit}
-                      />
-                    ) : null}
+                    {item.prescription ? <PrescriptionPanel item={item} /> : null}
                   </div>
                 ))}
               </div>
@@ -322,9 +233,8 @@ export default function OrderTrackingPage() {
   );
 }
 
-function PrescriptionPanel({ item, form, file, state, onFieldChange, onFileChange, onSubmit }) {
+function PrescriptionPanel({ item }) {
   const prescription = item.prescription;
-  const needsMoreInfo = String(prescription.prescriptionStatus ?? "").toLowerCase() === "needmoreinfo";
 
   return (
     <div className="mt-4 rounded-2xl border border-primary/20 bg-white p-4">
@@ -369,57 +279,6 @@ function PrescriptionPanel({ item, form, file, state, onFieldChange, onFileChang
           Mở ảnh toa
         </a>
       ) : null}
-
-      {needsMoreInfo ? (
-        <form onSubmit={(event) => onSubmit(event, prescription)} className="mt-5 rounded-2xl bg-secondary/60 p-4">
-          <div className="mb-4 flex items-center gap-2 text-sm text-amber-800">
-            <RefreshCw className="h-4 w-4" />
-            Bổ sung thông tin theo yêu cầu của staff.
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <Input label="SPH phải" value={form.rightSph} onChange={(value) => onFieldChange(prescription.prescriptionId, "rightSph", value)} />
-            <Input label="CYL phải" value={form.rightCyl} onChange={(value) => onFieldChange(prescription.prescriptionId, "rightCyl", value)} />
-            <Input label="AXIS phải" value={form.rightAxis} onChange={(value) => onFieldChange(prescription.prescriptionId, "rightAxis", value)} />
-            <Input label="SPH trái" value={form.leftSph} onChange={(value) => onFieldChange(prescription.prescriptionId, "leftSph", value)} />
-            <Input label="CYL trái" value={form.leftCyl} onChange={(value) => onFieldChange(prescription.prescriptionId, "leftCyl", value)} />
-            <Input label="AXIS trái" value={form.leftAxis} onChange={(value) => onFieldChange(prescription.prescriptionId, "leftAxis", value)} />
-          </div>
-
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <Input label="PD" value={form.pd} onChange={(value) => onFieldChange(prescription.prescriptionId, "pd", value)} />
-            <label className="block">
-              <span className="mb-2 block text-sm">Ảnh mới</span>
-              <span className="flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-white px-4 py-3 text-sm">
-                <Upload className="h-4 w-4" />
-                {file?.name || "Chọn ảnh"}
-                <input type="file" accept="image/*" className="hidden" onChange={(event) => onFileChange(event.target.files?.[0] ?? null)} />
-              </span>
-            </label>
-          </div>
-
-          <label className="mt-3 block">
-            <span className="mb-2 block text-sm">Ghi chú</span>
-            <textarea
-              value={form.notes}
-              onChange={(event) => onFieldChange(prescription.prescriptionId, "notes", event.target.value)}
-              rows={3}
-              className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none focus:border-primary"
-            />
-          </label>
-
-          {state?.error ? <p className="mt-3 text-sm text-red-600">{state.error}</p> : null}
-          {state?.status === "succeeded" ? <p className="mt-3 text-sm text-emerald-700">Đã gửi lại toa kính.</p> : null}
-
-          <button
-            type="submit"
-            disabled={state?.status === "loading"}
-            className="mt-4 rounded-xl bg-primary px-5 py-3 text-sm text-white hover:bg-primary/90 disabled:opacity-60"
-          >
-            {state?.status === "loading" ? "Đang gửi..." : "Gửi lại toa kính"}
-          </button>
-        </form>
-      ) : null}
     </div>
   );
 }
@@ -449,21 +308,6 @@ function EyeSummary({ title, eye }) {
   );
 }
 
-function Input({ label, value, onChange }) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-sm">{label}</span>
-      <input
-        type="text"
-        inputMode="decimal"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="w-full rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none focus:border-primary"
-      />
-    </label>
-  );
-}
-
 function Badge({ tone, children }) {
   return <span className={`rounded-full px-3 py-1 text-sm ${tone}`}>{children}</span>;
 }
@@ -486,7 +330,7 @@ function StateCard({ icon: Icon, title, description, primaryAction, secondaryAct
             <Icon className="h-10 w-10" />
           </div>
           <h1 className="mb-3 text-3xl">{title}</h1>
-          <p className="mx-auto mb-8 max-w-2xl text-muted-foreground leading-7">{description}</p>
+          <p className="mx-auto mb-8 max-w-2xl leading-7 text-muted-foreground">{description}</p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link to={primaryAction.to} className="rounded-xl bg-primary px-5 py-3 text-white transition-colors hover:bg-primary/90">
               {primaryAction.label}
@@ -553,10 +397,7 @@ function getShippingTone(shippingStatus) {
 function getPrescriptionTone(status) {
   switch (String(status ?? "").trim().toLowerCase()) {
     case "approved":
-    case "inproduction":
       return "bg-green-100 text-green-700";
-    case "needmoreinfo":
-      return "bg-amber-100 text-amber-700";
     case "rejected":
       return "bg-red-100 text-red-700";
     default:
@@ -575,52 +416,6 @@ function getOrderTimelineTone(orderStatus) {
     default:
       return "bg-primary/10 text-primary";
   }
-}
-
-function validatePrescriptionForm(formState) {
-  const values = [
-    formState.rightSph,
-    formState.rightCyl,
-    formState.leftSph,
-    formState.leftCyl,
-    formState.pd,
-  ];
-
-  if (values.some((value) => !Number.isFinite(parseDecimal(value)))) {
-    return "Vui lòng nhập đầy đủ thông số toa.";
-  }
-
-  const rightAxis = parseInteger(formState.rightAxis);
-  const leftAxis = parseInteger(formState.leftAxis);
-
-  if (!Number.isInteger(rightAxis) || rightAxis < 0 || rightAxis > 180 || !Number.isInteger(leftAxis) || leftAxis < 0 || leftAxis > 180) {
-    return "AXIS phải nằm trong khoảng 0-180.";
-  }
-
-  if (parseDecimal(formState.pd) <= 0) {
-    return "PD phải lớn hơn 0.";
-  }
-
-  return "";
-}
-
-function parseDecimal(value) {
-  return Number.parseFloat(String(value ?? "").trim().replace(",", "."));
-}
-
-function parseInteger(value) {
-  return Number.parseInt(String(value ?? "").trim(), 10);
-}
-
-function mergeResubmitState(remoteState, validationError) {
-  if (validationError) {
-    return {
-      status: "failed",
-      error: validationError,
-    };
-  }
-
-  return remoteState;
 }
 
 function resolveErrorMessage(error, fallbackMessage) {
@@ -655,3 +450,4 @@ function formatDate(value) {
     year: "numeric",
   }).format(date);
 }
+

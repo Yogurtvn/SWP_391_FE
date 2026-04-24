@@ -57,22 +57,6 @@ export async function reviewPrescription(prescriptionId, payload, token) {
   });
 }
 
-export async function requestPrescriptionMoreInfo(prescriptionId, payload, token) {
-  return apiRequest(`${PRESCRIPTIONS_BASE_PATH}/${prescriptionId}/request-more-info`, {
-    method: "PATCH",
-    body: payload,
-    token,
-  });
-}
-
-export async function resubmitPrescription(prescriptionId, payload, token) {
-  return apiRequest(`${PRESCRIPTIONS_BASE_PATH}/${prescriptionId}/resubmit`, {
-    method: "PATCH",
-    body: payload,
-    token,
-  });
-}
-
 export function getPrescriptionApiErrorMessage(error, fallbackMessage) {
   if (error instanceof ApiError && typeof error.message === "string" && error.message.trim().length > 0) {
     return error.message;

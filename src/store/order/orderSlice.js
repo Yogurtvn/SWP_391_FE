@@ -1,6 +1,7 @@
 ﻿import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { fetchMyCart } from "@/store/cart/cartSlice";
 import {
+  cancelMyOrder,
   checkoutCartOrder,
   getMyOrders,
   getOrderById,
@@ -92,6 +93,29 @@ export const fetchOrderDetail = createAsyncThunk(
   },
 );
 
+export const cancelCustomerOrder = createAsyncThunk(
+  "order/cancelCustomerOrder",
+  async ({ orderId, reason }, { getState, rejectWithValue }) => {
+    const { auth } = getState();
+
+    if (!auth?.accessToken) {
+      return rejectWithValue("Vui lòng đăng nhập để hủy đơn hàng.");
+    }
+
+    if (!Number.isFinite(Number(orderId)) || Number(orderId) <= 0) {
+      return rejectWithValue("Mã đơn hàng không hợp lệ.");
+    }
+
+    try {
+      await cancelMyOrder(auth.accessToken, Number(orderId), reason);
+      const refreshedOrder = await getOrderById(auth.accessToken, Number(orderId));
+      return normalizeOrderDetail(refreshedOrder);
+    } catch (error) {
+      return rejectWithValue(getOrderErrorMessage(error, "Không thể hủy đơn hàng."));
+    }
+  },
+);
+
 const orderSlice = createSlice({
   name: "order",
   initialState,
@@ -172,6 +196,38 @@ const orderSlice = createSlice({
         state.currentOrderStatus = "failed";
         state.currentOrderError = action.payload ?? "Không thể tải chi tiết đơn hàng.";
         state.currentOrder = null;
+      })
+      .addCase(cancelCustomerOrder.pending, (state) => {
+        state.currentOrderStatus = "loading";
+        state.currentOrderError = null;
+      })
+      .addCase(cancelCustomerOrder.fulfilled, (state, action) => {
+        state.currentOrderStatus = "succeeded";
+        state.currentOrderError = null;
+        state.currentOrder = action.payload;
+        state.items = state.items.map((item) => {
+          if (item.orderId !== action.payload.orderId) {
+            return item;
+          }
+
+          return {
+            ...item,
+            orderStatus: action.payload.orderStatus,
+            orderStatusLabel: action.payload.orderStatusLabel,
+            shippingStatus: action.payload.shippingStatus,
+            shippingStatusLabel: action.payload.shippingStatusLabel,
+            paymentStatus: action.payload.payment?.paymentStatus ?? item.paymentStatus,
+            paymentStatusLabel: action.payload.payment?.paymentStatusLabel ?? item.paymentStatusLabel,
+            updatedAt: action.payload.updatedAt,
+            updatedAtLabel: action.payload.updatedAtLabel,
+            statusKey: action.payload.orderStatus === "cancelled" ? "cancelled" : item.statusKey,
+            statusLabel: action.payload.orderStatus === "cancelled" ? "Đã hủy" : item.statusLabel,
+          };
+        });
+      })
+      .addCase(cancelCustomerOrder.rejected, (state, action) => {
+        state.currentOrderStatus = "failed";
+        state.currentOrderError = action.payload ?? "Không thể hủy đơn hàng.";
       });
   },
 });

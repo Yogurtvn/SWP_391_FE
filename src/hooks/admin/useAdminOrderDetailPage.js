@@ -9,8 +9,8 @@ import {
   selectAdminState,
 } from "@/store/admin/adminSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { ADMIN_ORDER_STATUSES, ADMIN_SHIPPING_STATUSES } from "@/hooks/admin/useAdminOrdersPage";
 import { getOrderStatusPresentation, getShippingStatusPresentation } from "@/utils/orderStatus";
+import { getAllowedAdminOrderTransitions, getAllowedShippingStatuses } from "@/utils/orderWorkflowPolicy";
 
 export function useAdminOrderDetailPage() {
   const dispatch = useAppDispatch();
@@ -39,6 +39,13 @@ export function useAdminOrderDetailPage() {
   }
 
   async function updateOrderStatus() {
+    const availableOrderStatuses = getAllowedAdminOrderTransitions(admin.currentOrder.data);
+
+    if (availableOrderStatuses.length === 0) {
+      await popupAlert("Đơn hàng hiện không có transition trạng thái hợp lệ.");
+      return;
+    }
+
     const formValues = await popupForm({
       title: "Đổi trạng thái đơn",
       message: "Chọn trạng thái đơn hợp lệ và lưu ghi chú nếu cần.",
@@ -49,7 +56,7 @@ export function useAdminOrderDetailPage() {
           label: "Trạng thái đơn",
           type: "select",
           required: true,
-          options: ADMIN_ORDER_STATUSES.map((status) => {
+          options: availableOrderStatuses.map((status) => {
             const presentation = getOrderStatusPresentation(status);
             return { value: status, label: presentation.label, className: presentation.className };
           }),
@@ -62,7 +69,9 @@ export function useAdminOrderDetailPage() {
         },
       ],
       initialValues: {
-        orderStatus: admin.currentOrder.data?.orderStatus || ADMIN_ORDER_STATUSES[0],
+        orderStatus: availableOrderStatuses.includes(admin.currentOrder.data?.orderStatus)
+          ? admin.currentOrder.data.orderStatus
+          : availableOrderStatuses[0],
         note: "",
       },
     });
@@ -88,6 +97,13 @@ export function useAdminOrderDetailPage() {
   }
 
   async function updateShippingStatus() {
+    const availableShippingStatuses = getAllowedShippingStatuses(admin.currentOrder.data);
+
+    if (availableShippingStatuses.length === 0) {
+      await popupAlert("Đơn hàng hiện không cho phép cập nhật trạng thái vận chuyển.");
+      return;
+    }
+
     const formValues = await popupForm({
       title: "Đổi trạng thái vận chuyển",
       message: "Chọn trạng thái vận chuyển hợp lệ.",
@@ -98,21 +114,31 @@ export function useAdminOrderDetailPage() {
           label: "Trạng thái vận chuyển",
           type: "select",
           required: true,
-          options: ADMIN_SHIPPING_STATUSES.map((status) => {
+          options: availableShippingStatuses.map((status) => {
             const presentation = getShippingStatusPresentation(status);
             return { value: status, label: presentation.label, className: presentation.className };
           }),
         },
         {
-          name: "note",
-          label: "Ghi chú",
-          type: "textarea",
-          placeholder: "Thêm ghi chú giao hàng...",
+          name: "shippingCode",
+          label: "Mã vận đơn",
+          type: "text",
+          placeholder: "Mã vận đơn (optional)",
+        },
+        {
+          name: "expectedDeliveryDate",
+          label: "Ngày giao dự kiến",
+          type: "datetime-local",
         },
       ],
       initialValues: {
-        shippingStatus: admin.currentOrder.data?.shippingStatus || ADMIN_SHIPPING_STATUSES[0],
-        note: "",
+        shippingStatus: availableShippingStatuses.includes(admin.currentOrder.data?.shippingStatus)
+          ? admin.currentOrder.data.shippingStatus
+          : availableShippingStatuses[0],
+        shippingCode: admin.currentOrder.data?.shippingCode ?? "",
+        expectedDeliveryDate: admin.currentOrder.data?.expectedDeliveryDate
+          ? new Date(admin.currentOrder.data.expectedDeliveryDate).toISOString().slice(0, 16)
+          : "",
       },
     });
 
@@ -126,7 +152,10 @@ export function useAdminOrderDetailPage() {
           orderId: Number(orderId),
           payload: {
             shippingStatus: formValues.shippingStatus,
-            note: formValues.note?.trim() || undefined,
+            shippingCode: formValues.shippingCode?.trim() || undefined,
+            expectedDeliveryDate: formValues.expectedDeliveryDate
+              ? new Date(formValues.expectedDeliveryDate).toISOString()
+              : undefined,
           },
         }),
       ).unwrap();

@@ -1,5 +1,5 @@
 ﻿import { getCatalogProductById } from "@/services/catalogService";
-import { ApiError, apiGet, apiPost } from "@/services/apiClient";
+import { ApiError, apiGet, apiPost, apiRequest } from "@/services/apiClient";
 import { getPrescriptionStatusLabel } from "@/services/prescriptionService";
 
 const ORDERS_BASE_PATH = "/api/orders";
@@ -19,6 +19,16 @@ export async function getMyOrders(token, filters = {}) {
 
 export async function getOrderById(token, orderId) {
   return apiGet(`${ORDERS_BASE_PATH}/${orderId}`, { token });
+}
+
+export async function cancelMyOrder(token, orderId, reason) {
+  return apiRequest(`${ORDERS_BASE_PATH}/${orderId}/cancel`, {
+    method: "PATCH",
+    body: {
+      reason: normalizeText(reason) ?? undefined,
+    },
+    token,
+  });
 }
 
 export function createCheckoutPayload({

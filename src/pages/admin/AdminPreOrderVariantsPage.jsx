@@ -218,6 +218,7 @@ export default function AdminPreOrderVariantsPage() {
             page: pageNumber,
             pageSize: 100,
             orderType: "preOrder",
+            orderStatus: "awaitingStock",
             sortBy: "createdAt",
             sortOrder: "desc",
           },

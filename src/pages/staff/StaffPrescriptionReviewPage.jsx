@@ -1,4 +1,4 @@
-import { Check, Eye, FileText, Image as ImageIcon, RefreshCw, Search, X } from "lucide-react";
+import { Check, Eye, FileText, Image as ImageIcon, Search, X } from "lucide-react";
 import { useStaffPrescriptionReview } from "@/hooks/prescription/useStaffPrescriptionReview";
 
 const STATUS_PRESENTATIONS = {
@@ -10,10 +10,6 @@ const STATUS_PRESENTATIONS = {
     label: "Đang kiểm tra",
     className: "border border-sky-200 bg-sky-50 text-sky-700",
   },
-  needmoreinfo: {
-    label: "Cần bổ sung",
-    className: "border border-orange-200 bg-orange-50 text-orange-700",
-  },
   approved: {
     label: "Đã duyệt",
     className: "border border-emerald-200 bg-emerald-50 text-emerald-700",
@@ -22,20 +18,14 @@ const STATUS_PRESENTATIONS = {
     label: "Từ chối",
     className: "border border-rose-200 bg-rose-50 text-rose-700",
   },
-  inproduction: {
-    label: "Đang sản xuất",
-    className: "border border-violet-200 bg-violet-50 text-violet-700",
-  },
 };
 
 const STATUS_FILTERS = [
   { value: "", label: "Tất cả" },
   { value: "submitted", label: STATUS_PRESENTATIONS.submitted.label },
   { value: "reviewing", label: STATUS_PRESENTATIONS.reviewing.label },
-  { value: "needMoreInfo", label: STATUS_PRESENTATIONS.needmoreinfo.label },
   { value: "approved", label: STATUS_PRESENTATIONS.approved.label },
   { value: "rejected", label: STATUS_PRESENTATIONS.rejected.label },
-  { value: "inProduction", label: STATUS_PRESENTATIONS.inproduction.label },
 ];
 
 function StaffPrescriptionReviewPage() {
@@ -71,7 +61,6 @@ function StaffPrescriptionReviewPage() {
               disabled={ui.isListLoading}
               className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm hover:bg-secondary disabled:opacity-60"
             >
-              <RefreshCw className={`h-4 w-4 ${ui.isListLoading ? "animate-spin" : ""}`} />
               Tải lại
             </button>
           </div>
@@ -158,7 +147,6 @@ function StaffPrescriptionReviewPage() {
                 actionError={ui.actionError}
                 saving={ui.isSaving}
                 onReview={actions.review}
-                onRequestMoreInfo={actions.requestMoreInfo}
               />
             ) : (
               <EmptyCard text="Chọn một toa kính để kiểm tra." />
@@ -170,7 +158,7 @@ function StaffPrescriptionReviewPage() {
   );
 }
 
-function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, onReview, onRequestMoreInfo }) {
+function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, onReview }) {
   const status = normalizeStatus(detail.prescriptionStatus);
 
   return (
@@ -228,14 +216,14 @@ function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, o
             value={actionNote}
             onChange={(event) => setActionNote(event.target.value)}
             rows={4}
-            placeholder="Nhập ghi chú để duyệt hoặc yêu cầu bổ sung"
+            placeholder="Nhập ghi chú để duyệt hoặc từ chối"
             className="w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none focus:border-primary"
           />
           {actionError ? <p className="mt-3 text-sm text-red-600">{actionError}</p> : null}
         </section>
 
         <section className="flex flex-wrap gap-3 border-t border-border pt-6">
-          {["submitted", "needmoreinfo"].includes(status) ? (
+          {status === "submitted" ? (
             <ActionButton disabled={saving} onClick={() => onReview("reviewing")}>
               <Eye className="h-4 w-4" />
               Đang kiểm tra
@@ -248,22 +236,11 @@ function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, o
                 <Check className="h-4 w-4" />
                 Duyệt
               </ActionButton>
-              <ActionButton disabled={saving} onClick={onRequestMoreInfo} tone="warning">
-                <RefreshCw className="h-4 w-4" />
-                Cần bổ sung
-              </ActionButton>
               <ActionButton disabled={saving} onClick={() => onReview("rejected")} tone="danger">
                 <X className="h-4 w-4" />
                 Từ chối
               </ActionButton>
             </>
-          ) : null}
-
-          {status === "approved" ? (
-            <ActionButton disabled={saving} onClick={() => onReview("inProduction")} tone="success">
-              <Check className="h-4 w-4" />
-              Chuyển sản xuất
-            </ActionButton>
           ) : null}
         </section>
       </div>
@@ -277,9 +254,7 @@ function ActionButton({ children, onClick, disabled, tone = "default" }) {
       ? "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
       : tone === "danger"
         ? "border-red-600 bg-red-600 text-white hover:bg-red-700"
-        : tone === "warning"
-          ? "border-amber-500 bg-amber-500 text-white hover:bg-amber-600"
-          : "border-primary bg-primary text-white hover:bg-primary/90";
+        : "border-primary bg-primary text-white hover:bg-primary/90";
 
   return (
     <button
@@ -339,7 +314,7 @@ function StatusBadge({ status, label }) {
 function LoadingCard({ text }) {
   return (
     <div className="rounded-[28px] border border-border bg-white p-8 text-center shadow-sm">
-      <div className="mx-auto mb-4 h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+      <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
       <p className="text-sm text-muted-foreground">{text}</p>
     </div>
   );
@@ -380,3 +355,4 @@ function formatCurrency(amount) {
 }
 
 export { StaffPrescriptionReviewPage as default };
+

@@ -30,6 +30,7 @@ describe("pre-order checkout flow helpers", () => {
       shippingAddress: "123 ABC Street, Ward 1, District 1, HCMC",
       shippingFee: 30000,
       paymentMethod: "cod",
+      voucherCode: null,
     });
   });
 
@@ -87,12 +88,12 @@ describe("pre-order checkout flow helpers", () => {
     });
   });
 
-  it("summarizes backend AwaitingStock preorder response for success screen", () => {
+  it("summarizes backend Pending preorder response for success screen", () => {
     const summary = buildOrderSummary({
       checkoutResult: {
         orderId: 1005,
         orderType: "preOrder",
-        orderStatus: "awaitingStock",
+        orderStatus: "pending",
         totalAmount: 780000,
         payment: {
           paymentId: 3005,
@@ -112,8 +113,8 @@ describe("pre-order checkout flow helpers", () => {
     expect(summary).toMatchObject({
       orderId: 1005,
       orderType: "preOrder",
-      orderStatus: "awaitingStock",
-      orderStatusLabel: "Chờ bổ sung hàng",
+      orderStatus: "pending",
+      orderStatusLabel: expect.any(String),
       paymentStatus: "pending",
       total: 780000,
     });

@@ -5,7 +5,6 @@ import {
   clearStaffPrescriptionDetail,
   fetchStaffPrescriptionDetail,
   fetchStaffPrescriptions,
-  patchStaffPrescriptionMoreInfo,
   patchStaffPrescriptionReview,
   selectStaffPrescriptionState,
 } from "@/store/prescription/prescriptionSlice";
@@ -20,7 +19,6 @@ export function useStaffPrescriptionReview() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState(DEFAULT_FILTER_STATUS);
   const [actionNote, setActionNote] = useState("");
-  const [localActionError, setLocalActionError] = useState("");
 
   useEffect(() => {
     if (!auth.accessToken) {
@@ -44,7 +42,6 @@ export function useStaffPrescriptionReview() {
 
     if (detail?.prescriptionId === selectedId) {
       setActionNote(detail.notes || "");
-      setLocalActionError("");
     }
   }, [prescriptionState.detail.data, selectedId]);
 
@@ -74,11 +71,10 @@ export function useStaffPrescriptionReview() {
     }
 
     return items.filter((item) =>
-      String(item.orderId || "").includes(normalizedQuery) ||
-      String(item.prescriptionId || "").includes(normalizedQuery) ||
-      String(item.customerName || "").toLowerCase().includes(normalizedQuery) ||
-      String(item.customerEmail || "").toLowerCase().includes(normalizedQuery),
-    );
+      String(item.orderId || "").includes(normalizedQuery)
+      || String(item.prescriptionId || "").includes(normalizedQuery)
+      || String(item.customerName || "").toLowerCase().includes(normalizedQuery)
+      || String(item.customerEmail || "").toLowerCase().includes(normalizedQuery));
   }, [prescriptionState.list.items, searchQuery]);
 
   const pendingCount = useMemo(
@@ -109,8 +105,6 @@ export function useStaffPrescriptionReview() {
       return;
     }
 
-    setLocalActionError("");
-
     try {
       await dispatch(patchStaffPrescriptionReview({
         prescriptionId: detail.prescriptionId,
@@ -118,32 +112,6 @@ export function useStaffPrescriptionReview() {
           prescriptionStatus: nextStatus,
           notes: normalizeOptional(actionNote),
         },
-      })).unwrap();
-
-      await refreshAfterAction(detail.prescriptionId);
-    } catch {
-      // The slice already stores the API error for the page to render.
-    }
-  }
-
-  async function requestMoreInfo() {
-    const detail = prescriptionState.detail.data;
-
-    if (!detail) {
-      return;
-    }
-
-    if (!actionNote.trim()) {
-      setLocalActionError("Vui lòng nhập ghi chú cho khách hàng.");
-      return;
-    }
-
-    setLocalActionError("");
-
-    try {
-      await dispatch(patchStaffPrescriptionMoreInfo({
-        prescriptionId: detail.prescriptionId,
-        payload: { notes: actionNote.trim() },
       })).unwrap();
 
       await refreshAfterAction(detail.prescriptionId);
@@ -170,7 +138,7 @@ export function useStaffPrescriptionReview() {
       isDetailLoading: prescriptionState.detail.status === "loading",
       isSaving: prescriptionState.action.status === "loading",
       listError: prescriptionState.list.error,
-      actionError: localActionError || prescriptionState.action.error || prescriptionState.detail.error,
+      actionError: prescriptionState.action.error || prescriptionState.detail.error,
     },
     actions: {
       loadList,
@@ -179,7 +147,6 @@ export function useStaffPrescriptionReview() {
       setFilterStatus: updateFilterStatus,
       setActionNote,
       review,
-      requestMoreInfo,
     },
   };
 }
@@ -192,3 +159,4 @@ function normalizeOptional(value) {
   const normalizedValue = String(value ?? "").trim();
   return normalizedValue.length > 0 ? normalizedValue : undefined;
 }
+

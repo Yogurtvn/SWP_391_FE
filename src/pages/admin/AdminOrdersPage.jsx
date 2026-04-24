@@ -411,6 +411,14 @@ export default function AdminOrdersPage() {
                       <CheckCircle className="h-5 w-5" />
                       Đổi trạng thái đơn
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => actions.updateShippingStatus(detailOrder.orderId)}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-5 py-3 font-bold text-white transition hover:bg-sky-700"
+                    >
+                      <CheckCircle className="h-5 w-5" />
+                      Đổi trạng thái vận chuyển
+                    </button>
                   </div>
                 </div>
               </div>

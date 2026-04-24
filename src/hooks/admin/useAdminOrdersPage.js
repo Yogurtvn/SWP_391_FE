@@ -12,37 +12,13 @@ import {
 } from "@/store/admin/adminSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { getOrderStatusPresentation, getShippingStatusPresentation } from "@/utils/orderStatus";
-
-export const ADMIN_ORDER_STATUSES = [
-  "Pending",
-  "Confirmed",
-  "AwaitingStock",
-  "Processing",
-  "Shipped",
-  "Completed",
-  "Cancelled",
-];
-
-export const ADMIN_SHIPPING_STATUSES = [
-  "Pending",
-  "Picking",
-  "Delivering",
-  "Delivered",
-  "Failed",
-];
+import { getAllowedAdminOrderTransitions, getAllowedShippingStatuses } from "@/utils/orderWorkflowPolicy";
 
 export const ADMIN_ORDER_TYPES = [
   { value: "ready", label: "Đơn thường" },
   { value: "preOrder", label: "Pre-order" },
   { value: "prescription", label: "Đơn kính" },
 ];
-
-function normalizeValue(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]+/g, "");
-}
 
 export function useAdminOrdersPage() {
   const dispatch = useAppDispatch();
@@ -130,6 +106,24 @@ export function useAdminOrdersPage() {
   }
 
   async function updateOrderStatus(orderId) {
+    let workingOrder =
+      String(currentOrder?.orderId ?? "") === String(orderId)
+        ? currentOrder
+        : selectedOrderSummary;
+
+    try {
+      workingOrder = await dispatch(fetchAdminOrderDetail(orderId)).unwrap();
+    } catch {
+      // Fallback to summary data when detail fetch fails.
+    }
+
+    const availableOrderStatuses = getAllowedAdminOrderTransitions(workingOrder);
+
+    if (availableOrderStatuses.length === 0) {
+      await popupAlert("Đơn hàng hiện không có transition trạng thái hợp lệ.");
+      return;
+    }
+
     const formValues = await popupForm({
       title: "Đổi trạng thái đơn",
       message: "Chọn trạng thái hợp lệ và thêm ghi chú nếu cần.",
@@ -140,7 +134,7 @@ export function useAdminOrdersPage() {
           label: "Trạng thái đơn",
           type: "select",
           required: true,
-          options: ADMIN_ORDER_STATUSES.map((status) => {
+          options: availableOrderStatuses.map((status) => {
             const presentation = getOrderStatusPresentation(status);
             return { value: status, label: presentation.label, className: presentation.className };
           }),
@@ -153,7 +147,9 @@ export function useAdminOrdersPage() {
         },
       ],
       initialValues: {
-        orderStatus: currentOrder?.orderStatus || selectedOrderSummary?.orderStatus || ADMIN_ORDER_STATUSES[0],
+        orderStatus: availableOrderStatuses.includes(workingOrder?.orderStatus)
+          ? workingOrder.orderStatus
+          : availableOrderStatuses[0],
         note: "",
       },
     });
@@ -184,6 +180,24 @@ export function useAdminOrdersPage() {
   }
 
   async function updateShippingStatus(orderId) {
+    let workingOrder =
+      String(currentOrder?.orderId ?? "") === String(orderId)
+        ? currentOrder
+        : selectedOrderSummary;
+
+    try {
+      workingOrder = await dispatch(fetchAdminOrderDetail(orderId)).unwrap();
+    } catch {
+      // Fallback to summary data when detail fetch fails.
+    }
+
+    const availableShippingStatuses = getAllowedShippingStatuses(workingOrder);
+
+    if (availableShippingStatuses.length === 0) {
+      await popupAlert("Đơn hàng hiện không cho phép cập nhật trạng thái vận chuyển.");
+      return;
+    }
+
     const formValues = await popupForm({
       title: "Đổi trạng thái vận chuyển",
       message: "Chọn trạng thái vận chuyển hợp lệ.",
@@ -194,21 +208,31 @@ export function useAdminOrdersPage() {
           label: "Trạng thái vận chuyển",
           type: "select",
           required: true,
-          options: ADMIN_SHIPPING_STATUSES.map((status) => {
+          options: availableShippingStatuses.map((status) => {
             const presentation = getShippingStatusPresentation(status);
             return { value: status, label: presentation.label, className: presentation.className };
           }),
         },
         {
-          name: "note",
-          label: "Ghi chú",
-          type: "textarea",
-          placeholder: "Thêm ghi chú giao hàng...",
+          name: "shippingCode",
+          label: "Mã vận đơn",
+          type: "text",
+          placeholder: "Mã vận đơn (optional)",
+        },
+        {
+          name: "expectedDeliveryDate",
+          label: "Ngày giao dự kiến",
+          type: "datetime-local",
         },
       ],
       initialValues: {
-        shippingStatus: currentOrder?.shippingStatus || selectedOrderSummary?.shippingStatus || ADMIN_SHIPPING_STATUSES[0],
-        note: "",
+        shippingStatus: availableShippingStatuses.includes(workingOrder?.shippingStatus)
+          ? workingOrder.shippingStatus
+          : availableShippingStatuses[0],
+        shippingCode: workingOrder?.shippingCode ?? "",
+        expectedDeliveryDate: workingOrder?.expectedDeliveryDate
+          ? new Date(workingOrder.expectedDeliveryDate).toISOString().slice(0, 16)
+          : "",
       },
     });
 
@@ -222,7 +246,10 @@ export function useAdminOrdersPage() {
           orderId,
           payload: {
             shippingStatus: formValues.shippingStatus,
-            note: formValues.note?.trim() || undefined,
+            shippingCode: formValues.shippingCode?.trim() || undefined,
+            expectedDeliveryDate: formValues.expectedDeliveryDate
+              ? new Date(formValues.expectedDeliveryDate).toISOString()
+              : undefined,
           },
         }),
       ).unwrap();

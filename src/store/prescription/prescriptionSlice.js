@@ -9,9 +9,6 @@ import {
   getPrescriptionEligibility,
   getPrescriptionOptions,
   getPrescriptions,
-  normalizePrescriptionPayloadFromForm,
-  requestPrescriptionMoreInfo,
-  resubmitPrescription,
   reviewPrescription,
   uploadPrescriptionImage,
 } from "@/services/prescriptionService";
@@ -70,7 +67,6 @@ const initialState = {
     status: "idle",
     error: null,
   },
-  resubmit: {},
 };
 
 function requireToken(getState, rejectWithValue) {
@@ -253,48 +249,6 @@ export const patchStaffPrescriptionReview = createAsyncThunk(
   },
 );
 
-export const patchStaffPrescriptionMoreInfo = createAsyncThunk(
-  "prescription/patchStaffMoreInfo",
-  async ({ prescriptionId, payload }, { getState, rejectWithValue }) => {
-    const token = requireToken(getState, rejectWithValue);
-    if (typeof token !== "string") {
-      return token;
-    }
-
-    try {
-      return await requestPrescriptionMoreInfo(prescriptionId, payload, token);
-    } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể yêu cầu bổ sung thông tin."));
-    }
-  },
-);
-
-export const resubmitCustomerPrescription = createAsyncThunk(
-  "prescription/resubmitCustomer",
-  async ({ prescriptionId, formState, imageFile, existingImageUrl }, { getState, rejectWithValue }) => {
-    const token = requireToken(getState, rejectWithValue);
-    if (typeof token !== "string") {
-      return token;
-    }
-
-    try {
-      let prescriptionImageUrl = existingImageUrl ?? "";
-
-      if (imageFile) {
-        const uploadedImage = await uploadPrescriptionImage(imageFile, token);
-        prescriptionImageUrl = uploadedImage?.fileUrl ?? prescriptionImageUrl;
-      }
-
-      return await resubmitPrescription(
-        prescriptionId,
-        normalizePrescriptionPayloadFromForm(formState, prescriptionImageUrl),
-        token,
-      );
-    } catch (error) {
-      return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể gửi lại toa kính."));
-    }
-  },
-);
 
 const prescriptionSlice = createSlice({
   name: "prescription",
@@ -313,9 +267,6 @@ const prescriptionSlice = createSlice({
     clearStaffPrescriptionDetail(state) {
       state.staffDetail = { ...initialState.staffDetail };
       state.staffAction = { ...initialState.staffAction };
-    },
-    clearPrescriptionResubmitState(state, action) {
-      delete state.resubmit[String(action.payload)];
     },
   },
   extraReducers: (builder) => {
@@ -465,29 +416,8 @@ const prescriptionSlice = createSlice({
         };
       })
       .addCase(patchStaffPrescriptionReview.pending, startStaffAction)
-      .addCase(patchStaffPrescriptionMoreInfo.pending, startStaffAction)
       .addCase(patchStaffPrescriptionReview.fulfilled, finishStaffAction)
-      .addCase(patchStaffPrescriptionMoreInfo.fulfilled, finishStaffAction)
-      .addCase(patchStaffPrescriptionReview.rejected, failStaffAction)
-      .addCase(patchStaffPrescriptionMoreInfo.rejected, failStaffAction)
-      .addCase(resubmitCustomerPrescription.pending, (state, action) => {
-        state.resubmit[String(action.meta.arg.prescriptionId)] = {
-          status: "loading",
-          error: null,
-        };
-      })
-      .addCase(resubmitCustomerPrescription.fulfilled, (state, action) => {
-        state.resubmit[String(action.meta.arg.prescriptionId)] = {
-          status: "succeeded",
-          error: null,
-        };
-      })
-      .addCase(resubmitCustomerPrescription.rejected, (state, action) => {
-        state.resubmit[String(action.meta.arg.prescriptionId)] = {
-          status: "failed",
-          error: action.payload ?? "Không thể gửi lại toa kính.",
-        };
-      });
+      .addCase(patchStaffPrescriptionReview.rejected, failStaffAction);
   },
 });
 
@@ -516,7 +446,6 @@ export const {
   clearPrescriptionFlowSubmit,
   clearPrescriptionImageUpload,
   clearStaffPrescriptionDetail,
-  clearPrescriptionResubmitState,
 } = prescriptionSlice.actions;
 
 export const selectPrescriptionState = (state) => state.prescription;
@@ -526,6 +455,6 @@ export const selectStaffPrescriptionState = (state) => ({
   detail: state.prescription.staffDetail,
   action: state.prescription.staffAction,
 });
-export const selectPrescriptionResubmitState = (state) => state.prescription.resubmit;
 
 export default prescriptionSlice.reducer;
+

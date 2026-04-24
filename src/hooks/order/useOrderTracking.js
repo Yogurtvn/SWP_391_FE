@@ -3,22 +3,17 @@ import { useParams } from "react-router";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
+  cancelCustomerOrder,
   clearCurrentOrder,
   fetchOrderDetail,
   selectOrderState,
 } from "@/store/order/orderSlice";
-import {
-  clearPrescriptionResubmitState,
-  resubmitCustomerPrescription,
-  selectPrescriptionResubmitState,
-} from "@/store/prescription/prescriptionSlice";
 
 export function useOrderTracking() {
   const { orderId } = useParams();
   const dispatch = useAppDispatch();
   const auth = useAppSelector(selectAuthState);
   const orderState = useAppSelector(selectOrderState);
-  const prescriptionResubmit = useAppSelector(selectPrescriptionResubmitState);
 
   const numericOrderId = useMemo(() => Number.parseInt(String(orderId ?? ""), 10), [orderId]);
   const hasValidOrderId = Number.isFinite(numericOrderId) && numericOrderId > 0;
@@ -38,7 +33,6 @@ export function useOrderTracking() {
 
   return {
     order: orderState.currentOrder,
-    prescriptionResubmit,
     authRequired: auth.isReady && !auth.accessToken,
     ui: {
       isLoading: orderState.currentOrderStatus === "loading",
@@ -52,20 +46,15 @@ export function useOrderTracking() {
           void dispatch(fetchOrderDetail(numericOrderId));
         }
       },
-      resubmitPrescription: async ({ prescriptionId, formState, imageFile, existingImageUrl }) => {
-        await dispatch(resubmitCustomerPrescription({
-          prescriptionId,
-          formState,
-          imageFile,
-          existingImageUrl,
-        })).unwrap();
-
-        if (hasValidOrderId) {
-          await dispatch(fetchOrderDetail(numericOrderId)).unwrap();
+      cancelOrder: async (reason = "") => {
+        if (!hasValidOrderId) {
+          return;
         }
-      },
-      clearPrescriptionResubmit: (prescriptionId) => {
-        dispatch(clearPrescriptionResubmitState(prescriptionId));
+
+        await dispatch(cancelCustomerOrder({
+          orderId: numericOrderId,
+          reason,
+        })).unwrap();
       },
     },
   };

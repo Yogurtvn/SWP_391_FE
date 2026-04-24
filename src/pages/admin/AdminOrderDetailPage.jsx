@@ -145,6 +145,14 @@ export default function AdminOrderDetailPage() {
             >
               Đổi trạng thái đơn
             </button>
+            <button
+              type="button"
+              onClick={actions.updateShippingStatus}
+              disabled={!order}
+              className={adminStyles.secondaryButton}
+            >
+              Đổi trạng thái vận chuyển
+            </button>
           </div>
         </div>
 

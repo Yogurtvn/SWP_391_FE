@@ -34,36 +34,6 @@ function numberValue(value) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function labelFromKey(key) {
-  const labels = {
-    totalOrders: "Tổng đơn hàng",
-    readyOrders: "Đơn có sẵn",
-    preOrderOrders: "Đơn đặt trước",
-    prescriptionOrders: "Đơn kính thuốc",
-    completedOrders: "Hoàn thành",
-    cancelledOrders: "Đã hủy",
-    pendingOrders: "Chờ xử lý",
-    totalPrescriptions: "Tổng đơn kính",
-    pendingPrescriptions: "Đơn kính chờ xử lý",
-    completedPrescriptions: "Đơn kính hoàn thành",
-    totalPreOrders: "Tổng đơn đặt trước",
-    awaitingStockPreOrders: "Chờ hàng",
-    completedPreOrders: "Đặt trước hoàn thành",
-  };
-
-  return labels[key] || key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase());
-}
-
-function summaryToChartData(summary) {
-  return Object.entries(summary || {})
-    .filter(([key, value]) => key !== "items" && typeof value !== "object" && value !== null)
-    .map(([key, value]) => ({
-      name: labelFromKey(key),
-      value: numberValue(value),
-    }))
-    .filter((item) => item.value > 0);
-}
-
 function revenueItems(summary) {
   const items = Array.isArray(summary?.items) ? summary.items : [];
 
@@ -78,6 +48,74 @@ function totalRevenue(summary) {
   if (summary?.totalRevenue != null) return numberValue(summary.totalRevenue);
   if (summary?.revenue != null) return numberValue(summary.revenue);
   return revenueItems(summary).reduce((sum, item) => sum + item.revenue, 0);
+}
+
+function buildOrderChartData(summary) {
+  const data = [
+    { name: "Tổng đơn hàng", value: numberValue(summary?.totalOrders) },
+    { name: "Đơn có sẵn", value: numberValue(summary?.readyOrders) },
+    { name: "Đơn đặt trước", value: numberValue(summary?.preOrderOrders) },
+    { name: "Đơn kính theo toa", value: numberValue(summary?.prescriptionOrders) },
+  ];
+
+  return data.filter((item) => item.value > 0);
+}
+
+function normalizePrescriptionSummary(summary, ordersSummary) {
+  const total = numberValue(
+    summary?.totalPrescriptionOrders ?? summary?.totalPrescriptions ?? ordersSummary?.prescriptionOrders,
+  );
+  const approved = numberValue(summary?.approved);
+  const needMoreInfo = numberValue(summary?.needMoreInfo);
+  const rejected = numberValue(summary?.rejected);
+  const other = Math.max(total - (approved + needMoreInfo + rejected), 0);
+
+  return {
+    total,
+    approved,
+    needMoreInfo,
+    rejected,
+    other,
+  };
+}
+
+function buildPrescriptionChartData(normalized) {
+  const data = [
+    { name: "Đã duyệt", value: normalized.approved },
+    { name: "Cần bổ sung", value: normalized.needMoreInfo },
+    { name: "Từ chối", value: normalized.rejected },
+    { name: "Trạng thái khác", value: normalized.other },
+  ];
+
+  return data.filter((item) => item.value > 0);
+}
+
+function normalizePreOrderSummary(summary) {
+  const total = numberValue(summary?.totalPreOrders);
+  const awaitingStock = numberValue(summary?.awaitingStock ?? summary?.awaitingStockPreOrders);
+  const processing = numberValue(summary?.processing ?? summary?.processingPreOrders);
+  const completed = numberValue(summary?.completed ?? summary?.completedPreOrders);
+  const other = Math.max(total - (awaitingStock + processing + completed), 0);
+  const computedTotal = total > 0 ? total : awaitingStock + processing + completed;
+
+  return {
+    total: computedTotal,
+    awaitingStock,
+    processing,
+    completed,
+    other,
+  };
+}
+
+function buildPreOrderChartData(normalized) {
+  const data = [
+    { name: "Chờ hàng", value: normalized.awaitingStock },
+    { name: "Đang xử lý", value: normalized.processing },
+    { name: "Hoàn thành", value: normalized.completed },
+    { name: "Trạng thái khác", value: normalized.other },
+  ];
+
+  return data.filter((item) => item.value > 0);
 }
 
 function MetricCard({ label, value, tone = "orange" }) {
@@ -175,10 +213,18 @@ export default function AdminReportsPage() {
     void fetchReports();
   }, [fetchReports]);
 
-  const orderChartData = useMemo(() => summaryToChartData(ordersSummary), [ordersSummary]);
-  const prescriptionChartData = useMemo(() => summaryToChartData(prescriptionsSummary), [prescriptionsSummary]);
-  const preOrderChartData = useMemo(() => summaryToChartData(preOrdersSummary), [preOrdersSummary]);
   const revenueChartData = useMemo(() => revenueItems(revenuesSummary), [revenuesSummary]);
+  const orderChartData = useMemo(() => buildOrderChartData(ordersSummary), [ordersSummary]);
+  const normalizedPrescription = useMemo(
+    () => normalizePrescriptionSummary(prescriptionsSummary, ordersSummary),
+    [ordersSummary, prescriptionsSummary],
+  );
+  const normalizedPreOrder = useMemo(() => normalizePreOrderSummary(preOrdersSummary), [preOrdersSummary]);
+  const prescriptionChartData = useMemo(
+    () => buildPrescriptionChartData(normalizedPrescription),
+    [normalizedPrescription],
+  );
+  const preOrderChartData = useMemo(() => buildPreOrderChartData(normalizedPreOrder), [normalizedPreOrder]);
 
   return (
     <AdminPageShell
@@ -198,8 +244,8 @@ export default function AdminReportsPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard label="Tổng đơn hàng" value={numberValue(ordersSummary?.totalOrders)} />
         <MetricCard label="Doanh thu" value={formatCurrency(totalRevenue(revenuesSummary))} tone="emerald" />
-        <MetricCard label="Đơn kính thuốc" value={numberValue(prescriptionsSummary?.totalPrescriptions)} tone="sky" />
-        <MetricCard label="Đơn đặt trước" value={numberValue(preOrdersSummary?.totalPreOrders)} tone="rose" />
+        <MetricCard label="Đơn kính theo toa" value={normalizedPrescription.total} tone="sky" />
+        <MetricCard label="Đơn đặt trước" value={normalizedPreOrder.total} tone="rose" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -239,7 +285,7 @@ export default function AdminReportsPage() {
           )}
         </AdminSection>
 
-        <AdminSection title="Đơn kính thuốc">
+        <AdminSection title="Đơn kính theo toa">
           {prescriptionChartData.length ? (
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -265,7 +311,7 @@ export default function AdminReportsPage() {
                 <BarChart data={preOrderChartData} layout="vertical" margin={{ left: 28 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#fed7aa" />
                   <XAxis type="number" allowDecimals={false} tick={{ fontSize: 12 }} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={130} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} width={170} />
                   <Tooltip />
                   <Bar dataKey="value" name="Số lượng" radius={[0, 8, 8, 0]} fill="#f43f5e" />
                 </BarChart>
@@ -274,6 +320,9 @@ export default function AdminReportsPage() {
           ) : (
             <EmptyChart />
           )}
+          <p className="mt-2 text-xs text-slate-500">
+            Trạng thái khác gồm các đơn chưa nằm trong 3 nhóm trên, ví dụ: chờ xác nhận, đang giao, đã hủy.
+          </p>
         </AdminSection>
       </div>
     </AdminPageShell>

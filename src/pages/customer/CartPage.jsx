@@ -1,8 +1,9 @@
-﻿import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Edit3, Heart, Minus, Plus, Shield, ShoppingBag, Tag, Trash2, Truck, X } from "lucide-react";
+import { Edit3, Heart, Minus, Pencil, Plus, Shield, ShoppingBag, Tag, Trash2, Truck, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/cart/useCart";
+import { getPrescriptionOptions } from "@/services/prescriptionService";
 
 const EMPTY_PRESCRIPTION_EDIT_FORM = {
   lensTypeId: "",
@@ -29,12 +30,27 @@ function CartPage() {
   const [prescriptionEditItem, setPrescriptionEditItem] = useState(null);
   const [prescriptionEditForm, setPrescriptionEditForm] = useState(EMPTY_PRESCRIPTION_EDIT_FORM);
   const [prescriptionEditError, setPrescriptionEditError] = useState("");
+  const [prescriptionEditImageFile, setPrescriptionEditImageFile] = useState(null);
+  const [prescriptionEditImagePreviewBlobUrl, setPrescriptionEditImagePreviewBlobUrl] = useState("");
+  const [prescriptionMaterialOptions, setPrescriptionMaterialOptions] = useState([]);
+  const [isMaterialPickerOpen, setIsMaterialPickerOpen] = useState(false);
+  const [isLoadingPrescriptionOptions, setIsLoadingPrescriptionOptions] = useState(false);
 
   const isLoading = status === "loading" && items.length === 0;
   const isMutating = mutationStatus === "loading";
   const subtotal = getTotal();
-  const discount = appliedCoupon ? subtotal * appliedCoupon.discount / 100 : 0;
+  const discount = appliedCoupon ? (subtotal * appliedCoupon.discount) / 100 : 0;
   const total = subtotal - discount;
+  const currentPrescriptionImagePreview =
+    prescriptionEditImagePreviewBlobUrl || prescriptionEditForm.prescriptionImageUrl || "";
+
+  useEffect(() => {
+    return () => {
+      if (prescriptionEditImagePreviewBlobUrl) {
+        URL.revokeObjectURL(prescriptionEditImagePreviewBlobUrl);
+      }
+    };
+  }, [prescriptionEditImagePreviewBlobUrl]);
 
   async function handleUpdateQuantity(cartItemId, change) {
     const item = items.find((currentItem) => currentItem.cartItemId === cartItemId);
@@ -111,12 +127,17 @@ function CartPage() {
       prescriptionImageUrl: detail.prescriptionImageUrl ?? "",
       notes: detail.notes ?? "",
     });
+    resetPrescriptionEditImageSelection();
+    setIsMaterialPickerOpen(false);
     setPrescriptionEditError("");
+    void ensurePrescriptionOptionsLoaded();
   }
 
   function closePrescriptionEditor() {
+    resetPrescriptionEditImageSelection();
     setPrescriptionEditItem(null);
     setPrescriptionEditForm(EMPTY_PRESCRIPTION_EDIT_FORM);
+    setIsMaterialPickerOpen(false);
     setPrescriptionEditError("");
   }
 
@@ -125,7 +146,69 @@ function CartPage() {
       ...current,
       [field]: value,
     }));
+
+    if (field === "lensMaterial") {
+      setIsMaterialPickerOpen(false);
+    }
+
     setPrescriptionEditError("");
+  }
+
+  function handlePrescriptionEditImageSelect(file) {
+    if (prescriptionEditImagePreviewBlobUrl) {
+      URL.revokeObjectURL(prescriptionEditImagePreviewBlobUrl);
+      setPrescriptionEditImagePreviewBlobUrl("");
+    }
+
+    if (!file) {
+      setPrescriptionEditImageFile(null);
+      return;
+    }
+
+    const nextPreviewBlobUrl = URL.createObjectURL(file);
+    setPrescriptionEditImageFile(file);
+    setPrescriptionEditImagePreviewBlobUrl(nextPreviewBlobUrl);
+    setPrescriptionEditError("");
+  }
+
+  function clearPrescriptionEditImage() {
+    if (prescriptionEditImagePreviewBlobUrl) {
+      URL.revokeObjectURL(prescriptionEditImagePreviewBlobUrl);
+      setPrescriptionEditImagePreviewBlobUrl("");
+    }
+
+    setPrescriptionEditImageFile(null);
+    setPrescriptionEditForm((current) => ({
+      ...current,
+      prescriptionImageUrl: "",
+    }));
+    setPrescriptionEditError("");
+  }
+
+  async function ensurePrescriptionOptionsLoaded() {
+    if (prescriptionMaterialOptions.length > 0 || isLoadingPrescriptionOptions) {
+      return;
+    }
+
+    setIsLoadingPrescriptionOptions(true);
+
+    try {
+      const options = await getPrescriptionOptions();
+      setPrescriptionMaterialOptions(Array.isArray(options?.lensMaterials) ? options.lensMaterials : []);
+    } catch (error) {
+      toast.error(resolveErrorMessage(error, "Không thể tải danh sách chất liệu."));
+    } finally {
+      setIsLoadingPrescriptionOptions(false);
+    }
+  }
+
+  function resetPrescriptionEditImageSelection() {
+    if (prescriptionEditImagePreviewBlobUrl) {
+      URL.revokeObjectURL(prescriptionEditImagePreviewBlobUrl);
+    }
+
+    setPrescriptionEditImageFile(null);
+    setPrescriptionEditImagePreviewBlobUrl("");
   }
 
   async function handlePrescriptionEditSubmit(event) {
@@ -161,6 +244,7 @@ function CartPage() {
         },
         pd: parseDecimal(prescriptionEditForm.pd),
         prescriptionImageUrl: normalizeOptionalField(prescriptionEditForm.prescriptionImageUrl),
+        imageFile: prescriptionEditImageFile,
         notes: normalizeOptionalField(prescriptionEditForm.notes),
       });
 
@@ -421,6 +505,25 @@ function CartPage() {
           item={prescriptionEditItem}
           error={prescriptionEditError}
           isSaving={isMutating}
+          materialOptions={prescriptionMaterialOptions}
+          isLoadingMaterialOptions={isLoadingPrescriptionOptions}
+          isMaterialPickerOpen={isMaterialPickerOpen}
+          imagePreviewUrl={currentPrescriptionImagePreview}
+          imageFileName={prescriptionEditImageFile?.name ?? ""}
+          onToggleMaterialPicker={() => {
+            setIsMaterialPickerOpen((currentValue) => {
+              const nextValue = !currentValue;
+
+              if (nextValue) {
+                void ensurePrescriptionOptionsLoaded();
+              }
+
+              return nextValue;
+            });
+          }}
+          onSelectMaterial={(materialCode) => updatePrescriptionEditField("lensMaterial", materialCode)}
+          onSelectImageFile={handlePrescriptionEditImageSelect}
+          onClearImage={clearPrescriptionEditImage}
           onChange={updatePrescriptionEditField}
           onClose={closePrescriptionEditor}
           onSubmit={handlePrescriptionEditSubmit}
@@ -429,10 +532,27 @@ function CartPage() {
     </div>;
 }
 
-function PrescriptionEditor({ item, form, error, isSaving, onChange, onClose, onSubmit }) {
+function PrescriptionEditor({
+  item,
+  form,
+  error,
+  isSaving,
+  materialOptions,
+  isLoadingMaterialOptions,
+  isMaterialPickerOpen,
+  imagePreviewUrl,
+  imageFileName,
+  onToggleMaterialPicker,
+  onSelectMaterial,
+  onSelectImageFile,
+  onClearImage,
+  onChange,
+  onClose,
+  onSubmit,
+}) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6">
-      <form onSubmit={onSubmit} className="max-h-full w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+      <form onSubmit={onSubmit} className="max-h-full w-full max-w-5xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-2xl">Sửa sản phẩm theo toa</h2>
@@ -444,8 +564,15 @@ function PrescriptionEditor({ item, form, error, isSaving, onChange, onClose, on
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <EditField label="Lens type ID" value={form.lensTypeId} onChange={(value) => onChange("lensTypeId", value)} />
-          <EditField label="Chất liệu" value={form.lensMaterial} onChange={(value) => onChange("lensMaterial", value)} />
+          <EditField label="ID loại tròng" value={form.lensTypeId} onChange={(value) => onChange("lensTypeId", value)} />
+          <MaterialPickerField
+            value={form.lensMaterial}
+            options={materialOptions}
+            isOpen={isMaterialPickerOpen}
+            isLoading={isLoadingMaterialOptions}
+            onToggle={onToggleMaterialPicker}
+            onSelect={onSelectMaterial}
+          />
           <EditField label="Coating" value={form.coatings} onChange={(value) => onChange("coatings", value)} placeholder="blue-light, anti-reflective" />
           <EditField label="SPH phải" value={form.rightSph} onChange={(value) => onChange("rightSph", value)} />
           <EditField label="CYL phải" value={form.rightCyl} onChange={(value) => onChange("rightCyl", value)} />
@@ -455,9 +582,20 @@ function PrescriptionEditor({ item, form, error, isSaving, onChange, onClose, on
           <EditField label="AXIS trái" value={form.leftAxis} onChange={(value) => onChange("leftAxis", value)} />
           <EditField label="PD" value={form.pd} onChange={(value) => onChange("pd", value)} />
           <div className="md:col-span-2">
-            <EditField label="URL anh toa" value={form.prescriptionImageUrl} onChange={(value) => onChange("prescriptionImageUrl", value)} />
+            <EditField
+              label="URL ảnh toa (tùy chọn)"
+              value={form.prescriptionImageUrl}
+              onChange={(value) => onChange("prescriptionImageUrl", value)}
+            />
           </div>
         </div>
+
+        <PrescriptionImageField
+          imagePreviewUrl={imagePreviewUrl}
+          imageFileName={imageFileName}
+          onSelectImageFile={onSelectImageFile}
+          onClearImage={onClearImage}
+        />
 
         <label className="mt-4 block">
           <span className="mb-2 block text-sm">Ghi chú</span>
@@ -473,13 +611,105 @@ function PrescriptionEditor({ item, form, error, isSaving, onChange, onClose, on
 
         <div className="mt-6 flex flex-wrap justify-end gap-3">
           <button type="button" onClick={onClose} className="rounded-xl border border-border px-5 py-3 hover:bg-secondary">
-            Huy
+            Hủy
           </button>
           <button type="submit" disabled={isSaving} className="rounded-xl bg-primary px-5 py-3 text-white hover:bg-primary/90 disabled:opacity-60">
-            {isSaving ? "Dang luu..." : "Luu thay doi"}
+            {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function MaterialPickerField({ value, options, isOpen, isLoading, onToggle, onSelect }) {
+  const selectedOption = options.find((option) => option.code === value);
+
+  return (
+    <div className="block">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="block text-sm">Chất liệu</span>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-secondary hover:text-foreground"
+          title="Chọn chất liệu"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Chọn
+        </button>
+      </div>
+
+      <input
+        type="text"
+        value={selectedOption?.label || value || ""}
+        readOnly
+        placeholder="Bấm biểu tượng bút để chọn"
+        className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none"
+      />
+
+      {isOpen ? (
+        <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-border bg-white p-2">
+          {isLoading ? (
+            <p className="px-2 py-1 text-sm text-muted-foreground">Đang tải danh sách chất liệu...</p>
+          ) : options.length > 0 ? (
+            options.map((option) => (
+              <button
+                key={option.code}
+                type="button"
+                onClick={() => onSelect(option.code)}
+                className={`mb-1 w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                  option.code === value ? "bg-primary/10 text-primary" : "hover:bg-secondary"
+                }`}
+              >
+                <span className="block">{option.label}</span>
+                <span className="text-xs text-muted-foreground">+{formatCurrency(option.priceAdjustment)}</span>
+              </button>
+            ))
+          ) : (
+            <p className="px-2 py-1 text-sm text-muted-foreground">Chưa có danh sách chất liệu.</p>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function PrescriptionImageField({ imagePreviewUrl, imageFileName, onSelectImageFile, onClearImage }) {
+  return (
+    <div className="mt-4 rounded-xl border border-dashed border-border p-4">
+      <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl bg-secondary/30 px-4 py-5 text-center">
+        <Upload className="h-7 w-7 text-primary" />
+        <span className="text-sm font-medium">Cập nhật ảnh toa từ máy tính</span>
+        <span className="text-xs text-muted-foreground">JPG, PNG, WEBP...</span>
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(event) => onSelectImageFile(event.target.files?.[0] ?? null)}
+        />
+      </label>
+
+      {imageFileName ? <p className="mt-3 text-sm text-muted-foreground">Đã chọn: {imageFileName}</p> : null}
+
+      {imagePreviewUrl ? (
+        <div className="mt-3 rounded-xl border border-border bg-secondary/20 p-2">
+          <img
+            src={imagePreviewUrl}
+            alt="Ảnh toa"
+            className="max-h-[320px] w-full rounded-lg object-contain"
+          />
+          <div className="mt-2 flex justify-end">
+            <button
+              type="button"
+              onClick={onClearImage}
+              className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary"
+            >
+              Xóa ảnh
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -502,7 +732,7 @@ function EditField({ label, value, onChange, placeholder }) {
 
 function validatePrescriptionEditForm(form) {
   if (!Number.isFinite(Number(form.lensTypeId)) || Number(form.lensTypeId) <= 0) {
-    return "Lens type ID không hợp lệ.";
+    return "ID loại tròng không hợp lệ.";
   }
 
   const requiredValues = [form.rightSph, form.rightCyl, form.leftSph, form.leftCyl, form.pd];
@@ -581,5 +811,3 @@ function resolveErrorMessage(error, fallbackMessage) {
 export {
   CartPage as default
 };
-
-

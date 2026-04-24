@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "react-router";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -6,7 +6,7 @@ import {
   fetchCatalogProducts,
   selectCatalogState,
 } from "@/store/catalog/catalogSlice";
-import { getCatalogRouteConfig, getCatalogSortOptions } from "@/services/catalogService";
+import { getAvailablePromotions, getCatalogRouteConfig, getCatalogSortOptions } from "@/services/catalogService";
 
 const DEFAULT_PAGE_SIZE = 12;
 
@@ -15,6 +15,7 @@ export function useProductListingPage() {
   const { category } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const catalog = useAppSelector(selectCatalogState);
+  const [activePromotion, setActivePromotion] = useState(null);
 
   const routeConfig = useMemo(() => getCatalogRouteConfig(category), [category]);
 
@@ -64,6 +65,33 @@ export function useProductListingPage() {
     void dispatch(fetchCatalogProducts(productRequest));
   }, [dispatch, productRequest]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadPromotionBanner() {
+      try {
+        const promotions = await getAvailablePromotions(1);
+        if (!isMounted) {
+          return;
+        }
+
+        setActivePromotion(promotions[0] ?? null);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setActivePromotion(null);
+      }
+    }
+
+    void loadPromotionBanner();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   function updateQuery(patch, resetPage = true) {
     const nextSearchParams = new URLSearchParams(searchParams);
 
@@ -100,6 +128,7 @@ export function useProductListingPage() {
   return {
     title: routeConfig.title,
     routeNotice: routeConfig.notice ?? "",
+    activePromotion,
     products: catalog.items,
     categories: catalog.categories,
     filters,

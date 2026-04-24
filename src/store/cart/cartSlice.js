@@ -12,6 +12,7 @@ import {
   updatePrescriptionCartItem as updatePrescriptionCartItemRequest,
   updateStandardCartItem as updateStandardCartItemRequest,
 } from "@/services/cartService";
+import { uploadPrescriptionImage } from "@/services/prescriptionService";
 import { loadStoredCartViewCache } from "@/store/cart/cartStorage";
 
 const initialState = {
@@ -141,6 +142,13 @@ export const updatePrescriptionCartItem = createAsyncThunk(
     const nextViewCache = mergeCartViewCache(cart.viewCache, payload?.view);
 
     try {
+      let prescriptionImageUrl = payload.prescriptionImageUrl;
+
+      if (payload?.imageFile) {
+        const uploadedImage = await uploadPrescriptionImage(payload.imageFile, auth.accessToken);
+        prescriptionImageUrl = uploadedImage?.fileUrl ?? prescriptionImageUrl;
+      }
+
       await updatePrescriptionCartItemRequest(auth.accessToken, payload.cartItemId, {
         variantId: payload.variantId,
         quantity: 1,
@@ -151,7 +159,7 @@ export const updatePrescriptionCartItem = createAsyncThunk(
         leftEye: payload.leftEye,
         pd: payload.pd,
         notes: payload.notes,
-        prescriptionImageUrl: payload.prescriptionImageUrl,
+        prescriptionImageUrl,
       });
 
       return await loadCartSnapshot(auth.accessToken, nextViewCache);

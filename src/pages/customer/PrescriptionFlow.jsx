@@ -6,17 +6,14 @@ export default function PrescriptionFlow() {
   const {
     product,
     lensTypes,
-    pricingOptions,
     selectedVariant,
     selectedLensType,
-    selectedLensMaterialOption,
     selectedColor,
     selectedSize,
     selectedLensTypeId,
-    selectedLensMaterial,
-    selectedCoatings,
     formState,
     imageFileName,
+    imagePreviewUrl,
     totalPrice,
     ui,
     actions,
@@ -27,7 +24,7 @@ export default function PrescriptionFlow() {
     return (
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="rounded-[28px] border border-border bg-white p-8 shadow-sm">
-          <div className="mx-auto mb-4 h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
           <p className="text-center text-muted-foreground">Đang tải luồng kính theo toa...</p>
         </div>
       </div>
@@ -68,7 +65,7 @@ export default function PrescriptionFlow() {
                 Hỗ trợ kính theo toa
               </p>
               <h1 className="text-3xl">{product.name}</h1>
-              <p className="mt-2 text-muted-foreground leading-7">{product.description}</p>
+              <p className="mt-2 leading-7 text-muted-foreground">{product.description}</p>
             </div>
           </div>
 
@@ -162,56 +159,7 @@ export default function PrescriptionFlow() {
             </section>
 
             <section>
-              <h2 className="mb-4 text-xl">4. Chất liệu và coating</h2>
-
-              {pricingOptions.lensMaterials.length > 0 && (
-                <div className="mb-5">
-                  <p className="mb-3 text-sm">Chất liệu tròng</p>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {pricingOptions.lensMaterials.map((option) => (
-                      <button
-                        key={option.code}
-                        type="button"
-                        onClick={() => actions.setSelectedLensMaterial(option.code)}
-                        className={`rounded-2xl border p-4 text-left transition-colors ${
-                          selectedLensMaterial === option.code ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-                        }`}
-                      >
-                        <span className="block">{option.label}</span>
-                        <span className="mt-1 block text-sm text-muted-foreground">+{formatCurrency(option.priceAdjustment)}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {pricingOptions.coatings.length > 0 && (
-                <div>
-                  <p className="mb-3 text-sm">Coating</p>
-                  <div className="flex flex-wrap gap-3">
-                    {pricingOptions.coatings.map((coating) => {
-                      const isSelected = selectedCoatings.includes(coating.code);
-
-                      return (
-                        <button
-                          key={coating.code}
-                          type="button"
-                          onClick={() => actions.toggleCoating(coating.code)}
-                          className={`rounded-full border px-4 py-2 text-sm transition-colors ${
-                            isSelected ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/40"
-                          }`}
-                        >
-                          {coating.label} +{formatCurrency(coating.priceAdjustment)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </section>
-
-            <section>
-              <h2 className="mb-4 text-xl">5. Ảnh toa và ghi chú</h2>
+              <h2 className="mb-4 text-xl">4. Ảnh toa và ghi chú</h2>
 
               <div className="mb-4 rounded-2xl border border-dashed border-border p-5">
                 <label className="flex cursor-pointer flex-col items-center justify-center gap-3 text-center">
@@ -236,6 +184,14 @@ export default function PrescriptionFlow() {
                       <X className="h-4 w-4" />
                     </button>
                   </div>
+                ) : null}
+
+                {imagePreviewUrl ? (
+                  <img
+                    src={imagePreviewUrl}
+                    alt={imageFileName || "Ảnh toa kính"}
+                    className="mt-4 max-h-[460px] w-full rounded-xl border border-border bg-secondary/40 p-2 object-contain"
+                  />
                 ) : null}
 
                 {ui.imageUpload.error ? <p className="mt-3 text-sm text-red-600">{ui.imageUpload.error}</p> : null}
@@ -268,12 +224,12 @@ export default function PrescriptionFlow() {
               >
                 {ui.isSubmitting || ui.imageUpload.status === "loading" ? (
                   <>
-                    <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     Đang thêm vào giỏ...
                   </>
                 ) : pricing.status === "loading" ? (
                   <>
-                    <div className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     Đang tính giá...
                   </>
                 ) : (
@@ -311,15 +267,11 @@ export default function PrescriptionFlow() {
             <SummaryRow label="Gọng" value={product.name} />
             <SummaryRow label="Biến thể" value={`${selectedColor || selectedVariant?.color || "Mặc định"} / ${selectedSize || selectedVariant?.size || "Free size"}`} />
             <SummaryRow label="Tròng" value={selectedLensType?.lensName || "Chưa chọn"} />
-            <SummaryRow label="Chất liệu" value={selectedLensMaterialOption?.label || "Mặc định"} />
-            <SummaryRow label="Coating" value={selectedCoatings.length > 0 ? selectedCoatings.join(", ") : "Không"} />
             {imageFileName ? <SummaryRow label="Ảnh toa" value={imageFileName} /> : null}
 
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
               <PriceRow label="Giá gọng" value={pricing.framePrice || selectedVariant?.price || 0} />
               <PriceRow label="Giá tròng" value={pricing.lensBasePrice || selectedLensType?.price || 0} />
-              <PriceRow label="Chất liệu" value={pricing.materialPrice} />
-              <PriceRow label="Coating" value={pricing.coatingPrice} />
               <div className="mt-3 flex items-center justify-between border-t border-emerald-200 pt-3 text-base">
                 <span>Tổng</span>
                 <span className="font-semibold">{formatCurrency(totalPrice)}</span>
@@ -380,7 +332,7 @@ function StateCard({ title, description }) {
           <AlertCircle className="h-10 w-10" />
         </div>
         <h1 className="mb-3 text-3xl">{title}</h1>
-        <p className="mx-auto mb-8 max-w-2xl text-muted-foreground leading-7">{description}</p>
+        <p className="mx-auto mb-8 max-w-2xl leading-7 text-muted-foreground">{description}</p>
         <div className="flex justify-center gap-3">
           <Link
             to="/shop"

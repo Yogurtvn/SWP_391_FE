@@ -38,6 +38,8 @@ export function usePrescriptionFlow() {
   const [formState, setFormState] = useState(INITIAL_FORM_STATE);
   const [imageFile, setImageFile] = useState(null);
   const [imageFileName, setImageFileName] = useState("");
+  const [imagePreviewUrl, setImagePreviewUrl] = useState("");
+  const [imagePreviewBlobUrl, setImagePreviewBlobUrl] = useState("");
   const [formError, setFormError] = useState("");
 
   useEffect(() => {
@@ -52,31 +54,33 @@ export function usePrescriptionFlow() {
     const preferredVariant = resolvePreferredVariant(flow.product);
     const nextColor = normalizeText(location.state?.selectedColor) ?? flow.product.colors?.[0] ?? preferredVariant?.color ?? "";
     const nextSize = normalizeText(location.state?.selectedSize) ?? flow.product.sizes?.[0] ?? preferredVariant?.size ?? "";
-    const materialOptions = flow.pricingOptions.lensMaterials ?? [];
-    const defaultMaterial =
-      materialOptions.find((option) => option.code.toLowerCase() === "standard")?.code ??
-      materialOptions[0]?.code ??
-      "";
 
     setSelectedColor(nextColor);
     setSelectedSize(nextSize);
     setSelectedLensTypeId(String(flow.lensTypes[0]?.lensTypeId ?? ""));
-    setSelectedLensMaterial(defaultMaterial);
+    setSelectedLensMaterial("");
     setSelectedCoatings([]);
     setFormState(INITIAL_FORM_STATE);
-    setImageFile(null);
-    setImageFileName("");
+    setImage(null);
     setFormError("");
     dispatch(clearPrescriptionFlowSubmit());
   }, [
     dispatch,
     flow.lensTypes,
-    flow.pricingOptions.lensMaterials,
     flow.product,
     flow.status,
     location.state?.selectedColor,
     location.state?.selectedSize,
   ]);
+
+  useEffect(
+    () => () => {
+      if (imagePreviewBlobUrl) {
+        URL.revokeObjectURL(imagePreviewBlobUrl);
+      }
+    },
+    [imagePreviewBlobUrl],
+  );
 
   const selectedVariant = useMemo(() => {
     if (!flow.product) {
@@ -198,8 +202,24 @@ export function usePrescriptionFlow() {
   }
 
   function setImage(file) {
+    if (imagePreviewBlobUrl) {
+      URL.revokeObjectURL(imagePreviewBlobUrl);
+      setImagePreviewBlobUrl("");
+    }
+
+    if (!file) {
+      setImageFile(null);
+      setImageFileName("");
+      setImagePreviewUrl("");
+      return;
+    }
+
+    const previewBlobUrl = URL.createObjectURL(file);
+
     setImageFile(file);
     setImageFileName(file?.name ?? "");
+    setImagePreviewUrl(previewBlobUrl);
+    setImagePreviewBlobUrl(previewBlobUrl);
   }
 
   return {
@@ -217,6 +237,7 @@ export function usePrescriptionFlow() {
     selectedCoatings,
     formState,
     imageFileName,
+    imagePreviewUrl,
     totalPrice: flow.pricing.totalPrice || (Number(selectedVariant?.price ?? 0) + Number(selectedLensType?.price ?? 0)),
     ui: {
       isLoading: flow.status === "loading" || flow.status === "idle",

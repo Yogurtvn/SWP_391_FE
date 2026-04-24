@@ -22,15 +22,15 @@ const fallbackFeaturedProducts = products.slice(0, 4).map((p) => ({
 }));
 const categories = [
   {
-    name: "N\u1EEF",
-    path: "/shop/women",
+    name: "G\u1ECDng k\u00EDnh th\u1EDDi trang",
+    path: "/shop/ai-glasses",
     image: "https://images.unsplash.com/photo-1749032712013-6f21d1be6a6c?w=600",
     icon: User,
     color: "from-pink-500 to-rose-500"
   },
   {
-    name: "Nam",
-    path: "/shop/men",
+    name: "G\u1ECDng k\u00EDnh c\u00F4ng s\u1EDF",
+    path: "/shop/eyeglasses",
     image: "https://images.unsplash.com/photo-1715418554358-d34e420b18ab?w=600",
     icon: Users,
     color: "from-blue-500 to-indigo-500"

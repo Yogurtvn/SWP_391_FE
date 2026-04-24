@@ -4,11 +4,14 @@ import { useEffect, useMemo } from "react";
 import {
   AlertCircle,
   ArrowLeft,
+  ChevronRight,
   CreditCard,
   MapPin,
   Package,
+  Tag,
   Truck,
   Wallet,
+  X,
 } from "lucide-react";
 import { useCheckout } from "@/hooks/order/useCheckout";
 import {
@@ -18,6 +21,7 @@ import {
   getShippingProvinces,
   getShippingWards,
 } from "@/services/shippingService";
+import { getAvailablePromotions } from "@/services/catalogService";
 import { persistPendingPayOsCart } from "@/store/cart/cartStorage";
 
 const INITIAL_SHIPPING_INFO = {
@@ -64,6 +68,13 @@ export default function CheckoutPage() {
   const [shippingQuote, setShippingQuote] = useState(null);
   const [shippingError, setShippingError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cod");
+  const [voucherInput, setVoucherInput] = useState("");
+  const [appliedVoucherCode, setAppliedVoucherCode] = useState("");
+  const [availableVouchers, setAvailableVouchers] = useState([]);
+  const [voucherListStatus, setVoucherListStatus] = useState("idle");
+  const [isVoucherModalOpen, setIsVoucherModalOpen] = useState(false);
+  const [voucherMessage, setVoucherMessage] = useState("");
+  const [voucherMessageTone, setVoucherMessageTone] = useState("muted");
   const [localError, setLocalError] = useState("");
 
   const checkoutTitle = getCheckoutTitle(checkoutOrderType);
@@ -72,9 +83,49 @@ export default function CheckoutPage() {
   const isSubmitting = checkoutStatus === "loading";
   const shippingWeight = useMemo(() => Math.max(200, itemCount * 200), [itemCount]);
   const shippingFee = Number(shippingQuote?.totalFee ?? 0);
-  const displayTotal = subtotal + shippingFee;
+  const selectedVoucher = useMemo(
+    () => findVoucherByCodeOrName(availableVouchers, appliedVoucherCode),
+    [availableVouchers, appliedVoucherCode],
+  );
+  const previewVoucherDiscount = useMemo(
+    () => calculateVoucherDiscount(subtotal, selectedVoucher?.discountPercent),
+    [subtotal, selectedVoucher?.discountPercent],
+  );
+  const displayTotal = Math.max(0, subtotal + shippingFee - previewVoucherDiscount);
   const isCalculatingShippingFee = shippingStatus.fee === "loading";
   const isUnsupportedShippingRoute = Boolean(shippingError) && shippingStatus.fee === "failed";
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAvailableVouchers() {
+      setVoucherListStatus("loading");
+
+      try {
+        const vouchers = await getAvailablePromotions(30);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setAvailableVouchers(vouchers);
+        setVoucherListStatus("succeeded");
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setAvailableVouchers([]);
+        setVoucherListStatus("failed");
+      }
+    }
+
+    void loadAvailableVouchers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -269,9 +320,55 @@ export default function CheckoutPage() {
     });
   }
 
+  function handleAutoApplyVoucherFromInput() {
+    const normalizedVoucherCode = normalizeVoucherCode(voucherInput);
+
+    if (!normalizedVoucherCode) {
+      setAppliedVoucherCode("");
+      setVoucherMessageTone("muted");
+      setVoucherMessage("");
+      return;
+    }
+
+    const matchedVoucher = findVoucherByCodeOrName(availableVouchers, normalizedVoucherCode);
+
+    if (matchedVoucher) {
+      setAppliedVoucherCode(String(matchedVoucher.promotionId));
+      setVoucherInput(matchedVoucher.name);
+      setVoucherMessageTone("success");
+      setVoucherMessage(`Đã áp dụng tự động ${matchedVoucher.name} (-${matchedVoucher.discountPercent}%).`);
+      return;
+    }
+
+    setAppliedVoucherCode(normalizedVoucherCode);
+    setVoucherInput(normalizedVoucherCode);
+    setVoucherMessageTone("muted");
+    setVoucherMessage("Đã lưu mã voucher. Hệ thống sẽ xác minh khi bạn xác nhận đơn.");
+  }
+
+  function handleSelectVoucher(voucher) {
+    if (!voucher) {
+      return;
+    }
+
+    setAppliedVoucherCode(String(voucher.promotionId));
+    setVoucherInput(voucher.name);
+    setVoucherMessageTone("success");
+    setVoucherMessage(`Đã áp dụng tự động ${voucher.name}. Ước tính giảm ${formatCurrency(calculateVoucherDiscount(subtotal, voucher.discountPercent))}.`);
+    setIsVoucherModalOpen(false);
+  }
+
+  function handleClearVoucher() {
+    setVoucherInput("");
+    setAppliedVoucherCode("");
+    setVoucherMessageTone("muted");
+    setVoucherMessage("Đã bỏ voucher.");
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
     setLocalError("");
+    const checkoutVoucherCode = appliedVoucherCode || normalizeVoucherCode(voucherInput);
 
     if (isCalculatingShippingFee) {
       setLocalError("Hệ thống đang tính phí vận chuyển. Vui lòng chờ vài giây rồi thử lại.");
@@ -297,6 +394,7 @@ export default function CheckoutPage() {
         shippingInfo,
         paymentMethod,
         shippingFee,
+        voucherCode: checkoutVoucherCode,
       });
 
       if (paymentMethod === "payos") {
@@ -331,7 +429,12 @@ export default function CheckoutPage() {
 
       navigate("/checkout/failure", {
         state: {
-          orderSummary: createDraftSummary({ shippingInfo, paymentMethod, shippingFee }),
+          orderSummary: createDraftSummary({
+            shippingInfo,
+            paymentMethod,
+            shippingFee,
+            voucherCode: checkoutVoucherCode,
+          }),
           orderCreated: false,
           errorMessage,
         },
@@ -636,11 +739,88 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
+              <div className="mb-4 rounded-2xl border border-border bg-secondary/40 p-4">
+                <p className="mb-3 flex items-center gap-2 text-sm font-medium">
+                  <Tag className="h-4 w-4 text-primary" />
+                  Mã voucher
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={voucherInput}
+                    onChange={(event) => {
+                      setVoucherInput(event.target.value);
+                      setAppliedVoucherCode("");
+                      setVoucherMessage("");
+                      setVoucherMessageTone("muted");
+                    }}
+                    onBlur={handleAutoApplyVoucherFromInput}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleAutoApplyVoucherFromInput();
+                      }
+                    }}
+                    placeholder="Nhập tên chương trình hoặc ID voucher"
+                    className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none transition-colors focus:border-primary"
+                  />
+                  {appliedVoucherCode ? (
+                    <button
+                      type="button"
+                      onClick={handleClearVoucher}
+                      className="rounded-xl border border-border px-3 py-2 text-sm transition-colors hover:bg-secondary"
+                    >
+                      Bỏ
+                    </button>
+                  ) : null}
+                </div>
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsVoucherModalOpen(true)}
+                    className="flex w-full items-center justify-between rounded-xl border border-primary/20 bg-gradient-to-r from-primary/10 via-white to-white px-3 py-2 text-left transition-colors hover:border-primary/40"
+                  >
+                    <span className="text-xs font-medium uppercase tracking-[0.08em] text-muted-foreground">Voucher hiện có</span>
+                    <span className="flex items-center gap-1 text-xs text-foreground">
+                      {voucherListStatus === "loading"
+                        ? "Đang tải..."
+                        : `${availableVouchers.length} voucher`}
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </span>
+                  </button>
+                </div>
+                {voucherMessage ? (
+                  <p
+                    className={`mt-2 text-xs ${
+                      voucherMessageTone === "success"
+                        ? "text-emerald-700"
+                        : voucherMessageTone === "error"
+                          ? "text-red-600"
+                          : "text-muted-foreground"
+                    }`}
+                  >
+                    {voucherMessage}
+                  </p>
+                ) : null}
+              </div>
+
               <div className="space-y-3 border-t border-border pt-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Tạm tính</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Voucher</span>
+                  <span className={selectedVoucher ? "font-medium text-emerald-700" : "text-muted-foreground"}>
+                    {selectedVoucher ? `${selectedVoucher.name} (-${selectedVoucher.discountPercent}%)` : (appliedVoucherCode || "Chưa áp dụng")}
+                  </span>
+                </div>
+                {previewVoucherDiscount > 0 ? (
+                  <div className="flex justify-between text-sm text-emerald-700">
+                    <span>Giảm từ voucher</span>
+                    <span>-{formatCurrency(previewVoucherDiscount)}</span>
+                  </div>
+                ) : null}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Vận chuyển</span>
                   <span className={shippingQuote ? "font-medium" : "text-muted-foreground"}>
@@ -681,6 +861,117 @@ export default function CheckoutPage() {
             </div>
           </aside>
         </form>
+        {isVoucherModalOpen ? (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-8"
+            onClick={() => setIsVoucherModalOpen(false)}
+          >
+            <div
+              className="w-full max-w-2xl overflow-hidden rounded-[28px] border border-primary/20 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.35)]"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="border-b border-primary/15 bg-gradient-to-r from-primary/10 via-white to-white px-5 py-4">
+                <div className="flex items-center justify-between gap-4">
+                <div>
+                    <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white px-3 py-1 text-xs font-medium text-primary">
+                      <Tag className="h-3.5 w-3.5" />
+                      Ưu đãi thanh toán
+                    </div>
+                    <h3 className="text-[1.35rem] leading-tight">Chọn voucher cho đơn hàng</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Áp dụng ngay để xem tổng tiền sau giảm.
+                    </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsVoucherModalOpen(false)}
+                  className="rounded-full border border-border bg-white p-2 text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  aria-label="Đóng danh sách voucher"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                </div>
+              </div>
+              <div className="max-h-[62vh] overflow-y-auto p-5">
+                {voucherListStatus === "loading" ? (
+                  <div className="rounded-2xl border border-border bg-secondary/40 p-4 text-sm text-muted-foreground">
+                    Đang tải danh sách voucher...
+                  </div>
+                ) : voucherListStatus === "failed" ? (
+                  <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    Không tải được danh sách voucher. Vui lòng thử lại sau.
+                  </p>
+                ) : availableVouchers.length === 0 ? (
+                  <p className="rounded-xl border border-border bg-secondary/40 p-3 text-sm text-muted-foreground">
+                    Hiện chưa có voucher khả dụng.
+                  </p>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {availableVouchers.map((voucher) => {
+                      const isSelected = Number(selectedVoucher?.promotionId) === Number(voucher.promotionId);
+                      const estimatedDiscount = calculateVoucherDiscount(subtotal, voucher.discountPercent);
+
+                      return (
+                        <button
+                          key={voucher.promotionId}
+                          type="button"
+                          onClick={() => handleSelectVoucher(voucher)}
+                          className={`w-full rounded-2xl border p-4 text-left transition-all ${
+                            isSelected
+                              ? "border-primary bg-primary/10 shadow-[0_8px_24px_rgba(217,119,6,0.2)]"
+                              : "border-border bg-white hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[0_10px_24px_rgba(15,23,42,0.12)]"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="line-clamp-1 font-semibold text-foreground">
+                                {voucher.name || `Voucher #${voucher.promotionId}`}
+                              </p>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                Giảm {voucher.discountPercent}% · Hết hạn {formatDate(voucher.endAt)}
+                              </p>
+                              <p className="mt-2 inline-flex rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">
+                                Ước tính giảm {formatCurrency(estimatedDiscount)}
+                              </p>
+                              {voucher.description ? (
+                                <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{voucher.description}</p>
+                              ) : null}
+                            </div>
+                            {isSelected ? (
+                              <span className="shrink-0 rounded-full bg-primary px-2.5 py-1 text-xs font-medium text-white">
+                                Đã chọn
+                              </span>
+                            ) : (
+                              <span className="shrink-0 rounded-full border border-primary/20 bg-white px-2.5 py-1 text-xs text-muted-foreground">
+                                Chọn
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <div className="border-t border-border bg-secondary/30 px-5 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">
+                    {selectedVoucher
+                      ? `Đang áp dụng: ${selectedVoucher.name}`
+                      : "Chưa chọn voucher"}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsVoucherModalOpen(false)}
+                    className="rounded-xl bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+                  >
+                    Xong
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
     </div>
   );
@@ -861,6 +1152,44 @@ function resolveErrorMessage(error, fallbackMessage) {
   }
 
   return fallbackMessage;
+}
+
+function normalizeVoucherCode(value) {
+  const normalized = String(value ?? "").trim();
+  return normalized.length > 0 ? normalized : "";
+}
+
+function findVoucherByCodeOrName(vouchers, rawCode) {
+  const normalizedCode = normalizeVoucherCode(rawCode);
+
+  if (!normalizedCode || !Array.isArray(vouchers) || vouchers.length === 0) {
+    return null;
+  }
+
+  const matchedById = vouchers.find(
+    (voucher) => String(voucher?.promotionId ?? "") === normalizedCode,
+  );
+
+  if (matchedById) {
+    return matchedById;
+  }
+
+  return vouchers.find(
+    (voucher) =>
+      String(voucher?.name ?? "").trim().toLowerCase() === normalizedCode.toLowerCase(),
+  ) ?? null;
+}
+
+function calculateVoucherDiscount(subtotal, discountPercent) {
+  const normalizedSubtotal = Number(subtotal ?? 0);
+  const normalizedDiscountPercent = Number(discountPercent ?? 0);
+
+  if (!Number.isFinite(normalizedSubtotal) || normalizedSubtotal <= 0 || !Number.isFinite(normalizedDiscountPercent) || normalizedDiscountPercent <= 0) {
+    return 0;
+  }
+
+  const rawDiscount = normalizedSubtotal * normalizedDiscountPercent / 100;
+  return Math.max(0, Math.round(rawDiscount * 100) / 100);
 }
 
 

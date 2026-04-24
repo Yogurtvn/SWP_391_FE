@@ -68,13 +68,14 @@ export function useCheckout() {
   const shippingFee = 0;
   const checkoutOrderType = requestedOrderType || resolveCheckoutOrderType(checkoutItems[0]);
 
-  async function submitCheckout({ shippingInfo, paymentMethod, shippingFee = 0 }) {
+  async function submitCheckout({ shippingInfo, paymentMethod, shippingFee = 0, voucherCode = "" }) {
     const payload = createCheckoutPayload({
       cartItems: checkoutItems,
       orderType: checkoutOrderType,
       shippingInfo,
       paymentMethod,
       shippingFee,
+      voucherCode,
     });
 
     const result = await dispatch(checkoutReadyOrder(payload)).unwrap();
@@ -88,11 +89,12 @@ export function useCheckout() {
         shippingInfo,
         paymentMethod,
         shippingFee,
+        voucherCode,
       }),
     };
   }
 
-  function createDraftSummary({ shippingInfo, paymentMethod, shippingFee = 0 }) {
+  function createDraftSummary({ shippingInfo, paymentMethod, shippingFee = 0, voucherCode = "" }) {
     return buildOrderSummary({
       checkoutResult: null,
       cartItems: checkoutItems,
@@ -100,6 +102,7 @@ export function useCheckout() {
       shippingInfo,
       paymentMethod,
       shippingFee,
+      voucherCode,
     });
   }
 

@@ -21,7 +21,14 @@ export async function getOrderById(token, orderId) {
   return apiGet(`${ORDERS_BASE_PATH}/${orderId}`, { token });
 }
 
-export function createCheckoutPayload({ cartItems, orderType, shippingInfo, paymentMethod, shippingFee = 0 }) {
+export function createCheckoutPayload({
+  cartItems,
+  orderType,
+  shippingInfo,
+  paymentMethod,
+  shippingFee = 0,
+  voucherCode = "",
+}) {
   return {
     cartItemIds: (Array.isArray(cartItems) ? cartItems : [])
       .map((item) => Number(item?.cartItemId))
@@ -32,10 +39,19 @@ export function createCheckoutPayload({ cartItems, orderType, shippingInfo, paym
     shippingAddress: composeShippingAddress(shippingInfo),
     shippingFee: normalizeMoney(shippingFee),
     paymentMethod: normalizePaymentMethod(paymentMethod),
+    voucherCode: normalizeText(voucherCode),
   };
 }
 
-export function buildOrderSummary({ checkoutResult, cartItems, orderType, shippingInfo, paymentMethod, shippingFee = 0 }) {
+export function buildOrderSummary({
+  checkoutResult,
+  cartItems,
+  orderType,
+  shippingInfo,
+  paymentMethod,
+  shippingFee = 0,
+  voucherCode = "",
+}) {
   const resolvedPaymentMethod = normalizePaymentMethod(paymentMethod);
   const resolvedOrderType = checkoutResult?.orderType ?? toApiOrderType(orderType);
   const itemCount = (Array.isArray(cartItems) ? cartItems : []).reduce(
@@ -62,6 +78,7 @@ export function buildOrderSummary({ checkoutResult, cartItems, orderType, shippi
     paymentStatusLabel: getPaymentStatusLabel(checkoutResult?.payment?.paymentStatus ?? "pending"),
     itemCount,
     total: Number(checkoutResult?.totalAmount ?? fallbackTotal),
+    voucherCode: normalizeText(voucherCode),
     customerName: normalizeText(shippingInfo?.fullName) ?? "Khách hàng Vision Direct",
     phone: normalizeText(shippingInfo?.phone) ?? "Chưa cập nhật",
     email: normalizeText(shippingInfo?.email) ?? "Chưa cập nhật",

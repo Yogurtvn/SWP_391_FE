@@ -2,6 +2,7 @@
 
 const PRODUCTS_BASE_PATH = "/api/products";
 const CATEGORIES_BASE_PATH = "/api/categories";
+const PROMOTIONS_BASE_PATH = "/api/promotions";
 const DEFAULT_IMAGE_URL =
   "https://images.unsplash.com/photo-1626104853817-343b24b5613f?w=800&auto=format&fit=crop";
 
@@ -45,6 +46,13 @@ export async function getRecommendedCatalogProducts({ productType, excludeProduc
   return response.items
     .filter((item) => item.productId !== excludeProductId)
     .slice(0, pageSize);
+}
+
+export async function getAvailablePromotions(limit = 20) {
+  const response = await apiGet(`${PROMOTIONS_BASE_PATH}/available?limit=${Math.max(1, Number(limit) || 20)}`);
+  const promotions = Array.isArray(response) ? response : [];
+
+  return promotions.map(normalizePromotion).filter((promotion) => promotion.promotionId > 0);
 }
 
 export function getCatalogErrorMessage(error, fallbackMessage) {
@@ -227,6 +235,17 @@ function normalizeCategory(category) {
   return {
     id: category?.categoryId ?? 0,
     name: category?.categoryName?.trim() || "Danh mục",
+  };
+}
+
+function normalizePromotion(promotion) {
+  return {
+    promotionId: Number(promotion?.promotionId ?? promotion?.PromotionId ?? 0),
+    name: String(promotion?.name ?? promotion?.Name ?? "").trim(),
+    description: String(promotion?.description ?? promotion?.Description ?? "").trim(),
+    discountPercent: Number(promotion?.discountPercent ?? promotion?.DiscountPercent ?? 0),
+    startAt: promotion?.startAt ?? promotion?.StartAt ?? null,
+    endAt: promotion?.endAt ?? promotion?.EndAt ?? null,
   };
 }
 

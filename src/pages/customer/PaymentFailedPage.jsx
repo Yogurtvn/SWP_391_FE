@@ -41,17 +41,18 @@ export default function PaymentFailedPage() {
     lookup.error ??
     getDefaultFailureMessage(callback);
   const orderCreated = Boolean(location.state?.orderCreated ?? resolvedOrderSummary.orderCreated);
-  const paymentCanceled =
-    callback?.cancel ||
-    callback?.status === "CANCELLED" ||
-    normalizeOrderStatus(resolvedOrderSummary.orderStatus) === "cancelled";
+  const orderStatus = normalizeOrderStatus(resolvedOrderSummary.orderStatus);
+  const paymentStatus = normalizePaymentStatus(resolvedOrderSummary.paymentStatus);
+  const canceledByUserAtPayOs = callback?.cancel || callback?.status === "CANCELLED";
+  const orderCanceled = orderStatus === "cancelled";
   const canTrackOrder = Number(resolvedOrderSummary.orderId ?? 0) > 0;
   const canRetryPayment =
-    !paymentCanceled
-    && orderCreated
+    orderCreated
     && canTrackOrder
     && normalizePaymentMethod(resolvedOrderSummary.paymentMethod) === "payos"
-    && Number(resolvedOrderSummary.total ?? 0) > 0;
+    && Number(resolvedOrderSummary.total ?? 0) > 0
+    && !orderCanceled
+    && paymentStatus !== "completed";
   const isRetrying = retryState.status === "loading";
 
   useEffect(() => {
@@ -87,9 +88,9 @@ export default function PaymentFailedPage() {
         }
 
         clearPendingPayOsCart();
-        toast.success("Đã khôi phục giỏ hàng sau khi hủy thanh toán.");
+        toast.success("Đã khôi phục giỏ hàng sau khi thanh toán chưa hoàn tất.");
       } catch (error) {
-        toast.error(resolveErrorMessage(error, "Không thể khôi phục giỏ hàng sau khi hủy PayOS."));
+        toast.error(resolveErrorMessage(error, "Không thể khôi phục giỏ hàng sau khi thanh toán chưa hoàn tất."));
       }
     }
 
@@ -174,7 +175,13 @@ export default function PaymentFailedPage() {
               Thanh toán chưa hoàn tất
             </p>
             <h1 className="mb-3 text-3xl">
-              {orderCreated ? "Đơn hàng đã hủy" : "Tạo đơn hàng thất bại"}
+              {!orderCreated
+                ? "Tạo đơn hàng thất bại"
+                : orderCanceled
+                  ? `Đơn #${resolvedOrderSummary.orderId} đã hủy`
+                  : canceledByUserAtPayOs
+                    ? "Bạn đã hủy thanh toán PayOS"
+                    : "Đơn hàng đang chờ thanh toán"}
             </h1>
             <p className="mx-auto max-w-2xl text-muted-foreground leading-7">{errorMessage}</p>
           </div>
@@ -195,19 +202,39 @@ export default function PaymentFailedPage() {
                 <InfoCard
                   icon={ShieldAlert}
                   label="Trạng thái đơn"
-                  value={orderCreated ? `Đã hủy đơn #${resolvedOrderSummary.orderId}` : "Chưa tạo được đơn"}
+                  value={
+                    !orderCreated
+                      ? "Chưa tạo được đơn"
+                      : orderCanceled
+                        ? `Đã hủy đơn #${resolvedOrderSummary.orderId}`
+                        : `${resolvedOrderSummary.orderStatusLabel || "Đang xử lý"} · Đơn #${resolvedOrderSummary.orderId}`
+                  }
                 />
                 <InfoCard
                   icon={RefreshCcw}
                   label="Bước nên làm"
-                  value={orderCreated ? "Quay lại giỏ hàng hoặc checkout lại" : "Kiểm tra giỏ hàng và thử lại"}
+                  value={
+                    canRetryPayment
+                      ? "Thanh toán lại ngay cho đơn hiện tại"
+                      : orderCreated
+                        ? "Quay lại giỏ hàng hoặc checkout lại"
+                        : "Kiểm tra giỏ hàng và thử lại"
+                  }
                 />
               </div>
 
               <div className="mb-6 rounded-2xl border border-border p-6">
                 <h2 className="mb-4 text-lg">Lưu ý hiện tại</h2>
                 <div className="space-y-3 text-sm text-muted-foreground">
-                  <p>{orderCreated ? "Đơn hàng đã hủy. Giỏ hàng sẽ được khôi phục để bạn thử lại." : "Giỏ hàng vẫn giữ nguyên để bạn thử lại."}</p>
+                  <p>
+                    {!orderCreated
+                      ? "Giỏ hàng vẫn giữ nguyên để bạn thử lại."
+                      : orderCanceled
+                        ? "Đơn hàng đã hủy. Giỏ hàng sẽ được khôi phục để bạn thử lại."
+                        : canRetryPayment
+                          ? "Đơn hàng vẫn còn hiệu lực. Bạn có thể mở lại PayOS để thanh toán ngay đơn này."
+                          : "Đơn hàng đã tạo nhưng hiện chưa thể mở lại thanh toán tự động."}
+                  </p>
                   <p>Thông báo chi tiết: {errorMessage}</p>
                   <p>Nếu cần, bạn có thể quay lại checkout để nhập lại thông tin hoặc chọn phương thức khác.</p>
                 </div>
@@ -232,7 +259,7 @@ export default function PaymentFailedPage() {
                   <p>
                     {canRetryPayment
                       ? "Mở lại thanh toán PayOS cho đơn đã tạo, không cần tạo lại cart."
-                      : "Quay lại checkout để thử lại."}
+                      : "Quay lại checkout để tạo lại đơn tương tự."}
                   </p>
                   <p>Hoặc mở giỏ hàng để điều chỉnh sản phẩm.</p>
                 </div>
@@ -393,6 +420,10 @@ function normalizePaymentMethod(paymentMethod) {
 
 function normalizeOrderStatus(orderStatus) {
   return String(orderStatus ?? "").trim().toLowerCase();
+}
+
+function normalizePaymentStatus(paymentStatus) {
+  return String(paymentStatus ?? "").trim().toLowerCase();
 }
 
 function resolveErrorMessage(error, fallbackMessage) {

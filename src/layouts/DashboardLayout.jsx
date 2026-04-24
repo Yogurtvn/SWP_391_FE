@@ -16,6 +16,7 @@ import {
   Search,
   Settings,
   ShoppingCart,
+  Tag,
   Users,
   X,
 } from "lucide-react";
@@ -63,6 +64,7 @@ function DashboardLayout() {
         },
         { name: "Quản Lý Kho", path: "/admin/inventory", icon: ClipboardCheck },
         { name: "Gói Tròng Kính", path: "/admin/lens-packages", icon: Layers },
+        { name: "Khuyến mãi", path: "/admin/promotions", icon: Tag },
         { name: "Quản lý người dùng", path: "/admin/users", icon: Users },
         { name: "Báo Cáo", path: "/admin/reports", icon: BarChart3 },
         { name: "Cài Đặt", path: "/admin/settings", icon: Settings },

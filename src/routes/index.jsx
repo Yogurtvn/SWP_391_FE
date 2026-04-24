@@ -37,6 +37,7 @@ import AdminInventoryPage from "@/pages/admin/AdminInventoryPage";
 import AdminLensPackagesPage from "@/pages/admin/AdminLensPackagesPage";
 import AdminReportsPage from "@/pages/admin/AdminReportsPage";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
+import AdminPromotionsPage from "@/pages/admin/AdminPromotionsPage";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -140,6 +141,7 @@ const router = createBrowserRouter([
       { path: "products/pre-orders", Component: AdminPreOrderVariantsPage },
       { path: "inventory", Component: AdminInventoryPage },
       { path: "lens-packages", Component: AdminLensPackagesPage },
+      { path: "promotions", Component: AdminPromotionsPage },
       { path: "reports", Component: AdminReportsPage },
       { path: "settings", Component: AdminSettingsPage }
     ]

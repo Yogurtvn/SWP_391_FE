@@ -29,10 +29,12 @@ const DATE_RANGES = {
 
 const STATUS_CONFIG = {
   pending: { label: "Chờ xử lý", icon: Clock, className: "bg-amber-50 text-amber-700 border-amber-200" },
+  confirmed: { label: "Đã xác nhận", icon: Eye, className: "bg-indigo-50 text-indigo-700 border-indigo-200" },
   processing: { label: "Đang xử lý", icon: Package, className: "bg-sky-50 text-sky-700 border-sky-200" },
   awaitingstock: { label: "Chờ hàng", icon: AlertCircle, className: "bg-orange-50 text-orange-700 border-orange-200" },
   "awaiting-stock": { label: "Chờ hàng", icon: AlertCircle, className: "bg-orange-50 text-orange-700 border-orange-200" },
   reviewing: { label: "Kiểm tra", icon: Eye, className: "bg-violet-50 text-violet-700 border-violet-200" },
+  shipped: { label: "Đã gửi hàng", icon: Package, className: "bg-cyan-50 text-cyan-700 border-cyan-200" },
   completed: { label: "Hoàn thành", icon: CheckCircle, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   delivered: { label: "Đã giao", icon: CheckCircle, className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
   cancelled: { label: "Đã hủy", icon: XCircle, className: "bg-red-50 text-red-700 border-red-200" },
@@ -170,7 +172,10 @@ function deriveDashboardData({ dashboard, ordersPage, orders, customersPage, pro
   const ordersByStatus = sumObjectValues(dashboardStatusCounts) > 0 ? dashboardStatusCounts : derivedStatusCounts;
   const fallbackOrderCount = getPageTotal(ordersPage, rangeOrders.length);
   const fallbackRevenue = rangeOrders
-    .filter((order) => normalizeStatus(order.orderStatus) !== "cancelled")
+    .filter((order) => {
+      const status = normalizeStatus(order.orderStatus);
+      return status === "completed" || status === "delivered";
+    })
     .reduce((total, order) => total + Number(order.totalAmount ?? 0), 0);
   const topProducts = normalizeTopProducts(dashboard?.topProducts);
 
@@ -356,6 +361,47 @@ export default function AdminDashboard() {
   const totalProducts = dashboardData?.totalProducts ?? {};
   const ordersByStatus = dashboardData?.ordersByStatus ?? {};
   const topProducts = dashboardData?.topProducts ?? [];
+  const totalOrdersValue = Number(totalOrders.current ?? totalOrders.total ?? 0);
+
+  const statusOverviewItems = [
+    {
+      label: "Chờ xử lý",
+      count: Number(ordersByStatus.pending ?? 0),
+      className: "border-amber-200 bg-amber-50 text-amber-700",
+    },
+    {
+      label: "Đã xác nhận",
+      count: Number(ordersByStatus.confirmed ?? 0),
+      className: "border-indigo-200 bg-indigo-50 text-indigo-700",
+    },
+    {
+      label: "Chờ hàng",
+      count: Number(ordersByStatus.awaitingstock ?? 0),
+      className: "border-orange-200 bg-orange-50 text-orange-700",
+    },
+    {
+      label: "Đang xử lý",
+      count: Number(ordersByStatus.processing ?? 0),
+      className: "border-sky-200 bg-sky-50 text-sky-700",
+    },
+    {
+      label: "Đã gửi hàng",
+      count: Number(ordersByStatus.shipped ?? 0),
+      className: "border-cyan-200 bg-cyan-50 text-cyan-700",
+    },
+    {
+      label: "Hoàn thành",
+      count: Number(ordersByStatus.completed ?? 0) + Number(ordersByStatus.delivered ?? 0),
+      className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    },
+    {
+      label: "Đã hủy",
+      count: Number(ordersByStatus.cancelled ?? 0),
+      className: "border-red-200 bg-red-50 text-red-700",
+    },
+  ];
+  const trackedStatusTotal = statusOverviewItems.reduce((sum, item) => sum + Number(item.count ?? 0), 0);
+  const otherStatusCount = Math.max(0, totalOrdersValue - trackedStatusTotal);
 
   return (
     <AdminPageShell
@@ -421,24 +467,18 @@ export default function AdminDashboard() {
           <div className="grid gap-6 xl:grid-cols-[1.6fr,1fr]">
             <AdminSection title="Trạng thái đơn hàng">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-[1.4rem] border border-amber-200 bg-amber-50 p-5">
-                  <p className="text-sm font-semibold text-slate-600">Chờ xử lý</p>
-                  <p className="mt-2 text-3xl font-bold text-amber-700">{ordersByStatus.pending ?? 0}</p>
-                </div>
-                <div className="rounded-[1.4rem] border border-sky-200 bg-sky-50 p-5">
-                  <p className="text-sm font-semibold text-slate-600">Đang xử lý</p>
-                  <p className="mt-2 text-3xl font-bold text-sky-700">{ordersByStatus.processing ?? 0}</p>
-                </div>
-                <div className="rounded-[1.4rem] border border-emerald-200 bg-emerald-50 p-5">
-                  <p className="text-sm font-semibold text-slate-600">Hoàn thành</p>
-                  <p className="mt-2 text-3xl font-bold text-emerald-700">
-                    {Number(ordersByStatus.completed ?? 0) + Number(ordersByStatus.delivered ?? 0)}
-                  </p>
-                </div>
-                <div className="rounded-[1.4rem] border border-red-200 bg-red-50 p-5">
-                  <p className="text-sm font-semibold text-slate-600">Đã hủy</p>
-                  <p className="mt-2 text-3xl font-bold text-red-700">{ordersByStatus.cancelled ?? 0}</p>
-                </div>
+                {statusOverviewItems.map((item) => (
+                  <div key={item.label} className={`rounded-[1.4rem] border p-5 ${item.className}`}>
+                    <p className="text-sm font-semibold text-slate-600">{item.label}</p>
+                    <p className="mt-2 text-3xl font-bold">{item.count}</p>
+                  </div>
+                ))}
+                {otherStatusCount > 0 ? (
+                  <div className="rounded-[1.4rem] border border-slate-200 bg-slate-50 p-5 text-slate-700">
+                    <p className="text-sm font-semibold text-slate-600">Khác</p>
+                    <p className="mt-2 text-3xl font-bold">{otherStatusCount}</p>
+                  </div>
+                ) : null}
               </div>
             </AdminSection>
 

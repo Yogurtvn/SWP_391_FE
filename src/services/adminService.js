@@ -125,6 +125,45 @@ export async function getPreOrdersSummary(params = {}, token) {
 }
 
 // =============================================
+// PROMOTIONS (Admin)
+// =============================================
+
+export async function getAdminPromotions(params = {}, token) {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", params.page);
+  if (params.pageSize) query.set("pageSize", params.pageSize);
+  const queryStr = query.toString();
+  return apiGet(`/api/admin/promotions${queryStr ? `?${queryStr}` : ""}`, { token });
+}
+
+export async function createAdminPromotion(data, token) {
+  return apiPost("/api/admin/promotions", data, { token });
+}
+
+export async function updateAdminPromotion(promotionId, data, token) {
+  return apiRequest(`/api/admin/promotions/${promotionId}`, {
+    method: "PATCH",
+    body: data,
+    token,
+  });
+}
+
+export async function updateAdminPromotionStatus(promotionId, isActive, token) {
+  return apiRequest(`/api/admin/promotions/${promotionId}/status`, {
+    method: "PATCH",
+    body: { isActive },
+    token,
+  });
+}
+
+export async function deleteAdminPromotion(promotionId, token) {
+  return apiRequest(`/api/admin/promotions/${promotionId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
+// =============================================
 // ORDERS (Admin + Staff)
 // =============================================
 

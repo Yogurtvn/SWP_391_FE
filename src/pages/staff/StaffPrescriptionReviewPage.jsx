@@ -1,3 +1,4 @@
+import { Link, useLocation } from "react-router";
 import { Check, Eye, FileText, Image as ImageIcon, Search, X } from "lucide-react";
 import { useStaffPrescriptionReview } from "@/hooks/prescription/useStaffPrescriptionReview";
 
@@ -33,6 +34,7 @@ function StaffPrescriptionReviewPage() {
     items,
     selectedId,
     detail,
+    relatedOrder,
     searchQuery,
     filterStatus,
     actionNote,
@@ -40,6 +42,8 @@ function StaffPrescriptionReviewPage() {
     ui,
     actions,
   } = useStaffPrescriptionReview();
+  const location = useLocation();
+  const orderBasePath = location.pathname.startsWith("/admin") ? "/admin/orders" : "/staff/orders";
 
   return (
     <div className="min-h-screen bg-secondary/30">
@@ -145,10 +149,14 @@ function StaffPrescriptionReviewPage() {
                 actionNote={actionNote}
                 setActionNote={actions.setActionNote}
                 actionError={ui.actionError}
-                saving={ui.isSaving}
-                onReview={actions.review}
-              />
-            ) : (
+              saving={ui.isSaving}
+              relatedOrder={relatedOrder}
+              isRelatedOrderLoading={ui.isRelatedOrderLoading}
+              relatedOrderError={ui.relatedOrderError}
+              orderBasePath={orderBasePath}
+              onReview={actions.review}
+            />
+          ) : (
               <EmptyCard text="Chọn một toa kính để kiểm tra." />
             )}
           </div>
@@ -158,7 +166,18 @@ function StaffPrescriptionReviewPage() {
   );
 }
 
-function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, onReview }) {
+function DetailPanel({
+  detail,
+  actionNote,
+  setActionNote,
+  actionError,
+  saving,
+  relatedOrder,
+  isRelatedOrderLoading,
+  relatedOrderError,
+  orderBasePath,
+  onReview,
+}) {
   const status = normalizeStatus(detail.prescriptionStatus);
 
   return (
@@ -209,6 +228,42 @@ function DetailPanel({ detail, actionNote, setActionNote, actionError, saving, o
             </a>
           </section>
         ) : null}
+
+        <section>
+          <SectionTitle icon={Eye} title="Đơn hàng liên quan" />
+          {isRelatedOrderLoading ? (
+            <p className="rounded-2xl border border-border bg-secondary/60 px-4 py-3 text-sm text-muted-foreground">
+              Đang tải thông tin đơn hàng...
+            </p>
+          ) : null}
+
+          {!isRelatedOrderLoading && relatedOrderError ? (
+            <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {relatedOrderError}
+            </p>
+          ) : null}
+
+          {!isRelatedOrderLoading && !relatedOrderError && relatedOrder ? (
+            <div className="rounded-2xl border border-border bg-secondary/60 p-4">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="font-medium">Đơn #{relatedOrder.orderId}</p>
+                <StatusBadge
+                  status={relatedOrder.orderStatus}
+                  label={getOrderStatusLabel(relatedOrder.orderStatus)}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Cập nhật lúc: {relatedOrder.updatedAt ? new Date(relatedOrder.updatedAt).toLocaleString("vi-VN") : "-"}
+              </p>
+              <Link
+                to={`${orderBasePath}/${relatedOrder.orderId}`}
+                className="mt-3 inline-flex items-center gap-2 text-sm text-primary hover:underline"
+              >
+                Mở chi tiết đơn hàng
+              </Link>
+            </div>
+          ) : null}
+        </section>
 
         <section>
           <SectionTitle icon={FileText} title="Ghi chú xử lý" />
@@ -347,6 +402,25 @@ function normalizeStatus(status) {
   return String(status ?? "").trim().toLowerCase();
 }
 
+function getOrderStatusLabel(status) {
+  switch (normalizeStatus(status)) {
+    case "pending":
+      return "Chờ duyệt";
+    case "awaitingstock":
+      return "Chờ hàng";
+    case "processing":
+      return "Đang xử lý";
+    case "shipped":
+      return "Đang giao";
+    case "completed":
+      return "Hoàn thành";
+    case "cancelled":
+      return "Đã hủy";
+    default:
+      return status || "Đang cập nhật";
+  }
+}
+
 function formatCurrency(amount) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
@@ -355,4 +429,3 @@ function formatCurrency(amount) {
 }
 
 export { StaffPrescriptionReviewPage as default };
-

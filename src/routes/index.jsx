@@ -38,6 +38,7 @@ import AdminLensPackagesPage from "@/pages/admin/AdminLensPackagesPage";
 import AdminReportsPage from "@/pages/admin/AdminReportsPage";
 import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
 import AdminPromotionsPage from "@/pages/admin/AdminPromotionsPage";
+import AdminPaymentsPage from "@/pages/admin/AdminPaymentsPage";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -139,6 +140,7 @@ const router = createBrowserRouter([
       { path: "orders/:orderId", Component: AdminOrderDetailPage },
       { path: "products", Component: AdminProductsPage },
       { path: "products/pre-orders", Component: AdminPreOrderVariantsPage },
+      { path: "payments", Component: AdminPaymentsPage },
       { path: "inventory", Component: AdminInventoryPage },
       { path: "lens-packages", Component: AdminLensPackagesPage },
       { path: "promotions", Component: AdminPromotionsPage },
@@ -157,6 +159,8 @@ const router = createBrowserRouter([
       { path: "prescriptions", Component: StaffPrescriptionReviewPage },
       { path: "orders", Component: AdminOrdersPage },
       { path: "orders/:orderId", Component: AdminOrderDetailPage },
+      { path: "products/pre-orders", Component: AdminPreOrderVariantsPage },
+      { path: "payments", Component: AdminPaymentsPage },
       { path: "inventory", Component: AdminInventoryPage },
       { path: "reports", Component: SettingsPage }
     ]

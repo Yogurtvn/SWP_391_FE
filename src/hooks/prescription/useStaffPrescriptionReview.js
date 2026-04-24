@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { getOrderById } from "@/services/adminService";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
@@ -19,6 +20,9 @@ export function useStaffPrescriptionReview() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState(DEFAULT_FILTER_STATUS);
   const [actionNote, setActionNote] = useState("");
+  const [relatedOrder, setRelatedOrder] = useState(null);
+  const [relatedOrderStatus, setRelatedOrderStatus] = useState("idle");
+  const [relatedOrderError, setRelatedOrderError] = useState("");
 
   useEffect(() => {
     if (!auth.accessToken) {
@@ -31,11 +35,61 @@ export function useStaffPrescriptionReview() {
   useEffect(() => {
     if (!auth.accessToken || !selectedId) {
       dispatch(clearStaffPrescriptionDetail());
+      setRelatedOrder(null);
+      setRelatedOrderStatus("idle");
+      setRelatedOrderError("");
       return;
     }
 
     void dispatch(fetchStaffPrescriptionDetail(selectedId));
   }, [auth.accessToken, dispatch, selectedId]);
+
+  useEffect(() => {
+    const orderId = Number(prescriptionState.detail.data?.orderId ?? 0);
+
+    if (!auth.accessToken || !orderId) {
+      setRelatedOrder(null);
+      setRelatedOrderStatus("idle");
+      setRelatedOrderError("");
+      return;
+    }
+
+    let ignore = false;
+
+    async function loadRelatedOrder() {
+      setRelatedOrderStatus("loading");
+      setRelatedOrderError("");
+
+      try {
+        const order = await getOrderById(orderId, auth.accessToken);
+
+        if (ignore) {
+          return;
+        }
+
+        setRelatedOrder(order ?? null);
+        setRelatedOrderStatus("succeeded");
+      } catch (error) {
+        if (ignore) {
+          return;
+        }
+
+        setRelatedOrder(null);
+        setRelatedOrderStatus("failed");
+        setRelatedOrderError(
+          error instanceof Error && error.message.trim().length > 0
+            ? error.message
+            : "Không tải được đơn hàng liên quan.",
+        );
+      }
+    }
+
+    void loadRelatedOrder();
+
+    return () => {
+      ignore = true;
+    };
+  }, [auth.accessToken, prescriptionState.detail.data?.orderId]);
 
   useEffect(() => {
     const detail = prescriptionState.detail.data;
@@ -114,21 +168,41 @@ export function useStaffPrescriptionReview() {
         },
       })).unwrap();
 
-      await refreshAfterAction(detail.prescriptionId);
+      await refreshAfterAction(detail.prescriptionId, Number(detail.orderId ?? 0));
     } catch {
       // The slice already stores the API error for the page to render.
     }
   }
 
-  async function refreshAfterAction(prescriptionId) {
+  async function refreshAfterAction(prescriptionId, orderId) {
     await loadList();
-    await dispatch(fetchStaffPrescriptionDetail(prescriptionId));
+    await Promise.all([
+      dispatch(fetchStaffPrescriptionDetail(prescriptionId)),
+      orderId > 0 && auth.accessToken
+        ? getOrderById(orderId, auth.accessToken)
+            .then((order) => {
+              setRelatedOrder(order ?? null);
+              setRelatedOrderStatus("succeeded");
+              setRelatedOrderError("");
+            })
+            .catch((error) => {
+              setRelatedOrder(null);
+              setRelatedOrderStatus("failed");
+              setRelatedOrderError(
+                error instanceof Error && error.message.trim().length > 0
+                  ? error.message
+                  : "Không tải được đơn hàng liên quan.",
+              );
+            })
+        : Promise.resolve(),
+    ]);
   }
 
   return {
     items: filteredItems,
     selectedId,
     detail: prescriptionState.detail.data,
+    relatedOrder,
     searchQuery,
     filterStatus,
     actionNote,
@@ -137,7 +211,9 @@ export function useStaffPrescriptionReview() {
       isListLoading: prescriptionState.list.status === "loading",
       isDetailLoading: prescriptionState.detail.status === "loading",
       isSaving: prescriptionState.action.status === "loading",
+      isRelatedOrderLoading: relatedOrderStatus === "loading",
       listError: prescriptionState.list.error,
+      relatedOrderError,
       actionError: prescriptionState.action.error || prescriptionState.detail.error,
     },
     actions: {
@@ -159,4 +235,3 @@ function normalizeOptional(value) {
   const normalizedValue = String(value ?? "").trim();
   return normalizedValue.length > 0 ? normalizedValue : undefined;
 }
-

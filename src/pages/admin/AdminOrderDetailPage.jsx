@@ -1,6 +1,7 @@
 ﻿import { AdminErrorBanner, adminStyles } from "@/components/admin/admin-ui";
 import { useAdminOrderDetailPage } from "@/hooks/admin/useAdminOrderDetailPage";
 import { getOrderStatusPresentation, getShippingStatusPresentation } from "@/utils/orderStatus";
+import { getAllowedAdminOrderTransitions, getAllowedShippingStatuses } from "@/utils/orderWorkflowPolicy";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(Number(value || 0));
@@ -112,6 +113,8 @@ function DetailField({ label, value, emphasize = false, children }) {
 
 export default function AdminOrderDetailPage() {
   const { orderId, order, ui, actions, popupElement } = useAdminOrderDetailPage();
+  const canUpdateOrderStatus = order ? getAllowedAdminOrderTransitions(order).length > 0 : false;
+  const canUpdateShippingStatus = order ? getAllowedShippingStatuses(order).length > 0 : false;
 
   return (
     <div className={adminStyles.page}>
@@ -140,7 +143,7 @@ export default function AdminOrderDetailPage() {
             <button
               type="button"
               onClick={actions.updateOrderStatus}
-              disabled={!order}
+              disabled={!order || !canUpdateOrderStatus}
               className={adminStyles.secondaryButton}
             >
               Đổi trạng thái đơn
@@ -148,7 +151,7 @@ export default function AdminOrderDetailPage() {
             <button
               type="button"
               onClick={actions.updateShippingStatus}
-              disabled={!order}
+              disabled={!order || !canUpdateShippingStatus}
               className={adminStyles.secondaryButton}
             >
               Đổi trạng thái vận chuyển

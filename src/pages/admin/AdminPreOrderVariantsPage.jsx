@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { useSelector } from "react-redux";
 import { Clock3, Eye, Loader2, PackagePlus, RefreshCw, Search, X } from "lucide-react";
 import { AdminErrorBanner, AdminPageShell, AdminPagination, AdminSection, adminStyles } from "@/components/admin/admin-ui";
@@ -145,8 +145,10 @@ function statusClass(status) {
 
 export default function AdminPreOrderVariantsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { accessToken, isReady } = useSelector(selectAuthState);
   const { popupAlert, popupForm, popupElement } = usePopupDialog();
+  const orderBasePath = location.pathname.startsWith("/staff") ? "/staff/orders" : "/admin/orders";
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -615,7 +617,7 @@ export default function AdminPreOrderVariantsPage() {
                               className={adminStyles.smallButton}
                               onClick={() => {
                                 setSelectedOrdersRow(null);
-                                navigate(`/admin/orders/${order.orderId}`);
+                                navigate(`${orderBasePath}/${order.orderId}`);
                               }}
                             >
                               Xem đơn

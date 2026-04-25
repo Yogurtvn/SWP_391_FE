@@ -103,9 +103,6 @@ export default function OrderTrackingPage() {
               <p className="text-muted-foreground">Đặt lúc {order.createdAtLabel}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Badge tone={getOrderTone(order.orderStatus)}>{order.orderStatusLabel}</Badge>
-              <Badge tone={getPaymentTone(order.payment?.paymentStatus)}>{order.payment?.paymentStatusLabel ?? "Chưa có thanh toán"}</Badge>
-              <Badge tone={getShippingTone(order.shippingStatus)}>{order.shippingStatusLabel}</Badge>
               {cancelAvailable ? (
                 <button
                   type="button"
@@ -213,7 +210,6 @@ export default function OrderTrackingPage() {
               <div className="space-y-3 text-sm">
                 <Row label="Tổng tiền" value={formatCurrency(order.totalAmount)} />
                 <Row label="Trạng thái đơn" value={order.orderStatusLabel} />
-                <Row label="Trạng thái giao" value={order.shippingStatusLabel} />
                 <Row label="Cập nhật cuối" value={order.updatedAtLabel} />
                 {order.payment ? (
                   <>
@@ -356,44 +352,6 @@ function createFallbackHistory(order) {
   };
 }
 
-function getOrderTone(orderStatus) {
-  switch (String(orderStatus ?? "").trim().toLowerCase()) {
-    case "completed":
-      return "bg-green-100 text-green-700";
-    case "cancelled":
-      return "bg-red-100 text-red-700";
-    case "shipped":
-      return "bg-blue-100 text-blue-700";
-    default:
-      return "bg-amber-100 text-amber-700";
-  }
-}
-
-function getPaymentTone(paymentStatus) {
-  switch (String(paymentStatus ?? "").trim().toLowerCase()) {
-    case "completed":
-      return "bg-green-100 text-green-700";
-    case "failed":
-      return "bg-red-100 text-red-700";
-    default:
-      return "bg-slate-100 text-slate-700";
-  }
-}
-
-function getShippingTone(shippingStatus) {
-  switch (String(shippingStatus ?? "").trim().toLowerCase()) {
-    case "delivered":
-      return "bg-green-100 text-green-700";
-    case "delivering":
-    case "picking":
-      return "bg-blue-100 text-blue-700";
-    case "failed":
-      return "bg-red-100 text-red-700";
-    default:
-      return "bg-slate-100 text-slate-700";
-  }
-}
-
 function getPrescriptionTone(status) {
   switch (String(status ?? "").trim().toLowerCase()) {
     case "approved":
@@ -448,6 +406,6 @@ function formatDate(value) {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
+    timeZone: "Asia/Ho_Chi_Minh",
   }).format(date);
 }
-

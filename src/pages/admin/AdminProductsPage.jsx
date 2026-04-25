@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { AdminPagination } from "@/components/admin/admin-ui";
 import { useAdminProductsPage } from "@/hooks/admin/useAdminProductsPage";
+import { resolveColorHex } from "@/utils/color";
 
 const COLOR_OPTIONS = [
   { name: "Đen", code: "#000000" },
@@ -29,6 +30,12 @@ const COLOR_OPTIONS = [
   { name: "Xanh lá", code: "#16A34A" },
   { name: "Hồng", code: "#EC4899" },
   { name: "Be", code: "#D2B48C" },
+];
+
+const PRODUCT_TYPE_OPTIONS = [
+  { value: "Frame", label: "Gọng kính" },
+  { value: "Lens", label: "Tròng kính" },
+  { value: "Sunglasses", label: "Kính râm" },
 ];
 
 const PAGE_SIZE = 10;
@@ -46,7 +53,11 @@ function normalizeValue(value) {
 
 function getColorCode(colorName) {
   const matched = COLOR_OPTIONS.find((color) => normalizeValue(color.name) === normalizeValue(colorName));
-  return matched?.code || "#d1d5db";
+  if (matched?.code) {
+    return matched.code;
+  }
+
+  return resolveColorHex(colorName) || "#d1d5db";
 }
 
 function getProductImage(product) {
@@ -60,6 +71,11 @@ function getProductBadgeColor(type) {
   if (normalized === "sunglasses") return "border-purple-200 bg-purple-100 text-purple-800";
   if (normalized === "lens") return "border-emerald-200 bg-emerald-100 text-emerald-800";
   return "border-gray-200 bg-gray-100 text-gray-800";
+}
+
+function getProductTypeLabel(type) {
+  const matched = PRODUCT_TYPE_OPTIONS.find((item) => normalizeValue(item.value) === normalizeValue(type));
+  return matched?.label || type || "Khác";
 }
 
 function getStockBadgeColor(stock) {
@@ -112,6 +128,7 @@ export default function AdminProductsPage() {
         !query ||
         String(product.productName || "").toLowerCase().includes(query) ||
         String(product.productType || "").toLowerCase().includes(query) ||
+        String(getProductTypeLabel(product.productType) || "").toLowerCase().includes(query) ||
         String(summary.primarySku || "").toLowerCase().includes(query) ||
         summary.colors.some((color) => String(color).toLowerCase().includes(query));
 
@@ -262,9 +279,11 @@ export default function AdminProductsPage() {
                   className="w-full rounded-lg border-2 border-gray-300 px-3 py-2 focus:border-primary focus:outline-none"
                 >
                   <option value="all">Tất cả</option>
-                  <option value="Frame">Frame</option>
-                  <option value="Sunglasses">Sunglasses</option>
-                  <option value="Lens">Lens</option>
+                  {PRODUCT_TYPE_OPTIONS.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -375,16 +394,16 @@ export default function AdminProductsPage() {
                       </td>
                       <td className="px-6 py-5">
                         <span className={`rounded-full border-2 px-3 py-1 text-xs font-bold ${getProductBadgeColor(product.productType)}`}>
-                          {product.productType}
+                          {getProductTypeLabel(product.productType)}
                         </span>
                       </td>
                       <td className="px-6 py-5 text-base font-bold text-primary">{formatCurrency(product.basePrice)}</td>
                       <td className="px-6 py-5">
-                        <div className="flex gap-1">
+                        <div className="flex flex-wrap gap-1.5">
                           {summary.colors.length === 0 ? (
                             <span className="text-sm text-gray-400">-</span>
                           ) : (
-                            summary.colors.slice(0, 4).map((color) => (
+                            summary.colors.map((color) => (
                               <div
                                 key={color}
                                 className="h-6 w-6 rounded-full border-2 border-gray-300"
@@ -393,11 +412,6 @@ export default function AdminProductsPage() {
                               />
                             ))
                           )}
-                          {summary.colors.length > 4 ? (
-                            <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-300 bg-gray-100 text-[10px] font-bold text-gray-700">
-                              +{summary.colors.length - 4}
-                            </div>
-                          ) : null}
                         </div>
                       </td>
                       <td className="px-6 py-5">
@@ -500,7 +514,7 @@ export default function AdminProductsPage() {
                       <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                         <ImageIcon className="h-4 w-4 text-primary" />
                       </div>
-                      Thong Tin Co Ban
+                      Thông Tin Cơ Bản
                     </h3>
 
                     <div className="space-y-4">
@@ -548,9 +562,11 @@ export default function AdminProductsPage() {
                             onChange={(event) => actions.setEditFormField("productType", event.target.value)}
                             className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
                           >
-                            <option value="Frame">Frame</option>
-                            <option value="Sunglasses">Sunglasses</option>
-                            <option value="Lens">Lens</option>
+                            {PRODUCT_TYPE_OPTIONS.map((type) => (
+                              <option key={type.value} value={type.value}>
+                                {type.label}
+                              </option>
+                            ))}
                           </select>
                         </div>
 
@@ -896,9 +912,11 @@ export default function AdminProductsPage() {
                         onChange={(event) => actions.setFormField("productType", event.target.value)}
                         className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none"
                       >
-                        <option value="Frame">Frame</option>
-                        <option value="Sunglasses">Sunglasses</option>
-                        <option value="Lens">Lens</option>
+                        {PRODUCT_TYPE_OPTIONS.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -1112,7 +1130,7 @@ export default function AdminProductsPage() {
               <div>
                 <h2 className="text-2xl font-bold text-slate-950">{productDetail.productName}</h2>
                 <p className="mt-1 text-base text-slate-500">
-                  {productDetail.productType} - {formatCurrency(productDetail.basePrice)}
+                  {getProductTypeLabel(productDetail.productType)} - {formatCurrency(productDetail.basePrice)}
                 </p>
                 <p className="mt-2 text-base text-slate-600">{productDetail.description || "Không có mô tả."}</p>
                 <p className="mt-2 text-sm font-medium text-slate-500">

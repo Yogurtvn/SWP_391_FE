@@ -12,7 +12,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAdminOrdersPage } from "@/hooks/admin/useAdminOrdersPage";
 import { getOrderStatusPresentation, getShippingStatusPresentation } from "@/utils/orderStatus";
-import { getAllowedAdminOrderTransitions, getAllowedShippingStatuses } from "@/utils/orderWorkflowPolicy";
+import { getAllowedAdminOrderTransitions } from "@/utils/orderWorkflowPolicy";
 
 const ORDER_STATUS_FILTERS = [
   { value: "Pending", label: "Chờ duyệt" },
@@ -161,7 +161,6 @@ export default function AdminOrdersPage() {
 
   const detailOrder = selectedOrder ?? selectedOrderSummary;
   const canUpdateOrderStatus = detailOrder ? getAllowedAdminOrderTransitions(detailOrder).length > 0 : false;
-  const canUpdateShippingStatus = detailOrder ? getAllowedShippingStatuses(detailOrder).length > 0 : false;
 
   return (
     <div className="min-h-screen bg-orange-50 px-4 py-6 md:px-6 lg:px-8">
@@ -414,15 +413,6 @@ export default function AdminOrdersPage() {
                     >
                       <CheckCircle className="h-5 w-5" />
                       Đổi trạng thái đơn
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => actions.updateShippingStatus(detailOrder.orderId)}
-                      disabled={!canUpdateShippingStatus}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-sky-600 px-5 py-3 font-bold text-white transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <CheckCircle className="h-5 w-5" />
-                      Đổi trạng thái vận chuyển
                     </button>
                   </div>
                 </div>

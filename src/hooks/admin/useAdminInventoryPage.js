@@ -1,20 +1,25 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
+import { getStockReceiptById } from "@/services/adminService";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
   createAdminReceipt,
   fetchAdminInventory,
-  saveAdminInventoryQuantity,
   saveAdminPreOrder,
   selectAdminState,
 } from "@/store/admin/adminSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const DEFAULT_RECEIPT_FORM = {
+  sku: "",
   variantId: "",
   quantityReceived: "",
   note: "",
 };
+
+function normalizeSku(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
 
 export function useAdminInventoryPage() {
   const dispatch = useAppDispatch();
@@ -22,6 +27,8 @@ export function useAdminInventoryPage() {
   const admin = useAppSelector(selectAdminState);
   const { popupAlert, popupForm, popupElement } = usePopupDialog();
   const [receiptForm, setReceiptForm] = useState(DEFAULT_RECEIPT_FORM);
+  const [receiptDetail, setReceiptDetail] = useState(null);
+  const [isLoadingReceiptDetail, setIsLoadingReceiptDetail] = useState(false);
 
   useEffect(() => {
     if (!auth.isReady || !auth.accessToken) {
@@ -31,56 +38,90 @@ export function useAdminInventoryPage() {
     void dispatch(fetchAdminInventory());
   }, [auth.accessToken, auth.isReady, dispatch]);
 
-  async function updateQuantity(item) {
-    const formValues = await popupForm({
-      title: "Sửa số lượng tồn kho",
-      message: `SKU: ${item.sku || "-"} | Variant ID: ${item.variantId}`,
-      okText: "Lưu",
-      cancelText: "Hủy",
-      fields: [
-        {
-          name: "quantity",
-          label: "Số lượng",
-          type: "number",
-          required: true,
-          min: 0,
-          validate: (value) => {
-            const parsed = Number(value);
-            if (Number.isNaN(parsed) || parsed < 0) {
-              return "Số lượng không hợp lệ.";
-            }
-            return "";
-          },
-        },
-      ],
-      initialValues: {
-        quantity: String(item.quantity ?? 0),
-      },
+  const skuToVariantMap = useMemo(() => {
+    const map = new Map();
+    admin.inventory.items.forEach((item) => {
+      const normalizedSku = normalizeSku(item?.sku);
+      const variantId = Number(item?.variantId ?? 0);
+      if (normalizedSku && Number.isFinite(variantId) && variantId > 0) {
+        map.set(normalizedSku, variantId);
+      }
     });
+    return map;
+  }, [admin.inventory.items]);
 
-    if (!formValues) {
+  const variantMetaById = useMemo(() => {
+    const map = new Map();
+    admin.inventory.items.forEach((item) => {
+      const variantId = Number(item?.variantId ?? 0);
+      if (Number.isFinite(variantId) && variantId > 0) {
+        map.set(variantId, {
+          sku: item?.sku ?? "-",
+          productName: item?.productName ?? "-",
+          productImageUrl: item?.productImageUrl ?? null,
+        });
+      }
+    });
+    return map;
+  }, [admin.inventory.items]);
+
+  const skuOptions = useMemo(() => {
+    const options = Array.from(
+      new Set(
+        admin.inventory.items
+          .map((item) => String(item?.sku ?? "").trim())
+          .filter((sku) => sku.length > 0 && sku !== "-"),
+      ),
+    );
+    options.sort((a, b) => a.localeCompare(b, "vi"));
+    return options;
+  }, [admin.inventory.items]);
+
+  function enrichReceiptDetail(detail) {
+    if (!detail) {
+      return null;
+    }
+
+    const variantId = Number(detail?.variantId ?? 0);
+    const fromVariant = variantMetaById.get(variantId) ?? {};
+    const fromReceiptList = admin.inventory.receipts.find(
+      (receipt) => Number(receipt?.receiptId) === Number(detail?.receiptId),
+    ) ?? {};
+
+    return {
+      ...detail,
+      sku: detail?.sku ?? fromReceiptList?.sku ?? fromVariant?.sku ?? "-",
+      productName: detail?.productName ?? fromReceiptList?.productName ?? fromVariant?.productName ?? "-",
+      productImageUrl: detail?.productImageUrl ?? fromReceiptList?.productImageUrl ?? fromVariant?.productImageUrl ?? null,
+    };
+  }
+
+  function setReceiptSku(value) {
+    const sku = String(value ?? "");
+    const variantId = skuToVariantMap.get(normalizeSku(sku));
+
+    setReceiptForm((current) => ({
+      ...current,
+      sku,
+      variantId: Number.isFinite(variantId) && variantId > 0 ? String(variantId) : "",
+    }));
+  }
+
+  useEffect(() => {
+    if (!receiptForm.sku) {
       return;
     }
 
-    const quantity = Number(formValues.quantity);
+    const variantId = skuToVariantMap.get(normalizeSku(receiptForm.sku));
+    const normalizedVariantId = Number.isFinite(variantId) && variantId > 0 ? String(variantId) : "";
 
-    try {
-      await dispatch(
-        saveAdminInventoryQuantity({
-          variantId: item.variantId,
-          payload: {
-            quantity,
-            isPreOrderAllowed: Boolean(item.isPreOrderAllowed),
-            expectedRestockDate: item.expectedRestockDate ?? null,
-            preOrderNote: item.preOrderNote ?? null,
-          },
-        }),
-      ).unwrap();
-      await dispatch(fetchAdminInventory()).unwrap();
-    } catch (error) {
-      await popupAlert(error || "Không cập nhật được tồn kho.");
+    if (receiptForm.variantId !== normalizedVariantId) {
+      setReceiptForm((current) => ({
+        ...current,
+        variantId: normalizedVariantId,
+      }));
     }
-  }
+  }, [receiptForm.sku, receiptForm.variantId, skuToVariantMap]);
 
   async function editPreOrder(item) {
     const formValues = await popupForm({
@@ -146,11 +187,17 @@ export function useAdminInventoryPage() {
   async function createReceipt(event) {
     event.preventDefault();
 
+    const sku = receiptForm.sku.trim();
     const variantId = Number(receiptForm.variantId);
     const quantityReceived = Number(receiptForm.quantityReceived);
 
+    if (!sku) {
+      await popupAlert("Vui lòng nhập SKU.");
+      return;
+    }
+
     if (Number.isNaN(variantId) || variantId <= 0) {
-      await popupAlert("Variant ID không hợp lệ.");
+      await popupAlert("Không tìm thấy Variant ID tương ứng với SKU.");
       return;
     }
 
@@ -160,13 +207,14 @@ export function useAdminInventoryPage() {
     }
 
     try {
-      await dispatch(
+      const createdReceipt = await dispatch(
         createAdminReceipt({
           variantId,
           quantityReceived,
           note: receiptForm.note.trim() || null,
         }),
       ).unwrap();
+      setReceiptDetail(enrichReceiptDetail(createdReceipt));
       setReceiptForm(DEFAULT_RECEIPT_FORM);
       await dispatch(fetchAdminInventory()).unwrap();
     } catch (error) {
@@ -174,20 +222,48 @@ export function useAdminInventoryPage() {
     }
   }
 
+  async function viewReceiptDetail(receiptId) {
+    if (!auth.accessToken) {
+      await popupAlert("Không có access token.");
+      return;
+    }
+
+    const normalizedReceiptId = Number(receiptId);
+    if (Number.isNaN(normalizedReceiptId) || normalizedReceiptId <= 0) {
+      await popupAlert("Mã phiếu nhập không hợp lệ.");
+      return;
+    }
+
+    setIsLoadingReceiptDetail(true);
+    try {
+      const detail = await getStockReceiptById(normalizedReceiptId, auth.accessToken);
+      setReceiptDetail(enrichReceiptDetail(detail));
+    } catch (error) {
+      await popupAlert(error || "Không tải được chi tiết phiếu nhập.");
+    } finally {
+      setIsLoadingReceiptDetail(false);
+    }
+  }
+
   return {
     inventories: admin.inventory.items,
     receipts: admin.inventory.receipts,
     receiptForm,
+    skuOptions,
+    receiptDetail,
     ui: {
       error: admin.inventory.error ?? (!auth.accessToken && auth.isReady ? "Không có access token." : null),
       isLoading: admin.inventory.status === "loading",
+      isLoadingReceiptDetail,
     },
     actions: {
       setReceiptField: (field, value) => setReceiptForm((current) => ({ ...current, [field]: value })),
+      setReceiptSku,
       retry: () => dispatch(fetchAdminInventory()),
-      updateQuantity,
       editPreOrder,
       createReceipt,
+      viewReceiptDetail,
+      closeReceiptDetail: () => setReceiptDetail(null),
     },
     popupElement,
   };

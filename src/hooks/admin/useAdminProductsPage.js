@@ -21,7 +21,7 @@ import {
 } from "@/store/admin/adminSlice";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
-const PRODUCT_TYPES = ["Frame", "Sunglasses", "Lens"];
+const PRODUCT_TYPES = ["Frame", "Lens", "Sunglasses"];
 
 const DEFAULT_PRODUCT_FORM = {
   productName: "",

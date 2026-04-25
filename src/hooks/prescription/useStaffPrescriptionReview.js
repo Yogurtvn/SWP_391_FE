@@ -10,7 +10,7 @@ import {
   selectStaffPrescriptionState,
 } from "@/store/prescription/prescriptionSlice";
 
-const DEFAULT_FILTER_STATUS = "submitted";
+const DEFAULT_FILTER_STATUS = "";
 
 export function useStaffPrescriptionReview() {
   const dispatch = useAppDispatch();

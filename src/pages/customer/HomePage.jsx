@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { products } from "@/constants/products";
 import { getCatalogProducts } from "@/services/catalogService";
+import { resolveColorHex } from "@/utils/color";
 
 const fallbackFeaturedProducts = products.slice(0, 4).map((p) => ({
   id: p.id,
@@ -433,43 +434,4 @@ function mapCatalogProductToFeaturedCard(item) {
     availabilityStatus: item.availabilityStatus,
     product: item.product ?? item,
   };
-}
-
-function resolveColorHex(value) {
-  const rawValue = String(value ?? "").trim();
-
-  if (!rawValue) {
-    return null;
-  }
-
-  if (/^#([a-fA-F0-9]{3}|[a-fA-F0-9]{6})$/.test(rawValue)) {
-    return rawValue;
-  }
-
-  const normalized = rawValue
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "");
-
-  const colorMap = {
-    den: "#111827",
-    trang: "#f3f4f6",
-    xam: "#6b7280",
-    bac: "#c0c0c0",
-    vang: "#facc15",
-    vanggold: "#facc15",
-    nau: "#8b5a2b",
-    do: "#dc2626",
-    doburgundy: "#800020",
-    xanhlam: "#2563eb",
-    xanhduong: "#2563eb",
-    xanhnavy: "#1e3a8a",
-    xanhla: "#16a34a",
-    hong: "#ec4899",
-    beige: "#d2b48c",
-    be: "#d2b48c",
-  };
-
-  return colorMap[normalized] || "#9ca3af";
 }

@@ -85,6 +85,30 @@ function getErrorMessage(error, fallbackMessage) {
   return error?.message || fallbackMessage;
 }
 
+function normalizeText(value) {
+  const normalized = String(value ?? "").trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function resolveProductImage(product) {
+  const thumbnail = normalizeText(product?.thumbnailUrl) ?? normalizeText(product?.imageUrl);
+  if (thumbnail) {
+    return thumbnail;
+  }
+
+  const images = Array.isArray(product?.images) ? product.images : [];
+  if (images.length === 0) {
+    return null;
+  }
+
+  const primaryImage = images.find((image) => Boolean(image?.isPrimary)) ?? images[0];
+  if (typeof primaryImage === "string") {
+    return normalizeText(primaryImage);
+  }
+
+  return normalizeText(primaryImage?.imageUrl ?? primaryImage?.url);
+}
+
 function normalizePagedPayload(payload) {
   return {
     items: Array.isArray(payload?.items) ? payload.items : [],
@@ -264,24 +288,111 @@ export const fetchAdminInventory = createAsyncThunk(
     }
 
     try {
-      const [inventoryResult, receiptResult] = await Promise.all([
-        getInventories({ page: 1, pageSize: 50, sortBy: "variantId", sortOrder: "asc" }, token),
+      const [inventoryResult, receiptResult, productResult] = await Promise.all([
+        getInventories({ page: 1, pageSize: 100, sortBy: "variantId", sortOrder: "asc" }, token),
         getStockReceipts({ page: 1, pageSize: 10 }, token),
+        getProducts({ page: 1, pageSize: 200, sortBy: "newest", sortOrder: "desc" }, token),
       ]);
 
       const baseItems = inventoryResult?.items ?? [];
-      const enrichedItems = await Promise.all(baseItems.map(async (item) => {
-        try {
-          const variant = await getVariantById(item.variantId, token);
-          return { ...item, sku: variant?.sku ?? "-" };
-        } catch {
-          return { ...item, sku: "-" };
+      const baseReceipts = receiptResult?.items ?? [];
+      const products = Array.isArray(productResult?.items) ? productResult.items : [];
+      const productById = new Map(
+        products
+          .map((product) => [Number(product?.productId ?? 0), product])
+          .filter(([productId]) => Number.isFinite(productId) && productId > 0),
+      );
+      const variantMetaById = new Map();
+
+      for (const product of products) {
+        const productName = normalizeText(product?.productName) ?? "-";
+        const productImageUrl = resolveProductImage(product);
+        const variants = Array.isArray(product?.variants) ? product.variants : [];
+
+        for (const variant of variants) {
+          const variantId = Number(variant?.variantId ?? 0);
+          if (!Number.isFinite(variantId) || variantId <= 0) {
+            continue;
+          }
+
+          variantMetaById.set(variantId, {
+            sku: normalizeText(variant?.sku) ?? "-",
+            productName,
+            productImageUrl,
+            color: normalizeText(variant?.color),
+            size: normalizeText(variant?.size),
+            frameType: normalizeText(variant?.frameType),
+          });
         }
-      }));
+      }
+
+      const allVariantIds = new Set([
+        ...baseItems.map((item) => Number(item?.variantId ?? 0)),
+        ...baseReceipts.map((receipt) => Number(receipt?.variantId ?? 0)),
+      ]);
+      const missingVariantIds = Array.from(allVariantIds).filter(
+        (variantId) =>
+          Number.isFinite(variantId) &&
+          variantId > 0 &&
+          !variantMetaById.has(variantId),
+      );
+
+      if (missingVariantIds.length > 0) {
+        const fallbackEntries = await Promise.all(
+          missingVariantIds.map(async (variantId) => {
+            try {
+              const detail = await getVariantById(variantId, token);
+              return [variantId, detail];
+            } catch {
+              return [variantId, null];
+            }
+          }),
+        );
+
+        for (const [variantId, detail] of fallbackEntries) {
+          const existingMeta = variantMetaById.get(variantId) ?? null;
+          const productId = Number(detail?.productId ?? 0);
+          const product = productById.get(productId);
+          const fallbackProductName = normalizeText(detail?.productName) ?? normalizeText(product?.productName) ?? "-";
+          const fallbackProductImage = normalizeText(detail?.productImageUrl ?? detail?.imageUrl) ?? resolveProductImage(product);
+
+          variantMetaById.set(variantId, {
+            sku: normalizeText(detail?.sku) ?? existingMeta?.sku ?? "-",
+            productName: existingMeta?.productName && existingMeta.productName !== "-" ? existingMeta.productName : fallbackProductName,
+            productImageUrl: existingMeta?.productImageUrl ?? fallbackProductImage ?? null,
+            color: normalizeText(detail?.color) ?? existingMeta?.color ?? null,
+            size: normalizeText(detail?.size) ?? existingMeta?.size ?? null,
+            frameType: normalizeText(detail?.frameType) ?? existingMeta?.frameType ?? null,
+          });
+        }
+      }
+
+      const enrichedItems = baseItems.map((item) => {
+        const meta = variantMetaById.get(Number(item?.variantId ?? 0));
+        return {
+          ...item,
+          sku: meta?.sku ?? "-",
+          productName: meta?.productName ?? "-",
+          productImageUrl: meta?.productImageUrl ?? null,
+          color: meta?.color ?? item?.color ?? null,
+          size: meta?.size ?? item?.size ?? null,
+          frameType: meta?.frameType ?? item?.frameType ?? null,
+        };
+      });
+
+      const enrichedReceipts = baseReceipts.map((receipt) => {
+        const meta = variantMetaById.get(Number(receipt?.variantId ?? 0));
+        return {
+          ...receipt,
+          sku: meta?.sku ?? "-",
+          productName: meta?.productName ?? "-",
+          productImageUrl: meta?.productImageUrl ?? null,
+        };
+      });
 
       return {
         items: enrichedItems,
-        receipts: receiptResult?.items ?? [],
+        receipts: enrichedReceipts,
       };
     } catch (error) {
       return rejectWithValue(getErrorMessage(error, "Không tải được tồn kho."));

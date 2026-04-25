@@ -450,6 +450,10 @@ export async function getStockReceipts(params = {}, token) {
   return apiGet(`/api/stock-receipts${queryStr ? `?${queryStr}` : ""}`, { token });
 }
 
+export async function getStockReceiptById(receiptId, token) {
+  return apiGet(`/api/stock-receipts/${receiptId}`, { token });
+}
+
 // =============================================
 // LENS TYPES (Admin)
 // =============================================

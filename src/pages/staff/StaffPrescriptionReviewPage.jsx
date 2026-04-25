@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router";
 import { Check, Eye, FileText, Image as ImageIcon, Search, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useStaffPrescriptionReview } from "@/hooks/prescription/useStaffPrescriptionReview";
 
 const STATUS_PRESENTATIONS = {
@@ -44,9 +45,39 @@ function StaffPrescriptionReviewPage() {
   } = useStaffPrescriptionReview();
   const location = useLocation();
   const orderBasePath = location.pathname.startsWith("/admin") ? "/admin/orders" : "/staff/orders";
+  const [previewImageUrl, setPreviewImageUrl] = useState("");
+  const [hasAppliedQuerySelection, setHasAppliedQuerySelection] = useState(false);
+
+  useEffect(() => {
+    setHasAppliedQuerySelection(false);
+  }, [location.search]);
+
+  useEffect(() => {
+    if (hasAppliedQuerySelection) {
+      return;
+    }
+
+    const queryPrescriptionId = Number(new URLSearchParams(location.search).get("prescriptionId") ?? 0);
+
+    if (!Number.isFinite(queryPrescriptionId) || queryPrescriptionId <= 0) {
+      setHasAppliedQuerySelection(true);
+      return;
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return;
+    }
+
+    const matchedItem = items.find((item) => Number(item.prescriptionId) === queryPrescriptionId);
+    if (matchedItem) {
+      actions.setSelectedId(matchedItem.prescriptionId);
+    }
+
+    setHasAppliedQuerySelection(true);
+  }, [actions, hasAppliedQuerySelection, items, location.search]);
 
   return (
-    <div className="min-h-screen bg-secondary/30">
+    <div className="min-h-screen bg-[#fffaf2]">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 rounded-[28px] border border-border bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -149,19 +180,35 @@ function StaffPrescriptionReviewPage() {
                 actionNote={actionNote}
                 setActionNote={actions.setActionNote}
                 actionError={ui.actionError}
-              saving={ui.isSaving}
-              relatedOrder={relatedOrder}
-              isRelatedOrderLoading={ui.isRelatedOrderLoading}
-              relatedOrderError={ui.relatedOrderError}
-              orderBasePath={orderBasePath}
-              onReview={actions.review}
-            />
+                saving={ui.isSaving}
+                relatedOrder={relatedOrder}
+                isRelatedOrderLoading={ui.isRelatedOrderLoading}
+                relatedOrderError={ui.relatedOrderError}
+                orderBasePath={orderBasePath}
+                onReview={actions.review}
+                onOpenImagePreview={setPreviewImageUrl}
+              />
           ) : (
               <EmptyCard text="Chọn một toa kính để kiểm tra." />
             )}
           </div>
         </div>
       </div>
+
+      {previewImageUrl ? (
+        <button
+          type="button"
+          onClick={() => setPreviewImageUrl("")}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+        >
+          <img
+            src={previewImageUrl}
+            alt="Anh toa"
+            onClick={(event) => event.stopPropagation()}
+            className="max-h-[90vh] max-w-[90vw] rounded-xl border border-white/20 bg-white object-contain shadow-2xl"
+          />
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -177,6 +224,7 @@ function DetailPanel({
   relatedOrderError,
   orderBasePath,
   onReview,
+  onOpenImagePreview,
 }) {
   const status = normalizeStatus(detail.prescriptionStatus);
 
@@ -222,10 +270,14 @@ function DetailPanel({
         {detail.prescriptionImageUrl ? (
           <section>
             <SectionTitle icon={ImageIcon} title="Ảnh toa" />
-            <a href={detail.prescriptionImageUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-primary hover:underline">
+            <button
+              type="button"
+              onClick={() => onOpenImagePreview(detail.prescriptionImageUrl)}
+              className="inline-flex items-center gap-2 text-primary hover:underline"
+            >
               <ImageIcon className="h-4 w-4" />
               Mở ảnh toa
-            </a>
+            </button>
           </section>
         ) : null}
 
@@ -299,6 +351,7 @@ function DetailPanel({
           ) : null}
         </section>
       </div>
+
     </div>
   );
 }
@@ -429,3 +482,4 @@ function formatCurrency(amount) {
 }
 
 export { StaffPrescriptionReviewPage as default };
+

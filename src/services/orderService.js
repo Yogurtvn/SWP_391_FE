@@ -367,6 +367,7 @@ export function formatDateTime(value) {
   return new Intl.DateTimeFormat("vi-VN", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "Asia/Ho_Chi_Minh",
   }).format(date);
 }
 

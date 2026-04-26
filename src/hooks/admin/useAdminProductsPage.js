@@ -64,6 +64,41 @@ const DEFAULT_EDIT_PRODUCT_FORM = {
   description: "",
 };
 
+const SKU_COLOR_LABELS = {
+  den: "Đen",
+  black: "Đen",
+  trang: "Trắng",
+  white: "Trắng",
+  xam: "Xám",
+  gray: "Xám",
+  grey: "Xám",
+  bac: "Bạc",
+  silver: "Bạc",
+  vang: "Vàng gold",
+  gold: "Vàng gold",
+  nau: "Nâu",
+  brown: "Nâu",
+  do: "Đỏ",
+  red: "Đỏ",
+  xanh: "Xanh dương",
+  blue: "Xanh dương",
+  xanhduong: "Xanh dương",
+  xanhla: "Xanh lá",
+  green: "Xanh lá",
+  hong: "Hồng",
+  pink: "Hồng",
+  tim: "Tím",
+  purple: "Tím",
+  be: "Be",
+  beige: "Be",
+  trongsuot: "Trong suốt",
+  clear: "Trong suốt",
+  transparent: "Trong suốt",
+  khongmau: "Trong suốt",
+  doimau: "Đổi màu",
+  photochromic: "Đổi màu",
+};
+
 function createEmptyEditVariant(variantId = null) {
   return {
     variantId,
@@ -86,6 +121,55 @@ function normalizeSkuSegment(value) {
     .replace(/[^A-Z0-9]+/g, "-")
     .replace(/-{2,}/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+function normalizeLookup(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function isMeaningfulColor(value) {
+  const normalized = normalizeLookup(value);
+
+  if (!normalized) {
+    return false;
+  }
+
+  return !["-", "na", "n/a", "default", "macdinh", "khac", "none", "null", "undefined"].includes(normalized);
+}
+
+function inferColorFromSku(sku) {
+  const normalizedSku = String(sku || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  if (!normalizedSku) {
+    return "";
+  }
+
+  const token = normalizedSku
+    .split(/[^a-z0-9]+/)
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .find((segment) => SKU_COLOR_LABELS[segment]);
+
+  return token ? SKU_COLOR_LABELS[token] : "";
+}
+
+function resolveVariantColorLabel(variant) {
+  const rawColor = String(variant?.color ?? "").trim();
+
+  if (isMeaningfulColor(rawColor)) {
+    return rawColor;
+  }
+
+  return inferColorFromSku(variant?.sku);
 }
 
 function revokeDraftPreviews(drafts) {
@@ -185,7 +269,10 @@ export function useAdminProductsPage() {
         try {
           const detail = await getProductById(product.productId, auth.accessToken);
           const variants = detail?.variants ?? [];
-          const colors = Array.from(new Set(variants.map((variant) => variant.color).filter(Boolean)));
+          const colorEntries = variants
+            .map((variant) => resolveVariantColorLabel(variant))
+            .filter(Boolean);
+          const colors = Array.from(new Set(colorEntries));
           const totalStock = variants.reduce((sum, variant) => sum + Number(variant.quantity || 0), 0);
 
           return [
@@ -518,6 +605,10 @@ export function useAdminProductsPage() {
       const refreshedDetail = await loadProductForEditing(editForm.productId, true);
       setEditForm(buildEditProductForm(refreshedDetail));
       await popupAlert("Cập nhật sản phẩm thành công.");
+      const nextDetailOpen = isDetailMởdalOpen;
+      setIsEditMởdalOpen(false);
+      resetEditMởdalState();
+      clearCurrentProductIfUnused(nextDetailOpen, false);
       return true;
     } catch (error) {
       await popupAlert(error || "Không cập nhật được sản phẩm.");

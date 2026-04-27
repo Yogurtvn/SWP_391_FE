@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
 import { getProductById, getVariantById } from "@/services/adminService";
@@ -33,12 +33,11 @@ const DEFAULT_PRODUCT_FORM = {
   description: "",
 };
 
-const DEFAULT_CREATE_COLOR_FORM = {
-  colorName: "",
-  colorCode: "#000000",
-  quantity: "",
-  size: "",
-  frameType: "",
+const DEFAULT_CREATE_VARIANT_PICKER_FORM = {
+  selectedVariantId: "",
+};
+
+const DEFAULT_CREATE_IMAGE_FORM = {
   imageFiles: [],
   imagePreviews: [],
 };
@@ -178,14 +177,17 @@ function revokeDraftPreviews(drafts) {
   });
 }
 
-function buildUniqueVariantSku(baseSku, colorName, existingDrafts) {
+function buildGeneratedVariantSku(baseSku, productId, sourceVariantId, usedSkus) {
   const normalizedBase = normalizeSkuSegment(baseSku) || "SKU";
-  const normalizedColor = normalizeSkuSegment(colorName) || "COLOR";
-  let candidate = `${normalizedBase}-${normalizedColor}`;
+  const normalizedProductId = Number(productId);
+  const normalizedSourceVariantId = Number(sourceVariantId);
+  const productSegment = Number.isFinite(normalizedProductId) && normalizedProductId > 0 ? normalizedProductId : "P";
+  const variantSegment = Number.isFinite(normalizedSourceVariantId) && normalizedSourceVariantId > 0 ? normalizedSourceVariantId : "V";
+  let candidate = `${normalizedBase}-${productSegment}-${variantSegment}`;
   let suffix = 2;
 
-  while (existingDrafts.some((draft) => draft.sku === candidate)) {
-    candidate = `${normalizedBase}-${normalizedColor}-${suffix}`;
+  while (usedSkus.has(candidate)) {
+    candidate = `${normalizedBase}-${productSegment}-${variantSegment}-${suffix}`;
     suffix += 1;
   }
 
@@ -229,7 +231,8 @@ export function useAdminProductsPage() {
   const { popupAlert, popupConfirm, popupElement } = usePopupDialog();
 
   const [form, setForm] = useState(DEFAULT_PRODUCT_FORM);
-  const [currentColorForm, setCurrentColorForm] = useState(DEFAULT_CREATE_COLOR_FORM);
+  const [currentVariantPickerForm, setCurrentVariantPickerForm] = useState(DEFAULT_CREATE_VARIANT_PICKER_FORM);
+  const [createImageForm, setCreateImageForm] = useState(DEFAULT_CREATE_IMAGE_FORM);
   const [draftVariants, setDraftVariants] = useState([]);
   const [isCreatingProduct, setIsCreatingProduct] = useState(false);
   const [productSummaries, setProductSummaries] = useState({});
@@ -310,10 +313,53 @@ export function useAdminProductsPage() {
     };
   }, [admin.products.items, auth.accessToken]);
 
+  const availableDbVariants = useMemo(() => {
+    const seenVariantIds = new Set();
+
+    return admin.products.items
+      .flatMap((product) => {
+        const productId = Number(product?.productId ?? 0);
+        const productName = String(product?.productName ?? "").trim() || `Sản phẩm #${productId || "-"}`;
+        const variants = Array.isArray(product?.variants) ? product.variants : [];
+
+        return variants
+          .map((variant) => {
+            const variantId = Number(variant?.variantId ?? 0);
+
+            if (!Number.isFinite(variantId) || variantId <= 0 || seenVariantIds.has(variantId)) {
+              return null;
+            }
+
+            seenVariantIds.add(variantId);
+
+            return {
+              variantId,
+              sourceProductId: productId,
+              sourceProductName: productName,
+              sourceSku: String(variant?.sku ?? "").trim() || "-",
+              colorName: resolveVariantColorLabel(variant),
+              quantity: Number(variant?.quantity ?? 0),
+              size: String(variant?.size ?? "").trim(),
+              frameType: String(variant?.frameType ?? "").trim(),
+              price: Number(variant?.price ?? 0),
+            };
+          })
+          .filter(Boolean);
+      })
+      .sort((left, right) => {
+        if (left.sourceProductName !== right.sourceProductName) {
+          return left.sourceProductName.localeCompare(right.sourceProductName, "vi");
+        }
+
+        return left.variantId - right.variantId;
+      });
+  }, [admin.products.items]);
+
   function resetCreateProductBuilder() {
-    revokeDraftPreviews([currentColorForm, ...draftVariants]);
+    revokeDraftPreviews([createImageForm]);
     setForm(DEFAULT_PRODUCT_FORM);
-    setCurrentColorForm(DEFAULT_CREATE_COLOR_FORM);
+    setCurrentVariantPickerForm(DEFAULT_CREATE_VARIANT_PICKER_FORM);
+    setCreateImageForm(DEFAULT_CREATE_IMAGE_FORM);
     setDraftVariants([]);
   }
 
@@ -351,8 +397,8 @@ export function useAdminProductsPage() {
     return detail;
   }
 
-  function setCurrentColorField(field, value) {
-    setCurrentColorForm((current) => ({ ...current, [field]: value }));
+  function setCurrentVariantPickerField(field, value) {
+    setCurrentVariantPickerForm((current) => ({ ...current, [field]: value }));
   }
 
   function setEditVariantField(variantId, field, value) {
@@ -368,7 +414,7 @@ export function useAdminProductsPage() {
     );
   }
 
-  function attachColorImages(fileList) {
+  function attachCreateProductImages(fileList) {
     const files = Array.from(fileList ?? []);
     if (files.length === 0) {
       return;
@@ -376,15 +422,15 @@ export function useAdminProductsPage() {
 
     const previews = files.map((file) => URL.createObjectURL(file));
 
-    setCurrentColorForm((current) => ({
+    setCreateImageForm((current) => ({
       ...current,
       imageFiles: [...current.imageFiles, ...files],
       imagePreviews: [...current.imagePreviews, ...previews],
     }));
   }
 
-  function removeColorImage(index) {
-    setCurrentColorForm((current) => {
+  function removeCreateProductImage(index) {
+    setCreateImageForm((current) => {
       const previewToRemove = current.imagePreviews[index];
       if (previewToRemove) {
         URL.revokeObjectURL(previewToRemove);
@@ -399,53 +445,48 @@ export function useAdminProductsPage() {
   }
 
   async function addDraftVariant() {
-    const quantity = Number(currentColorForm.quantity);
-
     if (!form.sku.trim()) {
       await popupAlert("Vui lòng nhập SKU gốc trong phần thông tin cơ bản.");
       return;
     }
 
-    if (!currentColorForm.colorName.trim()) {
-      await popupAlert("Vui lòng chọn màu sắc.");
+    const selectedVariantId = Number(currentVariantPickerForm.selectedVariantId);
+    if (!Number.isFinite(selectedVariantId) || selectedVariantId <= 0) {
+      await popupAlert("Vui lòng chọn variant có sẵn trong DB.");
       return;
     }
 
-    if (Number.isNaN(quantity) || quantity < 0) {
-      await popupAlert("Tồn kho không hợp lệ.");
+    const selectedVariant = availableDbVariants.find((variant) => variant.variantId === selectedVariantId);
+    if (!selectedVariant) {
+      await popupAlert("Variant đã chọn không tồn tại hoặc chưa tải xong.");
       return;
     }
 
-    if (currentColorForm.imageFiles.length === 0) {
-      await popupAlert("Vui lòng tải lên ít nhất 1 hình ảnh cho màu này.");
+    if (draftVariants.some((variant) => variant.sourceVariantId === selectedVariant.variantId)) {
+      await popupAlert("Variant này đã được thêm.");
       return;
     }
-
-    const sku = buildUniqueVariantSku(form.sku, currentColorForm.colorName, draftVariants);
 
     setDraftVariants((current) => [
       ...current,
       {
-        sku,
-        colorName: currentColorForm.colorName.trim(),
-        colorCode: currentColorForm.colorCode,
-        quantity,
-        size: currentColorForm.size.trim(),
-        frameType: currentColorForm.frameType.trim(),
-        imageFiles: currentColorForm.imageFiles,
-        imagePreviews: currentColorForm.imagePreviews,
+        sourceVariantId: selectedVariant.variantId,
+        sourceProductId: selectedVariant.sourceProductId,
+        sourceProductName: selectedVariant.sourceProductName,
+        sourceSku: selectedVariant.sourceSku,
+        colorName: selectedVariant.colorName,
+        quantity: selectedVariant.quantity,
+        size: selectedVariant.size,
+        frameType: selectedVariant.frameType,
+        price: selectedVariant.price,
       },
     ]);
 
-    setCurrentColorForm(DEFAULT_CREATE_COLOR_FORM);
+    setCurrentVariantPickerForm(DEFAULT_CREATE_VARIANT_PICKER_FORM);
   }
 
   function removeDraftVariant(index) {
-    setDraftVariants((current) => {
-      const removed = current[index];
-      removed?.imagePreviews?.forEach((preview) => URL.revokeObjectURL(preview));
-      return current.filter((_, itemIndex) => itemIndex !== index);
-    });
+    setDraftVariants((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
   async function createProduct(event) {
@@ -462,7 +503,7 @@ export function useAdminProductsPage() {
     }
 
     if (draftVariants.length === 0) {
-      await popupAlert("Vui lòng thêm ít nhất 1 màu sắc và tồn kho.");
+      await popupAlert("Vui lòng thêm ít nhất 1 variant có sẵn trong DB.");
       return null;
     }
 
@@ -486,13 +527,18 @@ export function useAdminProductsPage() {
         throw new Error("Không nhận được productId sau khi tạo sản phẩm.");
       }
 
+      const usedSkus = new Set();
+
       for (const draft of draftVariants) {
+        const generatedSku = buildGeneratedVariantSku(form.sku, productId, draft.sourceVariantId, usedSkus);
+        usedSkus.add(generatedSku);
+
         await dispatch(
           createAdminVariant({
             productId,
             payload: {
-              sku: draft.sku,
-              price: Number(form.basePrice || 0),
+              sku: generatedSku,
+              price: Number(draft.price || form.basePrice || 0),
               quantity: draft.quantity,
               color: draft.colorName || null,
               size: draft.size || null,
@@ -505,7 +551,7 @@ export function useAdminProductsPage() {
         ).unwrap();
       }
 
-      const imageFiles = draftVariants.flatMap((draft) => draft.imageFiles);
+      const imageFiles = createImageForm.imageFiles;
       if (imageFiles.length > 0) {
         await dispatch(uploadAdminProductImages({ productId, files: imageFiles })).unwrap();
       }
@@ -900,8 +946,10 @@ export function useAdminProductsPage() {
     form,
     editForm,
     editVariants,
-    currentColorForm,
+    currentVariantPickerForm,
+    createImageForm,
     draftVariants,
+    availableDbVariants,
     productSummaries,
     variantForm,
     ui: {
@@ -923,9 +971,9 @@ export function useAdminProductsPage() {
       setFormField: (field, value) => setForm((current) => ({ ...current, [field]: value })),
       setEditFormField: (field, value) => setEditForm((current) => ({ ...current, [field]: value })),
       setEditVariantField,
-      setCurrentColorField,
-      attachColorImages,
-      removeColorImage,
+      setCurrentVariantPickerField,
+      attachCreateProductImages,
+      removeCreateProductImage,
       addDraftVariant,
       removeDraftVariant,
       resetCreateProductBuilder,

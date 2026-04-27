@@ -458,7 +458,7 @@ export const fetchAdminProducts = createAsyncThunk(
 
     try {
       const [productResult, categoryResult] = await Promise.all([
-        getProducts({ page: 1, pageSize: 50, sortBy: "newest", sortOrder: "desc" }, token),
+        getProducts({ page: 1, pageSize: 200, sortBy: "newest", sortOrder: "desc" }, token),
         getCategories({ page: 1, pageSize: 100, sortBy: "categoryName", sortOrder: "asc" }, token),
       ]);
 

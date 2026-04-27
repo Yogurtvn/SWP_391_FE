@@ -348,6 +348,23 @@ function translateOrderHistoryNote(note) {
     case "order created.":
     case "order created":
       return "Đơn hàng đã được tạo.";
+    case "payment created.":
+    case "payment created":
+      return "Thanh toán đã được tạo.";
+    case "order is being processed.":
+    case "order is being processed":
+      return "Đơn hàng đang được xử lý.";
+    case "order shipped.":
+    case "order shipped":
+      return "Đơn hàng đã được giao cho đơn vị vận chuyển.";
+    case "order completed.":
+    case "order completed":
+      return "Đơn hàng đã hoàn thành.";
+    case "payment collected when the order was completed.":
+    case "payment collected when the order was completed":
+      return "Đã thu tiền khi đơn hàng hoàn thành.";
+    case "updated by admin":
+      return "Quản trị viên đã cập nhật.";
     default:
       return normalizedNote;
   }

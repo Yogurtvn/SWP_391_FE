@@ -76,6 +76,19 @@ function getTypeIcon(type) {
   return Package;
 }
 
+function getPaymentMethodLabel(value) {
+  return normalizeValue(value) === "payos" ? "PayOS" : "COD";
+}
+
+function getPaymentStatusLabel(value) {
+  const normalized = normalizeValue(value);
+
+  if (normalized === "completed") return "Đã thanh toán";
+  if (normalized === "failed") return "Thanh toán thất bại";
+  if (normalized === "pending") return "Chờ thanh toán";
+  return value || "-";
+}
+
 function StatusFilterDropdown({ value, onChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef(null);
@@ -368,12 +381,12 @@ export default function AdminOrdersPage() {
                         <p className="mb-2 font-bold text-gray-900">Thanh toán</p>
                         {hasValue(selectedOrder?.payment?.paymentMethod || detailOrder.paymentMethod) ? (
                           <p className="font-medium text-gray-700">
-                            Phương thức: {selectedOrder?.payment?.paymentMethod || detailOrder.paymentMethod}
+                            Phương thức: {getPaymentMethodLabel(selectedOrder?.payment?.paymentMethod || detailOrder.paymentMethod)}
                           </p>
                         ) : null}
                         {hasValue(selectedOrder?.payment?.paymentStatus || detailOrder.paymentStatus) ? (
                           <p className="font-medium text-gray-700">
-                            Trạng thái: {selectedOrder?.payment?.paymentStatus || detailOrder.paymentStatus}
+                            Trạng thái: {getPaymentStatusLabel(selectedOrder?.payment?.paymentStatus || detailOrder.paymentStatus)}
                           </p>
                         ) : null}
                       </div>

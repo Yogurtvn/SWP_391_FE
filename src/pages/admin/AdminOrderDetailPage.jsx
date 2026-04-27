@@ -22,10 +22,25 @@ function hasValue(value) {
 function translateNote(note) {
   const normalized = String(note || "").trim().toLowerCase();
 
-  if (normalized === "order created.") return "Đơn hàng đã được tạo.";
-  if (normalized === "payment created.") return "Thanh toán đã được tạo.";
+  if (normalized === "order created." || normalized === "order created") return "Đơn hàng đã được tạo.";
+  if (normalized === "payment created." || normalized === "payment created") return "Thanh toán đã được tạo.";
+  if (normalized === "order is being processed." || normalized === "order is being processed") return "Đơn hàng đang được xử lý.";
+  if (normalized === "order shipped." || normalized === "order shipped") return "Đơn hàng đã được giao cho đơn vị vận chuyển.";
+  if (normalized === "order completed." || normalized === "order completed") return "Đơn hàng đã hoàn thành.";
+  if (normalized === "payment collected when the order was completed." || normalized === "payment collected when the order was completed") {
+    return "Đã thu tiền khi đơn hàng hoàn thành.";
+  }
   if (normalized === "updated by admin") return "Quản trị viên đã cập nhật.";
   return note;
+}
+
+function getPaymentStatusLabel(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (normalized === "completed") return "Đã thanh toán";
+  if (normalized === "failed") return "Thanh toán thất bại";
+  if (normalized === "pending") return "Chờ thanh toán";
+  return value || "-";
 }
 
 function getPillClass(value, type = "default") {
@@ -81,6 +96,14 @@ function StatusPill({ value, type }) {
     return (
       <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${presentation.className}`}>
         {presentation.label}
+      </span>
+    );
+  }
+
+  if (type === "payment") {
+    return (
+      <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getPillClass(value)}`}>
+        {getPaymentStatusLabel(value)}
       </span>
     );
   }
@@ -229,7 +252,7 @@ export default function AdminOrderDetailPage() {
                     <div className="grid gap-4 md:grid-cols-2">
                       <DetailField label="Phương thức" value={order.payment.paymentMethod} />
                       {hasValue(order.payment.paymentStatus) ? <DetailField label="Trạng thái">
-                        <StatusPill value={order.payment.paymentStatus} />
+                        <StatusPill value={order.payment.paymentStatus} type="payment" />
                       </DetailField> : null}
                       <DetailField label="Số tiền" value={formatCurrency(order.payment.amount)} emphasize />
                       <DetailField label="Đã thanh toán lúc" value={formatDateTime(order.payment.paidAt)} />
@@ -250,7 +273,7 @@ export default function AdminOrderDetailPage() {
                               className="rounded-[1.2rem] border border-orange-100 bg-[#fffaf4] p-4"
                             >
                               <div className="flex flex-wrap items-center justify-between gap-3">
-                                <StatusPill value={history.paymentStatus} />
+                                <StatusPill value={history.paymentStatus} type="payment" />
                                 <p className="text-sm text-slate-500">{formatDateTime(history.createdAt)}</p>
                               </div>
                               {hasValue(history.transactionCode) ? (

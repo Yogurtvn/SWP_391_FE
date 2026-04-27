@@ -65,7 +65,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <AdminPageShell
-      title="Payment Monitoring"
+      title="Theo dõi thanh toán"
       actions={
         <button type="button" className={adminStyles.secondaryButton} onClick={actions.retryList} disabled={ui.listLoading}>
           <RefreshCw className={`h-4 w-4 ${ui.listLoading ? "animate-spin" : ""}`} />
@@ -83,7 +83,7 @@ export default function AdminPaymentsPage() {
               type="text"
               value={filters.orderId}
               onChange={(event) => actions.setFilter("orderId", event.target.value)}
-              placeholder="Lọc theo Order ID"
+              placeholder="Lọc theo mã đơn hàng"
               className={`${adminStyles.input} pl-12`}
             />
           </label>
@@ -104,9 +104,9 @@ export default function AdminPaymentsPage() {
             className={adminStyles.input}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="pending">Pending</option>
-            <option value="completed">Completed</option>
-            <option value="failed">Failed</option>
+            <option value="pending">Chờ thanh toán</option>
+            <option value="completed">Đã thanh toán</option>
+            <option value="failed">Thất bại</option>
           </select>
 
           <select
@@ -126,8 +126,8 @@ export default function AdminPaymentsPage() {
           <table className={adminStyles.table}>
             <thead className={adminStyles.tableHead}>
               <tr>
-                <th className={adminStyles.th}>Payment ID</th>
-                <th className={adminStyles.th}>Order ID</th>
+                <th className={adminStyles.th}>Mã thanh toán</th>
+                <th className={adminStyles.th}>Mã đơn hàng</th>
                 <th className={adminStyles.th}>Phương thức</th>
                 <th className={adminStyles.th}>Trạng thái</th>
                 <th className={`${adminStyles.th} text-center`}>Thao tác</th>
@@ -186,7 +186,7 @@ export default function AdminPaymentsPage() {
             page={pageInfo.page}
             totalPages={Math.max(1, pageInfo.totalPages)}
             onPageChange={(nextPage) => actions.setFilter("page", nextPage)}
-            summary={`Tổng ${pageInfo.totalItems} payment - trang ${pageInfo.page} / ${Math.max(1, pageInfo.totalPages)}`}
+            summary={`Tổng ${pageInfo.totalItems} thanh toán - trang ${pageInfo.page} / ${Math.max(1, pageInfo.totalPages)}`}
           />
         </div>
 
@@ -237,11 +237,11 @@ export default function AdminPaymentsPage() {
             <div className="space-y-5">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-xl border border-orange-100 bg-[#fffaf4] p-4">
-                  <p className="text-xs font-bold uppercase text-slate-500">Payment ID</p>
+                  <p className="text-xs font-bold uppercase text-slate-500">Mã thanh toán</p>
                   <p className="mt-2 text-sm font-semibold text-[#11284b]">#{paymentDetail.paymentId}</p>
                 </div>
                 <div className="rounded-xl border border-orange-100 bg-[#fffaf4] p-4">
-                  <p className="text-xs font-bold uppercase text-slate-500">Order ID</p>
+                  <p className="text-xs font-bold uppercase text-slate-500">Mã đơn hàng</p>
                   <p className="mt-2 text-sm font-semibold text-[#11284b]">#{paymentDetail.orderId}</p>
                 </div>
                 <div className="rounded-xl border border-orange-100 bg-[#fffaf4] p-4">
@@ -257,13 +257,13 @@ export default function AdminPaymentsPage() {
                   <p className="mt-2 text-sm text-slate-700">{formatCurrency(paymentDetail.amount)}</p>
                 </div>
                 <div className="rounded-xl border border-orange-100 bg-[#fffaf4] p-4">
-                  <p className="text-xs font-bold uppercase text-slate-500">Paid At</p>
+                  <p className="text-xs font-bold uppercase text-slate-500">Thanh toán lúc</p>
                   <p className="mt-2 text-sm text-slate-700">{formatDateTime(paymentDetail.paidAt)}</p>
                 </div>
               </div>
 
               <div>
-                <h3 className="mb-3 text-base font-bold text-[#11284b]">Lịch sử trạng thái payment</h3>
+                <h3 className="mb-3 text-base font-bold text-[#11284b]">Lịch sử trạng thái thanh toán</h3>
                 <ul className="space-y-3">
                   {paymentHistories.length === 0 ? (
                     <li className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">

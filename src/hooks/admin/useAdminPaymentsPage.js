@@ -22,6 +22,17 @@ function normalizeApiError(error, fallbackMessage) {
   return fallbackMessage;
 }
 
+function getPaymentStatusLabel(status) {
+  switch (String(status ?? "").trim().toLowerCase()) {
+    case "completed":
+      return "Đã thanh toán";
+    case "failed":
+      return "Thất bại";
+    default:
+      return "Chờ thanh toán";
+  }
+}
+
 export function useAdminPaymentsPage() {
   const auth = useAppSelector(selectAuthState);
   const navigate = useNavigate();
@@ -159,13 +170,13 @@ export function useAdminPaymentsPage() {
     const availableStatuses = ["pending", "completed", "failed"].filter((status) => status !== currentStatus);
 
     if (availableStatuses.length === 0) {
-      await popupAlert("Payment hiện không có trạng thái mới để cập nhật.");
+      await popupAlert("Thanh toán hiện không có trạng thái mới để cập nhật.");
       return;
     }
 
     const formValues = await popupForm({
       title: "Cập nhật trạng thái thanh toán",
-      message: `Payment #${paymentId}`,
+      message: `Thanh toán #${paymentId}`,
       okText: "Cập nhật",
       fields: [
         {
@@ -175,7 +186,7 @@ export function useAdminPaymentsPage() {
           required: true,
           options: availableStatuses.map((status) => ({
             value: status,
-            label: status,
+            label: getPaymentStatusLabel(status),
           })),
         },
         {

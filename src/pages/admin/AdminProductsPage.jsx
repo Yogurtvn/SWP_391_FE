@@ -745,7 +745,7 @@ export default function AdminProductsPage() {
                               <div className="mb-4 flex items-center justify-between gap-3">
                                 <div>
                                   <p className="text-base font-bold text-gray-900">Variant #{variant.variantId}</p>
-                                  <p className="text-sm text-gray-500">Cập nhật SKU, màu, kích thước, giá và tồn kho.</p>
+                                  <p className="text-sm text-gray-500">Cập nhật SKU, màu, kích thước và giá.</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <button
@@ -819,16 +819,6 @@ export default function AdminProductsPage() {
                                   />
                                 </div>
 
-                                <div>
-                                  <label className="mb-2 block text-sm font-bold text-gray-700">Tồn kho</label>
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    value={variant.quantity}
-                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "quantity", event.target.value)}
-                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                  />
-                                </div>
                               </div>
                             </div>
                           );

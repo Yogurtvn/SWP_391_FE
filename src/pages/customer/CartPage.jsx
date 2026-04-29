@@ -41,6 +41,22 @@ function CartPage() {
   const subtotal = getTotal();
   const discount = appliedCoupon ? (subtotal * appliedCoupon.discount) / 100 : 0;
   const total = subtotal - discount;
+  const overStockReadyItems = items.filter((item) => {
+    if (item.hasPrescription) {
+      return false;
+    }
+
+    const normalizedOrderType = normalizeCartOrderType(item.orderType);
+    if (normalizedOrderType === "preorder") {
+      return false;
+    }
+
+    const stockQuantity = Number(item.stockQuantity ?? 0);
+    const quantity = Number(item.quantity ?? 0);
+
+    return Number.isFinite(stockQuantity) && Number.isFinite(quantity) && quantity > Math.max(0, stockQuantity);
+  });
+  const hasOverStockReadyItems = overStockReadyItems.length > 0;
   const currentPrescriptionImagePreview =
     prescriptionEditImagePreviewBlobUrl || prescriptionEditForm.prescriptionImageUrl || "";
 
@@ -51,6 +67,40 @@ function CartPage() {
       }
     };
   }, [prescriptionEditImagePreviewBlobUrl]);
+  useEffect(() => {
+    if (!isCustomerSession || isMutating || overStockReadyItems.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function syncOverStockItems() {
+      for (const item of overStockReadyItems) {
+        if (cancelled) {
+          return;
+        }
+
+        const stockQuantity = Number(item.stockQuantity ?? 0);
+        const quantity = Number(item.quantity ?? 0);
+
+        if (!Number.isFinite(stockQuantity) || stockQuantity <= 0 || !Number.isFinite(quantity) || quantity <= stockQuantity) {
+          continue;
+        }
+
+        try {
+          await updateQuantity(item.cartItemId, stockQuantity);
+        } catch {
+          // Keep silent here; checkout/update handlers already show user-facing errors.
+        }
+      }
+    }
+
+    void syncOverStockItems();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isCustomerSession, isMutating, overStockReadyItems, updateQuantity]);
 
   async function handleUpdateQuantity(cartItemId, change) {
     const item = items.find((currentItem) => currentItem.cartItemId === cartItemId);
@@ -64,8 +114,28 @@ function CartPage() {
       return;
     }
 
+    const stockQuantity = Number(item.stockQuantity ?? 0);
+    const normalizedOrderType = normalizeCartOrderType(item.orderType);
+    const isStockLimited = normalizedOrderType !== "preorder" && Number.isFinite(stockQuantity);
+    const availableQuantity = Math.max(0, stockQuantity);
+
+    if (change > 0 && isStockLimited && Number(item.quantity ?? 0) >= availableQuantity) {
+      toast.error(availableQuantity > 0 ? `Chỉ còn ${availableQuantity} sản phẩm trong kho.` : "Sản phẩm đã hết hàng.");
+      return;
+    }
+
+    let nextQuantity = Math.max(1, Number(item.quantity ?? 1) + change);
+    if (isStockLimited && availableQuantity > 0) {
+      // Clamp back to inventory cap in one step for old out-of-sync cart data.
+      nextQuantity = Math.min(nextQuantity, availableQuantity);
+    }
+
+    if (nextQuantity === Number(item.quantity ?? 0)) {
+      return;
+    }
+
     try {
-      await updateQuantity(cartItemId, Math.max(1, item.quantity + change));
+      await updateQuantity(cartItemId, nextQuantity);
     } catch (error) {
       toast.error(resolveErrorMessage(error, "Không thể cập nhật số lượng sản phẩm."));
     }
@@ -359,7 +429,12 @@ function CartPage() {
                                 <span className="w-8 text-center font-medium">{item.quantity}</span>
                                 <button
                                   onClick={() => handleUpdateQuantity(item.cartItemId, 1)}
-                                  disabled={isMutating}
+                                  disabled={
+                                    isMutating
+                                    || (normalizeCartOrderType(item.orderType) !== "preorder"
+                                      && Number.isFinite(Number(item.stockQuantity ?? 0))
+                                      && Number(item.quantity ?? 0) >= Math.max(0, Number(item.stockQuantity ?? 0)))
+                                  }
                                   className="w-6 h-6 flex items-center justify-center hover:text-primary transition-colors"
                                 >
                                   <Plus className="w-4 h-4" />
@@ -466,11 +541,16 @@ function CartPage() {
 
                 <button
                   onClick={() => navigate("/checkout")}
-                  disabled={isMutating}
+                  disabled={isMutating || hasOverStockReadyItems}
                   className="w-full py-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium disabled:opacity-60"
                 >
                   Thanh Toán Ngay
                 </button>
+                {hasOverStockReadyItems ? (
+                  <p className="text-xs text-red-600">
+                    Một số sản phẩm đang vượt tồn kho. Vui lòng giảm số lượng hoặc xóa sản phẩm hết hàng trước khi checkout.
+                  </p>
+                ) : null}
 
                 <div className="space-y-3 pt-4 border-t border-border">
                   <div className="flex items-start gap-3 text-sm">
@@ -794,6 +874,13 @@ function formatDate(value) {
     month: "2-digit",
     year: "numeric"
   }).format(date);
+}
+
+function normalizeCartOrderType(orderType) {
+  return String(orderType ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
 }
 
 function resolveErrorMessage(error, fallbackMessage) {

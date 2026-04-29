@@ -1,4 +1,4 @@
-﻿import { useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/common/ui/sheet";
@@ -12,6 +12,22 @@ function CartDrawer({ open, onOpenChange }) {
   const isMutating = mutationStatus === "loading";
   const subtotal = getTotal();
 
+  const hasOverStockReadyItems = items.some((item) => {
+    if (item.hasPrescription) {
+      return false;
+    }
+
+    const normalizedOrderType = normalizeCartOrderType(item.orderType);
+    if (normalizedOrderType === "preorder") {
+      return false;
+    }
+
+    const stockQuantity = Number(item.stockQuantity ?? 0);
+    const quantity = Number(item.quantity ?? 0);
+
+    return Number.isFinite(stockQuantity) && Number.isFinite(quantity) && quantity > Math.max(0, stockQuantity);
+  });
+
   async function handleUpdateQuantity(cartItemId, change) {
     const item = items.find((currentItem) => currentItem.cartItemId === cartItemId);
 
@@ -19,8 +35,32 @@ function CartDrawer({ open, onOpenChange }) {
       return;
     }
 
+    if (item.hasPrescription) {
+      toast.error("Sản phẩm theo toa chỉ hỗ trợ số lượng 1.");
+      return;
+    }
+
+    const stockQuantity = Number(item.stockQuantity ?? 0);
+    const normalizedOrderType = normalizeCartOrderType(item.orderType);
+    const isStockLimited = normalizedOrderType !== "preorder" && Number.isFinite(stockQuantity);
+    const availableQuantity = Math.max(0, stockQuantity);
+
+    if (change > 0 && isStockLimited && Number(item.quantity ?? 0) >= availableQuantity) {
+      toast.error(availableQuantity > 0 ? `Chỉ còn ${availableQuantity} sản phẩm trong kho.` : "Sản phẩm đã hết hàng.");
+      return;
+    }
+
+    let nextQuantity = Math.max(1, Number(item.quantity ?? 1) + change);
+    if (isStockLimited && availableQuantity > 0) {
+      nextQuantity = Math.min(nextQuantity, availableQuantity);
+    }
+
+    if (nextQuantity === Number(item.quantity ?? 0)) {
+      return;
+    }
+
     try {
-      await updateQuantity(cartItemId, Math.max(1, item.quantity + change));
+      await updateQuantity(cartItemId, nextQuantity);
     } catch (error) {
       toast.error(resolveErrorMessage(error, "Không thể cập nhật số lượng sản phẩm."));
     }
@@ -40,33 +80,32 @@ function CartDrawer({ open, onOpenChange }) {
     navigate("/checkout");
   }
 
-  return <Sheet open={open} onOpenChange={onOpenChange}>
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-full sm:max-w-lg p-0 flex flex-col">
         <SheetHeader className="px-6 py-4 border-b border-border">
-          <SheetDescription className="sr-only">
-            Xem và quản lý các sản phẩm trong giỏ hàng của bạn
-          </SheetDescription>
-          <SheetTitle className="text-xl">
-            Giỏ Hàng ({items.length})
-          </SheetTitle>
+          <SheetDescription className="sr-only">Xem và quản lý các sản phẩm trong giỏ hàng của bạn</SheetDescription>
+          <SheetTitle className="text-xl">Giỏ Hàng ({items.length})</SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {!isCustomerSession ? <GuestCartState onOpenChange={onOpenChange} /> : isLoading ? <LoadingState /> : items.length === 0 ? <EmptyCartState onOpenChange={onOpenChange} /> : <div className="space-y-4">
-              {items.map((item) => <div key={item.cartItemId} className="flex gap-4 p-4 bg-secondary rounded-lg">
+          {!isCustomerSession ? (
+            <GuestCartState onOpenChange={onOpenChange} />
+          ) : isLoading ? (
+            <LoadingState />
+          ) : items.length === 0 ? (
+            <EmptyCartState onOpenChange={onOpenChange} />
+          ) : (
+            <div className="space-y-4">
+              {items.map((item) => (
+                <div key={item.cartItemId} className="flex gap-4 p-4 bg-secondary rounded-lg">
                   <div className="w-20 h-20 bg-white rounded-lg overflow-hidden shrink-0">
-                    <img
-                      src={item.product.images[0]}
-                      alt={item.product.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" />
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start gap-2 mb-2">
-                      <h4 className="text-sm font-medium line-clamp-1">
-                        {item.product.name}
-                      </h4>
+                      <h4 className="text-sm font-medium line-clamp-1">{item.product.name}</h4>
                       <button
                         onClick={() => handleRemoveItem(item)}
                         disabled={isMutating}
@@ -80,10 +119,16 @@ function CartDrawer({ open, onOpenChange }) {
                       {item.selectedColor && <p>Màu: {item.selectedColor}</p>}
                       {item.size && <p>Size: {item.size}</p>}
                       {item.sku && <p>SKU: {item.sku}</p>}
-                      {item.prescriptionDetails ? <>
+                      {item.prescriptionDetails ? (
+                        <>
                           <p>Tròng: {item.prescriptionDetails.lensType}</p>
                           <p className="text-amber-600">• Theo đơn thuốc</p>
-                        </> : item.orderType === "preOrder" ? <p className="text-blue-600">• Đặt trước</p> : <p className="text-green-600">• Hàng có sẵn</p>}
+                        </>
+                      ) : item.orderType === "preOrder" ? (
+                        <p className="text-blue-600">• Đặt trước</p>
+                      ) : (
+                        <p className="text-green-600">• Hàng có sẵn</p>
+                      )}
                       {!item.prescriptionDetails && (
                         <p>
                           Tồn kho: {Number(item.stockQuantity ?? 0)}
@@ -103,28 +148,32 @@ function CartDrawer({ open, onOpenChange }) {
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="w-6 text-center text-sm font-medium">
-                          {item.quantity}
-                        </span>
+                        <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
                         <button
                           onClick={() => handleUpdateQuantity(item.cartItemId, 1)}
-                          disabled={isMutating}
+                          disabled={
+                            isMutating
+                            || (normalizeCartOrderType(item.orderType) !== "preorder"
+                              && Number.isFinite(Number(item.stockQuantity ?? 0))
+                              && Number(item.quantity ?? 0) >= Math.max(0, Number(item.stockQuantity ?? 0)))
+                          }
                           className="w-5 h-5 flex items-center justify-center hover:text-primary transition-colors"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
 
-                      <p className="text-sm font-semibold text-primary">
-                        {formatCurrency(item.totalPrice)}
-                      </p>
+                      <p className="text-sm font-semibold text-primary">{formatCurrency(item.totalPrice)}</p>
                     </div>
                   </div>
-                </div>)}
-            </div>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {isCustomerSession && items.length > 0 && <div className="border-t border-border px-6 py-4 space-y-4 bg-secondary">
+        {isCustomerSession && items.length > 0 && (
+          <div className="border-t border-border px-6 py-4 space-y-4 bg-secondary">
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Tạm tính</span>
@@ -135,44 +184,45 @@ function CartDrawer({ open, onOpenChange }) {
                 <span className="text-muted-foreground">Tính ở checkout</span>
               </div>
               <div className="border-t border-border pt-2 flex justify-between items-center">
-                <span className="font-semibold">Tổng cộng</span>
-                <span className="text-xl font-bold text-primary">
-                  {formatCurrency(subtotal)}
-                </span>
+                <span className="text-lg font-medium">Tổng cộng</span>
+                <span className="text-xl font-bold text-primary">{formatCurrency(subtotal)}</span>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <button
-                onClick={handleCheckout}
-                disabled={isMutating}
-                className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium disabled:opacity-60"
-              >
-                Thanh Toán
-              </button>
-              <button
-                onClick={() => {
-                  onOpenChange(false);
-                  navigate("/cart");
-                }}
-                className="w-full py-3 border border-border rounded-lg hover:bg-white transition-colors text-sm"
-              >
-                Xem Chi Tiết Giỏ Hàng
-              </button>
-            </div>
-          </div>}
+            <button
+              onClick={handleCheckout}
+              disabled={isMutating || hasOverStockReadyItems}
+              className="w-full py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium disabled:opacity-60"
+            >
+              Thanh Toán
+            </button>
+            {hasOverStockReadyItems ? (
+              <p className="text-xs text-red-600">Một số sản phẩm đang vượt tồn kho. Vui lòng giảm số lượng trước khi checkout.</p>
+            ) : null}
+
+            <button
+              onClick={() => {
+                onOpenChange(false);
+                navigate("/cart");
+              }}
+              className="w-full py-3 border border-border rounded-lg hover:bg-background transition-colors"
+            >
+              Xem Chi Tiết Giỏ Hàng
+            </button>
+          </div>
+        )}
       </SheetContent>
-    </Sheet>;
+    </Sheet>
+  );
 }
 
 function GuestCartState({ onOpenChange }) {
   const navigate = useNavigate();
 
-  return <div className="flex flex-col items-center justify-center h-full text-center py-12">
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center py-12">
       <ShoppingBag className="w-16 h-16 text-muted-foreground opacity-50 mb-4" />
-      <p className="text-muted-foreground mb-6">
-        Vui lòng đăng nhập bằng tài khoản khách hàng để sử dụng giỏ hàng
-      </p>
+      <p className="text-muted-foreground mb-6">Vui lòng đăng nhập bằng tài khoản khách hàng để sử dụng giỏ hàng</p>
       <button
         onClick={() => {
           onOpenChange(false);
@@ -182,24 +232,26 @@ function GuestCartState({ onOpenChange }) {
       >
         Đăng nhập
       </button>
-    </div>;
+    </div>
+  );
 }
 
 function LoadingState() {
-  return <div className="flex flex-col items-center justify-center h-full text-center py-12">
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center py-12">
       <div className="h-10 w-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin mb-4" />
       <p className="text-muted-foreground">Đang tải giỏ hàng...</p>
-    </div>;
+    </div>
+  );
 }
 
 function EmptyCartState({ onOpenChange }) {
   const navigate = useNavigate();
 
-  return <div className="flex flex-col items-center justify-center h-full text-center py-12">
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-center py-12">
       <ShoppingBag className="w-16 h-16 text-muted-foreground opacity-50 mb-4" />
-      <p className="text-muted-foreground mb-6">
-        Giỏ hàng của bạn đang trống
-      </p>
+      <p className="text-muted-foreground mb-6">Giỏ hàng của bạn đang trống</p>
       <button
         onClick={() => {
           onOpenChange(false);
@@ -209,13 +261,14 @@ function EmptyCartState({ onOpenChange }) {
       >
         Khám Phá Sản Phẩm
       </button>
-    </div>;
+    </div>
+  );
 }
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
-    currency: "VND"
+    currency: "VND",
   }).format(Number(value ?? 0));
 }
 
@@ -229,8 +282,15 @@ function formatDate(value) {
   return new Intl.DateTimeFormat("vi-VN", {
     day: "2-digit",
     month: "2-digit",
-    year: "numeric"
+    year: "numeric",
   }).format(date);
+}
+
+function normalizeCartOrderType(orderType) {
+  return String(orderType ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
 }
 
 function resolveErrorMessage(error, fallbackMessage) {
@@ -245,8 +305,4 @@ function resolveErrorMessage(error, fallbackMessage) {
   return fallbackMessage;
 }
 
-export {
-  CartDrawer as default
-};
-
-
+export { CartDrawer as default };

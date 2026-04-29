@@ -73,6 +73,8 @@ export default function OrderTrackingPage() {
   }
 
   const cancelAvailable = canCustomerCancelOrder(order);
+  const subtotal = order.items.reduce((sum, item) => sum + Number(item.lineTotal ?? 0), 0);
+  const surcharge = Math.max(0, Number(order.totalAmount ?? 0) - subtotal);
 
   async function handleCancelOrder() {
     const reason = window.prompt("Nhập lý do hủy đơn (tuỳ chọn):", "");
@@ -208,6 +210,9 @@ export default function OrderTrackingPage() {
               <SectionTitle icon={CreditCard} title="Thanh toán" subtitle="Thông tin thanh toán hiện tại." />
 
               <div className="space-y-3 text-sm">
+                <Row label="Tạm tính" value={formatCurrency(subtotal)} />
+                <Row label="Phụ phí" value={formatCurrency(surcharge)} />
+                <Row label="Phí ship" value="Miễn phí" />
                 <Row label="Tổng tiền" value={formatCurrency(order.totalAmount)} />
                 <Row label="Trạng thái đơn" value={order.orderStatusLabel} />
                 <Row label="Cập nhật cuối" value={order.updatedAtLabel} />

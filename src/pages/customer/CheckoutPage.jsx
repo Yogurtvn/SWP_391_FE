@@ -81,7 +81,22 @@ export default function CheckoutPage() {
   const checkoutDescription = getCheckoutDescription(checkoutOrderType, itemCount);
   const isLoadingCart = cartStatus === "loading" && checkoutItems.length === 0 && blockedItems.length === 0;
   const isSubmitting = checkoutStatus === "loading";
-  const shippingWeight = useMemo(() => Math.max(200, itemCount * 200), [itemCount]);
+  const shippingItems = useMemo(
+    () =>
+      checkoutItems
+        .map((item) => ({
+          variantId: Number(item?.variantId ?? 0),
+          quantity: Number(item?.quantity ?? 0),
+        }))
+        .filter(
+          (item) =>
+            Number.isFinite(item.variantId)
+            && item.variantId > 0
+            && Number.isFinite(item.quantity)
+            && item.quantity > 0,
+        ),
+    [checkoutItems],
+  );
   const shippingFee = Number(shippingQuote?.totalFee ?? 0);
   const selectedVoucher = useMemo(
     () => findVoucherByCodeOrName(availableVouchers, appliedVoucherCode),
@@ -238,7 +253,7 @@ export default function CheckoutPage() {
   }, [shippingInfo.districtId]);
 
   useEffect(() => {
-    if (!shippingInfo.districtId || !shippingInfo.wardCode) {
+    if (!shippingInfo.districtId || !shippingInfo.wardCode || shippingItems.length === 0) {
       setShippingQuote(null);
       return;
     }
@@ -253,7 +268,7 @@ export default function CheckoutPage() {
         const quote = await calculateShippingFee({
           districtId: shippingInfo.districtId,
           wardCode: shippingInfo.wardCode,
-          weight: shippingWeight,
+          items: shippingItems,
         });
 
         if (!isMounted) {
@@ -278,7 +293,7 @@ export default function CheckoutPage() {
     return () => {
       isMounted = false;
     };
-  }, [shippingInfo.districtId, shippingInfo.wardCode, shippingWeight]);
+  }, [shippingInfo.districtId, shippingInfo.wardCode, shippingItems]);
 
   function updateShippingInfo(patch) {
     setShippingInfo((current) => ({
@@ -711,29 +726,40 @@ export default function CheckoutPage() {
 
               <div className="mb-6 space-y-4">
                 {checkoutItems.map((item) => (
-                  <div key={item.cartItemId} className="flex gap-3 rounded-2xl bg-secondary/60 p-3">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="h-20 w-20 rounded-xl object-cover"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-2">{item.name}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {item.color}
-                        {item.size ? ` / ${item.size}` : ""}
-                      </p>
-                      <p className="mt-1 text-sm text-muted-foreground">{getCartItemTypeLabel(item)}</p>
-                      {item.orderType === "preOrder" && item.expectedRestockDate ? (
-                        <p className="mt-1 text-sm text-orange-700">
-                          Dự kiến có hàng: {formatDate(item.expectedRestockDate)}
+                  <div key={item.cartItemId} className="rounded-2xl border border-border/70 bg-white p-3 shadow-sm">
+                    <div className="flex gap-3">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="h-20 w-20 shrink-0 rounded-xl border border-border/60 object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="line-clamp-2 text-base font-medium text-foreground">{item.name}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {item.color}
+                          {item.size ? ` / ${item.size}` : ""}
                         </p>
-                      ) : null}
-                      {item.orderType === "preOrder" && item.preOrderNote ? (
-                        <p className="mt-1 text-sm text-orange-700">{item.preOrderNote}</p>
-                      ) : null}
-                      <p className="mt-1 text-sm text-muted-foreground">SL {item.quantity}</p>
-                      <p className="mt-2 text-sm text-primary">{formatCurrency(item.totalPrice)}</p>
+
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700">
+                            {getCartItemTypeLabel(item)}
+                          </span>
+                          <span className="rounded-full bg-secondary px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                            SL {item.quantity}
+                          </span>
+                        </div>
+
+                        {item.orderType === "preOrder" && item.expectedRestockDate ? (
+                          <p className="mt-2 text-xs text-orange-700">
+                            Dự kiến có hàng: {formatDate(item.expectedRestockDate)}
+                          </p>
+                        ) : null}
+                        {item.orderType === "preOrder" && item.preOrderNote ? (
+                          <p className="mt-1 text-xs text-orange-700">{item.preOrderNote}</p>
+                        ) : null}
+
+                        <p className="mt-3 text-lg font-semibold text-primary">{formatCurrency(item.totalPrice)}</p>
+                      </div>
                     </div>
                   </div>
                 ))}

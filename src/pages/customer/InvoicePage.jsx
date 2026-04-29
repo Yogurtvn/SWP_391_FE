@@ -58,7 +58,7 @@ function InvoicePage() {
 
   const subtotal = order.items.reduce((sum, item) => sum + Number(item.lineTotal ?? 0), 0);
   const shippingFee = 0;
-  const adjustment = Number(order.totalAmount ?? 0) - subtotal - shippingFee;
+  const surcharge = Math.max(0, Number(order.totalAmount ?? 0) - subtotal);
   const customerEmail = auth.user?.email?.trim() || "Chưa cập nhật";
   const statusLabel = order.payment?.paymentStatusLabel || order.orderStatusLabel;
   const isPaid = normalizeValue(order.payment?.paymentStatus) === "completed" || normalizeValue(order.orderStatus) === "completed";
@@ -170,14 +170,12 @@ function InvoicePage() {
               <span className="text-muted-foreground">Tạm tính</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
-            {adjustment !== 0 ? (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">{adjustment < 0 ? "Giảm giá" : "Phụ phí"}</span>
-                <span>{formatCurrency(adjustment)}</span>
-              </div>
-            ) : null}
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Vận chuyển</span>
+              <span className="text-muted-foreground">Phụ phí</span>
+              <span>{formatCurrency(surcharge)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Phí ship</span>
               <span className={shippingFee > 0 ? "" : "text-accent"}>
                 {shippingFee > 0 ? formatCurrency(shippingFee) : "Miễn phí"}
               </span>

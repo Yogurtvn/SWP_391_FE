@@ -1,6 +1,8 @@
+﻿import { useState } from "react";
 import { Link } from "react-router";
 import {
   AlertCircle,
+  AlertTriangle,
   ArrowLeft,
   Clock3,
   CreditCard,
@@ -9,12 +11,17 @@ import {
   Package,
   Phone,
   Truck,
+  X,
 } from "lucide-react";
 import { useOrderTracking } from "@/hooks/order/useOrderTracking";
 import { canCustomerCancelOrder } from "@/utils/orderWorkflowPolicy";
 
 export default function OrderTrackingPage() {
   const { order, authRequired, ui, actions } = useOrderTracking();
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelError, setCancelError] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
 
   if (authRequired) {
     return (
@@ -77,16 +84,32 @@ export default function OrderTrackingPage() {
   const shippingFee = Math.max(0, Number(order.shippingFee ?? 0));
   const voucherDiscountAmount = Math.max(0, Number(order.voucherDiscountAmount ?? 0));
 
-  async function handleCancelOrder() {
-    const reason = window.prompt("Nhập lý do hủy đơn (tuỳ chọn):", "");
-    if (reason === null) {
+  function openCancelModal() {
+    setCancelReason("");
+    setCancelError("");
+    setIsCancelModalOpen(true);
+  }
+
+  function closeCancelModal() {
+    if (isCancelling) {
       return;
     }
 
+    setIsCancelModalOpen(false);
+    setCancelError("");
+  }
+
+  async function handleConfirmCancelOrder() {
     try {
-      await actions.cancelOrder(reason);
+      setIsCancelling(true);
+      setCancelError("");
+      await actions.cancelOrder(cancelReason.trim());
+      setIsCancelModalOpen(false);
+      setCancelReason("");
     } catch (error) {
-      window.alert(resolveErrorMessage(error, "Không thể hủy đơn hàng."));
+      setCancelError(resolveErrorMessage(error, "Không thể hủy đơn hàng."));
+    } finally {
+      setIsCancelling(false);
     }
   }
 
@@ -105,17 +128,20 @@ export default function OrderTrackingPage() {
               <h1 className="mb-2 text-3xl">Đơn hàng #{order.orderId}</h1>
               <p className="text-muted-foreground">Đặt lúc {order.createdAtLabel}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {cancelAvailable ? (
-                <button
-                  type="button"
-                  onClick={handleCancelOrder}
-                  className="rounded-full bg-rose-100 px-3 py-1 text-sm text-rose-700 transition-colors hover:bg-rose-200"
-                >
-                  Hủy đơn
-                </button>
-              ) : null}
-            </div>
+            {cancelAvailable ? (
+              <button
+                type="button"
+                onClick={openCancelModal}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-600 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-rose-700"
+              >
+                <AlertTriangle className="h-4 w-4" />
+                Hủy đơn
+              </button>
+            ) : (
+              <div className="inline-flex items-center justify-center rounded-xl border border-border bg-secondary px-4 py-2.5 text-sm text-muted-foreground">
+                {getCancelUnavailableLabel(order.orderStatus)}
+              </div>
+            )}
           </div>
         </div>
 
@@ -231,6 +257,80 @@ export default function OrderTrackingPage() {
               </div>
             </section>
           </aside>
+        </div>
+      </div>
+
+      <CancelOrderModal
+        open={isCancelModalOpen}
+        isSubmitting={isCancelling}
+        reason={cancelReason}
+        error={cancelError}
+        onReasonChange={setCancelReason}
+        onClose={closeCancelModal}
+        onConfirm={handleConfirmCancelOrder}
+      />
+    </div>
+  );
+}
+
+function CancelOrderModal({ open, isSubmitting, reason, error, onReasonChange, onClose, onConfirm }) {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+      <div className="w-full max-w-lg rounded-2xl border border-border bg-white p-6 shadow-xl">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl">Xác nhận hủy đơn</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Đơn sẽ được hủy theo chính sách hiện tại. Bạn có thể nhập lý do để hệ thống lưu lại lịch sử.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <label className="mb-2 block text-sm font-medium">Lý do hủy (tùy chọn)</label>
+        <textarea
+          value={reason}
+          onChange={(event) => onReasonChange(event.target.value)}
+          rows={4}
+          maxLength={255}
+          placeholder="Ví dụ: Muốn đổi sản phẩm khác, đổi địa chỉ giao hàng..."
+          className="w-full resize-none rounded-xl border border-border bg-white px-4 py-3 text-sm outline-none transition-colors focus:border-rose-400"
+        />
+
+        {error ? (
+          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="mt-5 flex flex-wrap justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium transition-colors hover:bg-secondary disabled:opacity-60"
+          >
+            Đóng
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isSubmitting}
+            className="rounded-xl bg-rose-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-rose-700 disabled:opacity-60"
+          >
+            {isSubmitting ? "Đang hủy..." : "Xác nhận hủy đơn"}
+          </button>
         </div>
       </div>
     </div>
@@ -381,6 +481,17 @@ function getOrderTimelineTone(orderStatus) {
       return "bg-blue-100 text-blue-700";
     default:
       return "bg-primary/10 text-primary";
+  }
+}
+
+function getCancelUnavailableLabel(orderStatus) {
+  switch (String(orderStatus ?? "").trim().toLowerCase()) {
+    case "cancelled":
+      return "Đơn đã hủy";
+    case "completed":
+      return "Đơn đã hoàn tất";
+    default:
+      return "Không thể hủy ở trạng thái này";
   }
 }
 

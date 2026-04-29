@@ -150,6 +150,7 @@ export default function AdminInventoryPage() {
       const searchableText = [
         item?.sku,
         item?.variantId,
+        item?.productId,
         item?.productName,
         item?.preOrderNote,
         item?.expectedRestockDate,
@@ -158,8 +159,39 @@ export default function AdminInventoryPage() {
         .join(" ");
 
       return searchableText.includes(normalizedQuery);
+    }).sort((a, b) => {
+      const leftProductId = Number(a?.productId ?? 0);
+      const rightProductId = Number(b?.productId ?? 0);
+      const leftVariantId = Number(a?.variantId ?? 0);
+      const rightVariantId = Number(b?.variantId ?? 0);
+
+      const normalizedLeftProductId =
+        Number.isFinite(leftProductId) && leftProductId > 0 ? leftProductId : Number.MAX_SAFE_INTEGER;
+      const normalizedRightProductId =
+        Number.isFinite(rightProductId) && rightProductId > 0 ? rightProductId : Number.MAX_SAFE_INTEGER;
+
+      if (normalizedLeftProductId !== normalizedRightProductId) {
+        return normalizedLeftProductId - normalizedRightProductId;
+      }
+
+      return leftVariantId - rightVariantId;
     });
   }, [inventories, inventorySearchQuery, preOrderFilter, stockFilter]);
+
+  const productVariantCountByProductId = useMemo(() => {
+    const counts = new Map();
+
+    inventories.forEach((item) => {
+      const productId = Number(item?.productId ?? 0);
+      if (!Number.isFinite(productId) || productId <= 0) {
+        return;
+      }
+
+      counts.set(productId, (counts.get(productId) ?? 0) + 1);
+    });
+
+    return counts;
+  }, [inventories]);
 
   const totalPages = Math.max(1, Math.ceil(filteredInventories.length / PAGE_SIZE));
   const paginatedInventories = useMemo(
@@ -390,10 +422,15 @@ export default function AdminInventoryPage() {
                       <ProductCell
                         productName={item.productName}
                         imageUrl={item.productImageUrl}
+                        productId={item.productId}
+                        variantCount={productVariantCountByProductId.get(Number(item?.productId ?? 0)) ?? 0}
                       />
                     </td>
                     <td className={adminStyles.td}>
                       <p className="font-bold text-slate-900">{item.sku || "-"}</p>
+                      <p className="mt-1 text-xs font-semibold text-slate-500">
+                        {Number(item?.productId ?? 0) > 0 ? `SP #${item.productId}` : "SP #N/A"}
+                      </p>
                       <p className="mt-1 text-sm text-slate-500">Variant #{item.variantId}</p>
                     </td>
                     <td className={adminStyles.td}>
@@ -623,9 +660,11 @@ function QuantityPill({ value }) {
   );
 }
 
-function ProductCell({ productName, imageUrl }) {
-  const resolvedName = String(productName ?? "").trim() || "Chưa xác định";
+function ProductCell({ productName, imageUrl, productId, variantCount }) {
+  const resolvedName = String(productName ?? "").trim() || "Chua xac dinh";
   const fallbackLetter = resolvedName.charAt(0).toUpperCase() || "?";
+  const hasValidProductId = Number(productId ?? 0) > 0;
+  const hasSiblingVariant = Number(variantCount ?? 0) > 1;
 
   return (
     <div className="flex items-center gap-3">
@@ -640,11 +679,22 @@ function ProductCell({ productName, imageUrl }) {
           {fallbackLetter}
         </div>
       )}
-      <p className="font-semibold text-slate-900">{resolvedName}</p>
+      <div>
+        <p className="font-semibold text-slate-900">{resolvedName}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
+            {hasValidProductId ? `SP #${productId}` : "SP #N/A"}
+          </span>
+          {hasSiblingVariant ? (
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+              {variantCount} variants chung san pham
+            </span>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
-
 function DetailItem({ label, value }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">

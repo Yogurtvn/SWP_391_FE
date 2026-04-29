@@ -316,6 +316,7 @@ export const fetchAdminInventory = createAsyncThunk(
           }
 
           variantMetaById.set(variantId, {
+            productId: Number(product?.productId ?? 0) || null,
             sku: normalizeText(variant?.sku) ?? "-",
             productName,
             productImageUrl,
@@ -357,6 +358,7 @@ export const fetchAdminInventory = createAsyncThunk(
           const fallbackProductImage = normalizeText(detail?.productImageUrl ?? detail?.imageUrl) ?? resolveProductImage(product);
 
           variantMetaById.set(variantId, {
+            productId: productId > 0 ? productId : existingMeta?.productId ?? null,
             sku: normalizeText(detail?.sku) ?? existingMeta?.sku ?? "-",
             productName: existingMeta?.productName && existingMeta.productName !== "-" ? existingMeta.productName : fallbackProductName,
             productImageUrl: existingMeta?.productImageUrl ?? fallbackProductImage ?? null,
@@ -371,6 +373,7 @@ export const fetchAdminInventory = createAsyncThunk(
         const meta = variantMetaById.get(Number(item?.variantId ?? 0));
         return {
           ...item,
+          productId: Number(meta?.productId ?? item?.productId ?? 0) || null,
           sku: meta?.sku ?? "-",
           productName: meta?.productName ?? "-",
           productImageUrl: meta?.productImageUrl ?? null,
@@ -384,6 +387,7 @@ export const fetchAdminInventory = createAsyncThunk(
         const meta = variantMetaById.get(Number(receipt?.variantId ?? 0));
         return {
           ...receipt,
+          productId: Number(meta?.productId ?? receipt?.productId ?? 0) || null,
           sku: meta?.sku ?? "-",
           productName: meta?.productName ?? "-",
           productImageUrl: meta?.productImageUrl ?? null,

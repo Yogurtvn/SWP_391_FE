@@ -154,6 +154,8 @@ export function normalizeOrderDetail(order) {
     orderStatus: order?.orderStatus ?? "",
     orderStatusLabel: getOrderStatusLabel(order?.orderStatus),
     totalAmount: Number(order?.totalAmount ?? 0),
+    shippingFee: Number(order?.shippingFee ?? 0),
+    voucherDiscountAmount: Number(order?.voucherDiscountAmount ?? 0),
     receiverName: order?.receiverName?.trim() || "Khách hàng Vision Direct",
     receiverPhone: order?.receiverPhone?.trim() || "Chưa cập nhật",
     shippingAddress: order?.shippingAddress?.trim() || "Chưa cập nhật",

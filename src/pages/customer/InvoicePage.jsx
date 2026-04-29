@@ -57,8 +57,8 @@ function InvoicePage() {
   }
 
   const subtotal = order.items.reduce((sum, item) => sum + Number(item.lineTotal ?? 0), 0);
-  const shippingFee = 0;
-  const surcharge = Math.max(0, Number(order.totalAmount ?? 0) - subtotal);
+  const shippingFee = Math.max(0, Number(order.shippingFee ?? 0));
+  const voucherDiscountAmount = Math.max(0, Number(order.voucherDiscountAmount ?? 0));
   const customerEmail = auth.user?.email?.trim() || "Chưa cập nhật";
   const statusLabel = order.payment?.paymentStatusLabel || order.orderStatusLabel;
   const isPaid = normalizeValue(order.payment?.paymentStatus) === "completed" || normalizeValue(order.orderStatus) === "completed";
@@ -171,15 +171,17 @@ function InvoicePage() {
               <span>{formatCurrency(subtotal)}</span>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Phụ phí</span>
-              <span>{formatCurrency(surcharge)}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Phí ship</span>
               <span className={shippingFee > 0 ? "" : "text-accent"}>
                 {shippingFee > 0 ? formatCurrency(shippingFee) : "Miễn phí"}
               </span>
             </div>
+            {voucherDiscountAmount > 0 ? (
+              <div className="flex items-center justify-between text-sm text-emerald-700">
+                <span>Giảm từ voucher</span>
+                <span>-{formatCurrency(voucherDiscountAmount)}</span>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between border-t border-border pt-3">
               <span className="text-lg">Tổng cộng</span>
               <span className="text-2xl text-primary">{formatCurrency(order.totalAmount)}</span>

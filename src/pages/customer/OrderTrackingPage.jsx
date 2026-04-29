@@ -74,7 +74,8 @@ export default function OrderTrackingPage() {
 
   const cancelAvailable = canCustomerCancelOrder(order);
   const subtotal = order.items.reduce((sum, item) => sum + Number(item.lineTotal ?? 0), 0);
-  const surcharge = Math.max(0, Number(order.totalAmount ?? 0) - subtotal);
+  const shippingFee = Math.max(0, Number(order.shippingFee ?? 0));
+  const voucherDiscountAmount = Math.max(0, Number(order.voucherDiscountAmount ?? 0));
 
   async function handleCancelOrder() {
     const reason = window.prompt("Nhập lý do hủy đơn (tuỳ chọn):", "");
@@ -211,8 +212,10 @@ export default function OrderTrackingPage() {
 
               <div className="space-y-3 text-sm">
                 <Row label="Tạm tính" value={formatCurrency(subtotal)} />
-                <Row label="Phụ phí" value={formatCurrency(surcharge)} />
-                <Row label="Phí ship" value="Miễn phí" />
+                <Row label="Phí ship" value={shippingFee > 0 ? formatCurrency(shippingFee) : "Miễn phí"} />
+                {voucherDiscountAmount > 0 ? (
+                  <Row label="Giảm từ voucher" value={`-${formatCurrency(voucherDiscountAmount)}`} />
+                ) : null}
                 <Row label="Tổng tiền" value={formatCurrency(order.totalAmount)} />
                 <Row label="Trạng thái đơn" value={order.orderStatusLabel} />
                 <Row label="Cập nhật cuối" value={order.updatedAtLabel} />

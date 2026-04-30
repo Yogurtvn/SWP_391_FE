@@ -12,7 +12,25 @@ function formatDateTime(value) {
     return "";
   }
 
-  return new Date(value).toLocaleString("vi-VN");
+  const rawValue = String(value ?? "").trim();
+  const noTimezoneIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+  const normalizedValue = noTimezoneIsoPattern.test(rawValue) ? `${rawValue}Z` : rawValue;
+  const date = value instanceof Date ? value : new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour12: false,
+  }).format(date);
 }
 
 function hasValue(value) {

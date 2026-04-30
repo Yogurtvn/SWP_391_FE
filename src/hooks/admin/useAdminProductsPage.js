@@ -51,6 +51,10 @@ const DEFAULT_VARIANT_FORM = {
   color: "",
   size: "",
   frameType: "",
+  weightGram: "200",
+  packageLengthCm: "10",
+  packageWidthCm: "10",
+  packageHeightCm: "10",
 };
 
 const DEFAULT_EDIT_PRODUCT_FORM = {
@@ -107,10 +111,23 @@ function createEmptyEditVariant(variantId = null) {
     color: "",
     size: "",
     frameType: "",
+    weightGram: "200",
+    packageLengthCm: "10",
+    packageWidthCm: "10",
+    packageHeightCm: "10",
     isPreOrderAllowed: false,
     expectedRestockDate: "",
     preOrderNote: "",
   };
+}
+
+function parsePositiveInteger(value, fallbackValue) {
+  const parsedValue = Number.parseInt(String(value ?? "").trim(), 10);
+  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+    return fallbackValue;
+  }
+
+  return parsedValue;
 }
 
 function normalizeSkuSegment(value) {
@@ -194,6 +211,19 @@ function buildGeneratedVariantSku(baseSku, productId, sourceVariantId, usedSkus)
   return candidate;
 }
 
+function buildUniqueSku(candidateSku, usedSkus) {
+  const normalizedBase = normalizeSkuSegment(candidateSku) || "SKU";
+  let candidate = normalizedBase;
+  let suffix = 2;
+
+  while (usedSkus.has(candidate)) {
+    candidate = `${normalizedBase}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
 function buildEditProductForm(detail) {
   return {
     productId: detail?.productId ?? null,
@@ -217,6 +247,10 @@ function buildEditVariantForm(variant, fallbackPrice = 0) {
     color: variant?.color ?? "",
     size: variant?.size ?? "",
     frameType: variant?.frameType ?? "",
+    weightGram: String(variant?.weightGram ?? 200),
+    packageLengthCm: String(variant?.packageLengthCm ?? 10),
+    packageWidthCm: String(variant?.packageWidthCm ?? 10),
+    packageHeightCm: String(variant?.packageHeightCm ?? 10),
     isPreOrderAllowed: Boolean(variant?.isPreOrderAllowed),
     expectedRestockDate: variant?.expectedRestockDate ? String(variant.expectedRestockDate).slice(0, 10) : "",
     preOrderNote: variant?.preOrderNote ?? "",
@@ -228,7 +262,7 @@ export function useAdminProductsPage() {
   const navigate = useNavigate();
   const auth = useAppSelector(selectAuthState);
   const admin = useAppSelector(selectAdminState);
-  const { popupAlert, popupConfirm, popupElement } = usePopupDialog();
+  const { popupAlert, popupConfirm, popupForm, popupElement } = usePopupDialog();
 
   const [form, setForm] = useState(DEFAULT_PRODUCT_FORM);
   const [currentVariantPickerForm, setCurrentVariantPickerForm] = useState(DEFAULT_CREATE_VARIANT_PICKER_FORM);
@@ -342,6 +376,10 @@ export function useAdminProductsPage() {
               size: String(variant?.size ?? "").trim(),
               frameType: String(variant?.frameType ?? "").trim(),
               price: Number(variant?.price ?? 0),
+              weightGram: Number(variant?.weightGram ?? 200),
+              packageLengthCm: Number(variant?.packageLengthCm ?? 10),
+              packageWidthCm: Number(variant?.packageWidthCm ?? 10),
+              packageHeightCm: Number(variant?.packageHeightCm ?? 10),
             };
           })
           .filter(Boolean);
@@ -479,10 +517,191 @@ export function useAdminProductsPage() {
         size: selectedVariant.size,
         frameType: selectedVariant.frameType,
         price: selectedVariant.price,
+        weightGram: selectedVariant.weightGram,
+        packageLengthCm: selectedVariant.packageLengthCm,
+        packageWidthCm: selectedVariant.packageWidthCm,
+        packageHeightCm: selectedVariant.packageHeightCm,
       },
     ]);
 
     setCurrentVariantPickerForm(DEFAULT_CREATE_VARIANT_PICKER_FORM);
+  }
+
+  async function addManualDraftVariant() {
+    const formValues = await popupForm({
+      title: "Tạo variant mới",
+      message: "Nhập thông tin variant để thêm vào danh sách tạo sản phẩm.",
+      okText: "Thêm variant",
+      fields: [
+        {
+          name: "sku",
+          label: "SKU",
+          type: "text",
+          required: true,
+          placeholder: "VD: GK-MOI-DEN-53",
+        },
+        {
+          name: "price",
+          label: "Giá",
+          type: "number",
+          min: 0,
+          required: true,
+          validate: (value) => {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed) || parsed < 0) {
+              return "Giá phải từ 0 trở lên.";
+            }
+            return "";
+          },
+        },
+        {
+          name: "quantity",
+          label: "Số lượng tồn kho ban đầu",
+          type: "number",
+          min: 0,
+          required: true,
+          validate: (value) => {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed) || parsed < 0) {
+              return "Số lượng tồn kho phải từ 0 trở lên.";
+            }
+            return "";
+          },
+        },
+        {
+          name: "color",
+          label: "Màu sắc",
+          type: "text",
+          required: false,
+          placeholder: "VD: Đen",
+        },
+        {
+          name: "size",
+          label: "Kích thước",
+          type: "text",
+          required: false,
+          placeholder: "VD: 52-18-145",
+        },
+        {
+          name: "frameType",
+          label: "Kiểu gọng",
+          type: "text",
+          required: false,
+          placeholder: "VD: Vuông",
+        },
+        {
+          name: "weightGram",
+          label: "Khối lượng (gram)",
+          type: "number",
+          min: 1,
+          required: true,
+          validate: (value) => {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed) || parsed <= 0) {
+              return "Khối lượng phải lớn hơn 0.";
+            }
+            return "";
+          },
+        },
+        {
+          name: "packageLengthCm",
+          label: "Dài gói hàng (cm)",
+          type: "number",
+          min: 1,
+          required: true,
+          validate: (value) => {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed) || parsed <= 0) {
+              return "Chiều dài gói hàng phải lớn hơn 0.";
+            }
+            return "";
+          },
+        },
+        {
+          name: "packageWidthCm",
+          label: "Rộng gói hàng (cm)",
+          type: "number",
+          min: 1,
+          required: true,
+          validate: (value) => {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed) || parsed <= 0) {
+              return "Chiều rộng gói hàng phải lớn hơn 0.";
+            }
+            return "";
+          },
+        },
+        {
+          name: "packageHeightCm",
+          label: "Cao gói hàng (cm)",
+          type: "number",
+          min: 1,
+          required: true,
+          validate: (value) => {
+            const parsed = Number(value);
+            if (Number.isNaN(parsed) || parsed <= 0) {
+              return "Chiều cao gói hàng phải lớn hơn 0.";
+            }
+            return "";
+          },
+        },
+      ],
+      initialValues: {
+        sku: "",
+        price: String(form.basePrice || 0),
+        quantity: "1",
+        color: "",
+        size: "",
+        frameType: "",
+        weightGram: "200",
+        packageLengthCm: "10",
+        packageWidthCm: "10",
+        packageHeightCm: "10",
+      },
+    });
+
+    if (!formValues) {
+      return;
+    }
+
+    const manualSku = String(formValues.sku || "").trim();
+    if (!manualSku) {
+      await popupAlert("SKU variant không được để trống.");
+      return;
+    }
+
+    const normalizedManualSku = normalizeSkuSegment(manualSku);
+    if (!normalizedManualSku) {
+      await popupAlert("SKU variant không hợp lệ.");
+      return;
+    }
+
+    if (draftVariants.some((item) => normalizeSkuSegment(item.sourceSku) === normalizedManualSku)) {
+      await popupAlert("SKU variant này đã tồn tại trong danh sách tạo sản phẩm.");
+      return;
+    }
+
+    setDraftVariants((current) => {
+      return [
+        ...current,
+        {
+          sourceVariantId: -Date.now(),
+          sourceProductId: null,
+          sourceProductName: "Variant mới",
+          sourceSku: manualSku,
+          colorName: String(formValues.color || "").trim(),
+          quantity: Number(formValues.quantity || 0),
+          size: String(formValues.size || "").trim(),
+          frameType: String(formValues.frameType || "").trim(),
+          price: Number(formValues.price || 0),
+          weightGram: parsePositiveInteger(formValues.weightGram, 200),
+          packageLengthCm: parsePositiveInteger(formValues.packageLengthCm, 10),
+          packageWidthCm: parsePositiveInteger(formValues.packageWidthCm, 10),
+          packageHeightCm: parsePositiveInteger(formValues.packageHeightCm, 10),
+          isCustom: true,
+        },
+      ];
+    });
   }
 
   function removeDraftVariant(index) {
@@ -530,7 +749,9 @@ export function useAdminProductsPage() {
       const usedSkus = new Set();
 
       for (const draft of draftVariants) {
-        const generatedSku = buildGeneratedVariantSku(form.sku, productId, draft.sourceVariantId, usedSkus);
+        const generatedSku = draft.isCustom
+          ? buildUniqueSku(draft.sourceSku, usedSkus)
+          : buildGeneratedVariantSku(form.sku, productId, draft.sourceVariantId, usedSkus);
         usedSkus.add(generatedSku);
 
         await dispatch(
@@ -543,6 +764,10 @@ export function useAdminProductsPage() {
               color: draft.colorName || null,
               size: draft.size || null,
               frameType: draft.frameType || null,
+              weightGram: parsePositiveInteger(draft.weightGram, 200),
+              packageLengthCm: parsePositiveInteger(draft.packageLengthCm, 10),
+              packageWidthCm: parsePositiveInteger(draft.packageWidthCm, 10),
+              packageHeightCm: parsePositiveInteger(draft.packageHeightCm, 10),
               isPreOrderAllowed: false,
               expectedRestockDate: null,
               preOrderNote: null,
@@ -578,6 +803,10 @@ export function useAdminProductsPage() {
       color: "",
       size: "",
       frameType: "",
+      weightGram: "200",
+      packageLengthCm: "10",
+      packageWidthCm: "10",
+      packageHeightCm: "10",
     });
     setIsVariantMởdalOpen(true);
   }
@@ -674,6 +903,10 @@ export function useAdminProductsPage() {
     const normalizedSku = variant.sku.trim();
     const price = Number(variant.price);
     const quantity = Number(variant.quantity);
+    const weightGram = parsePositiveInteger(variant.weightGram, 0);
+    const packageLengthCm = parsePositiveInteger(variant.packageLengthCm, 0);
+    const packageWidthCm = parsePositiveInteger(variant.packageWidthCm, 0);
+    const packageHeightCm = parsePositiveInteger(variant.packageHeightCm, 0);
 
     if (!normalizedSku) {
       await popupAlert("SKU variant không được để trống.");
@@ -682,6 +915,11 @@ export function useAdminProductsPage() {
 
     if (Number.isNaN(price) || price < 0 || Number.isNaN(quantity) || quantity < 0) {
       await popupAlert("Giá hoặc số lượng variant không hợp lệ.");
+      return;
+    }
+
+    if (weightGram <= 0 || packageLengthCm <= 0 || packageWidthCm <= 0 || packageHeightCm <= 0) {
+      await popupAlert("Khối lượng và kích thước đóng gói phải lớn hơn 0.");
       return;
     }
 
@@ -698,6 +936,10 @@ export function useAdminProductsPage() {
             color: variant.color.trim() || null,
             size: variant.size.trim() || null,
             frameType: variant.frameType.trim() || null,
+            weightGram,
+            packageLengthCm,
+            packageWidthCm,
+            packageHeightCm,
             isPreOrderAllowed: variant.isPreOrderAllowed,
             expectedRestockDate: variant.isPreOrderAllowed && variant.expectedRestockDate ? variant.expectedRestockDate : null,
             preOrderNote: variant.isPreOrderAllowed ? variant.preOrderNote.trim() || null : null,
@@ -752,6 +994,10 @@ export function useAdminProductsPage() {
     const normalizedSku = variantForm.sku.trim();
     const price = Number(variantForm.price);
     const quantity = Number(variantForm.quantity);
+    const weightGram = parsePositiveInteger(variantForm.weightGram, 0);
+    const packageLengthCm = parsePositiveInteger(variantForm.packageLengthCm, 0);
+    const packageWidthCm = parsePositiveInteger(variantForm.packageWidthCm, 0);
+    const packageHeightCm = parsePositiveInteger(variantForm.packageHeightCm, 0);
 
     if (!variantForm.productId) {
       await popupAlert("Không xác định được sản phẩm để tạo variant.");
@@ -768,6 +1014,11 @@ export function useAdminProductsPage() {
       return;
     }
 
+    if (weightGram <= 0 || packageLengthCm <= 0 || packageWidthCm <= 0 || packageHeightCm <= 0) {
+      await popupAlert("Khối lượng và kích thước đóng gói phải lớn hơn 0.");
+      return;
+    }
+
     setIsCreatingVariant(true);
 
     try {
@@ -781,6 +1032,10 @@ export function useAdminProductsPage() {
             color: variantForm.color.trim() || null,
             size: variantForm.size.trim() || null,
             frameType: variantForm.frameType.trim() || null,
+            weightGram,
+            packageLengthCm,
+            packageWidthCm,
+            packageHeightCm,
             isPreOrderAllowed: false,
             expectedRestockDate: null,
             preOrderNote: null,
@@ -975,6 +1230,7 @@ export function useAdminProductsPage() {
       attachCreateProductImages,
       removeCreateProductImage,
       addDraftVariant,
+      addManualDraftVariant,
       removeDraftVariant,
       resetCreateProductBuilder,
       setVariantField: (field, value) => setVariantForm((current) => ({ ...current, [field]: value })),

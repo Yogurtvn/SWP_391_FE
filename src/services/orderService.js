@@ -377,7 +377,10 @@ export function formatDateTime(value) {
     return "Chưa cập nhật";
   }
 
-  const date = value instanceof Date ? value : new Date(value);
+  const rawValue = String(value ?? "").trim();
+  const noTimezoneIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+  const normalizedValue = noTimezoneIsoPattern.test(rawValue) ? `${rawValue}Z` : rawValue;
+  const date = value instanceof Date ? value : new Date(normalizedValue);
 
   if (Number.isNaN(date.getTime())) {
     return "Chưa cập nhật";

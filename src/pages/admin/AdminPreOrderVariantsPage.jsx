@@ -33,7 +33,25 @@ function formatDateTime(value) {
     return "-";
   }
 
-  return new Date(value).toLocaleString("vi-VN");
+  const rawValue = String(value ?? "").trim();
+  const noTimezoneIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+  const normalizedValue = noTimezoneIsoPattern.test(rawValue) ? `${rawValue}Z` : rawValue;
+  const date = value instanceof Date ? value : new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour12: false,
+  }).format(date);
 }
 
 function formatDate(value) {
@@ -41,13 +59,27 @@ function formatDate(value) {
     return "-";
   }
 
-  return new Date(value).toLocaleDateString("vi-VN");
+  const rawValue = String(value ?? "").trim();
+  const noTimezoneIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+  const normalizedValue = noTimezoneIsoPattern.test(rawValue) ? `${rawValue}Z` : rawValue;
+  const date = value instanceof Date ? value : new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
 }
 
 function buildVariantLabel(row) {
   const parts = [];
   if (row.color) parts.push(`Màu: ${row.color}`);
-  if (row.size) parts.push(`Size: ${row.size}`);
+  if (row.size) parts.push(`Kích thước: ${row.size}`);
   if (row.frameType) parts.push(`Kiểu: ${row.frameType}`);
   return parts.length ? parts.join(" | ") : "Không có thuộc tính";
 }
@@ -220,7 +252,6 @@ export default function AdminPreOrderVariantsPage() {
             page: pageNumber,
             pageSize: 100,
             orderType: "preOrder",
-            orderStatus: "awaitingStock",
             sortBy: "createdAt",
             sortOrder: "desc",
           },
@@ -268,13 +299,19 @@ export default function AdminPreOrderVariantsPage() {
         }
       }
 
-      const mergedRows = inventoryItems.map((inventory) => {
+      const mergedRows = inventoryItems
+        .map((inventory) => {
         const variantId = Number(inventory?.variantId ?? 0);
         const sku = inventory?.sku || variantMap.get(variantId)?.sku || "-";
         const normalizedSku = normalizeValue(sku);
         const demand = demandByVariantId.get(variantId) ?? demandBySku.get(normalizedSku);
         const variantDetail = variantMap.get(variantId) ?? null;
         const product = variantDetail?.productId ? productMap.get(Number(variantDetail.productId)) : null;
+        const isPreOrderAllowed = Boolean(inventory?.isPreOrderAllowed ?? variantDetail?.isPreOrderAllowed);
+
+        if (!isPreOrderAllowed) {
+          return null;
+        }
 
         const currentStock = Number(inventory?.quantity ?? variantDetail?.quantity ?? 0);
         const preOrderQuantity = Number(demand?.totalQuantity ?? 0);
@@ -301,7 +338,9 @@ export default function AdminPreOrderVariantsPage() {
             : [],
           variantDetail,
         };
-      });
+      })
+        .filter(Boolean)
+        .filter((row) => row.preOrderOrderCount > 0 || row.preOrderQuantity > 0);
 
       mergedRows.sort((a, b) => {
         if (b.neededImportQuantity !== a.neededImportQuantity) {
@@ -666,11 +705,11 @@ export default function AdminPreOrderVariantsPage() {
                 <p className="mt-2 text-sm text-slate-700">{selectedVariantRow.color || "-"}</p>
               </div>
               <div className="rounded-xl border border-orange-100 bg-[#fffaf4] p-4">
-                <p className="text-xs font-bold uppercase text-slate-500">Size</p>
+                <p className="text-xs font-bold uppercase text-slate-500">Kích thước</p>
                 <p className="mt-2 text-sm text-slate-700">{selectedVariantRow.size || "-"}</p>
               </div>
               <div className="rounded-xl border border-orange-100 bg-[#fffaf4] p-4">
-                <p className="text-xs font-bold uppercase text-slate-500">Frame type</p>
+                <p className="text-xs font-bold uppercase text-slate-500">Kiểu gọng</p>
                 <p className="mt-2 text-sm text-slate-700">{selectedVariantRow.frameType || "-"}</p>
               </div>
               <div className="rounded-xl border border-orange-100 bg-[#fffaf4] p-4">

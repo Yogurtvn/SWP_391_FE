@@ -745,7 +745,7 @@ export default function AdminProductsPage() {
                               <div className="mb-4 flex items-center justify-between gap-3">
                                 <div>
                                   <p className="text-base font-bold text-gray-900">Variant #{variant.variantId}</p>
-                                  <p className="text-sm text-gray-500">Cập nhật SKU, màu, kích thước và giá.</p>
+                                  <p className="text-sm text-gray-500">Cập nhật SKU, màu, kích thước, giá và thông số đóng gói.</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <button
@@ -789,7 +789,7 @@ export default function AdminProductsPage() {
                                 </div>
 
                                 <div>
-                                  <label className="mb-2 block text-sm font-bold text-gray-700">Kich thuoc</label>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Kích thước</label>
                                   <input
                                     type="text"
                                     value={variant.size}
@@ -799,7 +799,7 @@ export default function AdminProductsPage() {
                                 </div>
 
                                 <div>
-                                  <label className="mb-2 block text-sm font-bold text-gray-700">Frame type</label>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Kiểu gọng</label>
                                   <input
                                     type="text"
                                     value={variant.frameType}
@@ -815,6 +815,49 @@ export default function AdminProductsPage() {
                                     min="0"
                                     value={variant.price}
                                     onChange={(event) => actions.setEditVariantField(variant.variantId, "price", event.target.value)}
+                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Khối lượng (gram)</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={variant.weightGram}
+                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "weightGram", event.target.value)}
+                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Dài gói hàng (cm)</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={variant.packageLengthCm}
+                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "packageLengthCm", event.target.value)}
+                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Rộng gói hàng (cm)</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={variant.packageWidthCm}
+                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "packageWidthCm", event.target.value)}
+                                    className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="mb-2 block text-sm font-bold text-gray-700">Cao gói hàng (cm)</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={variant.packageHeightCm}
+                                    onChange={(event) => actions.setEditVariantField(variant.variantId, "packageHeightCm", event.target.value)}
                                     className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                                   />
                                 </div>
@@ -978,12 +1021,22 @@ export default function AdminProductsPage() {
               </div>
 
               <div className="border-t-2 border-gray-200 pt-6">
-                <h3 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                    <Palette className="h-4 w-4 text-primary" />
-                  </div>
-                  Variant và Tồn Kho
-                </h3>
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <h3 className="flex items-center gap-2 text-lg font-bold text-gray-900">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                      <Palette className="h-4 w-4 text-primary" />
+                    </div>
+                    Variant và Tồn Kho
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={actions.addManualDraftVariant}
+                    className="inline-flex items-center gap-2 rounded-xl border-2 border-primary bg-primary px-4 py-2 text-sm font-bold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Tạo variant mới
+                  </button>
+                </div>
 
                 {draftVariants.length > 0 ? (
                   <div className="mb-4 space-y-2">
@@ -997,7 +1050,7 @@ export default function AdminProductsPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-bold text-gray-900">
-                            Variant #{draft.sourceVariantId} - {draft.sourceSku}
+                            {draft.isCustom ? `Variant mới - ${draft.sourceSku}` : `Variant #${draft.sourceVariantId} - ${draft.sourceSku}`}
                           </p>
                           <p className="text-sm text-gray-600">
                             Nguồn: {draft.sourceProductName} | Màu: {draft.colorName || "-"} | Tồn kho: {draft.quantity}
@@ -1005,7 +1058,7 @@ export default function AdminProductsPage() {
                           {draft.size || draft.frameType ? (
                             <p className="text-xs text-gray-500">
                               {draft.size ? `Kích thước: ${draft.size}` : ""}{draft.size && draft.frameType ? " | " : ""}
-                              {draft.frameType ? `Frame type: ${draft.frameType}` : ""}
+                              {draft.frameType ? `Kiểu gọng: ${draft.frameType}` : ""}
                             </p>
                           ) : null}
                         </div>
@@ -1134,7 +1187,7 @@ export default function AdminProductsPage() {
                               </div>
                               <p className="mt-1 text-sm text-gray-600">{variant.sourceProductName}</p>
                               <p className="mt-1 text-xs text-gray-500">
-                                Màu: {variant.colorName || "-"} | Size: {variant.size || "-"} | Frame: {variant.frameType || "-"}
+                                Màu: {variant.colorName || "-"} | Kích thước: {variant.size || "-"} | Kiểu gọng: {variant.frameType || "-"}
                               </p>
                             </button>
                           );
@@ -1150,10 +1203,10 @@ export default function AdminProductsPage() {
                     className="mt-4 w-full rounded-xl border-2 border-primary bg-primary px-4 py-3 text-base font-bold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {!selectedVariant
-                      ? "Chọn variant để thêm"
+                      ? "Chọn variant có sẵn để thêm"
                       : selectedDraftVariantIds.has(selectedVariant.variantId)
                         ? "Variant này đã được thêm"
-                        : "+ Thêm variant này"}
+                        : "+ Thêm variant đã chọn"}
                   </button>
                 </div>
               </div>
@@ -1311,14 +1364,19 @@ export default function AdminProductsPage() {
                         <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Variant ID</th>
                         <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">SKU</th>
                         <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Giá</th>
-                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Color</th>
-                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Size</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Màu sắc</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Kích thước</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Kiểu gọng</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Khối lượng (g)</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Dài (cm)</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Rộng (cm)</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.02em] text-slate-700">Cao (cm)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {(productDetail.variants ?? []).length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-4 py-8 text-center text-base text-slate-500">
+                          <td colSpan={10} className="px-4 py-8 text-center text-base text-slate-500">
                             Chưa có variant.
                           </td>
                         </tr>
@@ -1330,6 +1388,11 @@ export default function AdminProductsPage() {
                             <td className="px-4 py-4 text-base text-slate-700">{formatCurrency(variant.price)}</td>
                             <td className="px-4 py-4 text-base text-slate-700">{variant.color || "-"}</td>
                             <td className="px-4 py-4 text-base text-slate-700">{variant.size || "-"}</td>
+                            <td className="px-4 py-4 text-base text-slate-700">{variant.frameType || "-"}</td>
+                            <td className="px-4 py-4 text-base text-slate-700">{variant.weightGram ?? "-"}</td>
+                            <td className="px-4 py-4 text-base text-slate-700">{variant.packageLengthCm ?? "-"}</td>
+                            <td className="px-4 py-4 text-base text-slate-700">{variant.packageWidthCm ?? "-"}</td>
+                            <td className="px-4 py-4 text-base text-slate-700">{variant.packageHeightCm ?? "-"}</td>
                           </tr>
                         ))
                       )}
@@ -1349,55 +1412,125 @@ export default function AdminProductsPage() {
             <p className="mt-1 text-base text-slate-500">Sản phẩm: {variantForm.productName}</p>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <input
-                name="sku"
-                value={variantForm.sku}
-                onChange={(event) => actions.setVariantField("sku", event.target.value)}
-                placeholder="SKU"
-                className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                required
-              />
-              <input
-                type="number"
-                min="0"
-                name="price"
-                value={variantForm.price}
-                onChange={(event) => actions.setVariantField("price", event.target.value)}
-                placeholder="Giá"
-                className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                required
-              />
-              <input
-                type="number"
-                min="0"
-                name="quantity"
-                value={variantForm.quantity}
-                onChange={(event) => actions.setVariantField("quantity", event.target.value)}
-                placeholder="Số lượng tồn kho ban đầu"
-                className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                required
-              />
-              <input
-                name="color"
-                value={variantForm.color}
-                onChange={(event) => actions.setVariantField("color", event.target.value)}
-                placeholder="Màu sắc"
-                className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-              <input
-                name="size"
-                value={variantForm.size}
-                onChange={(event) => actions.setVariantField("size", event.target.value)}
-                placeholder="Kích thước"
-                className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-              <input
-                name="frameType"
-                value={variantForm.frameType}
-                onChange={(event) => actions.setVariantField("frameType", event.target.value)}
-                placeholder="Frame type"
-                className="rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">SKU</label>
+                <input
+                  name="sku"
+                  value={variantForm.sku}
+                  onChange={(event) => actions.setVariantField("sku", event.target.value)}
+                  placeholder="SKU"
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Giá</label>
+                <input
+                  type="number"
+                  min="0"
+                  name="price"
+                  value={variantForm.price}
+                  onChange={(event) => actions.setVariantField("price", event.target.value)}
+                  placeholder="Nhập giá"
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Số lượng tồn kho ban đầu</label>
+                <input
+                  type="number"
+                  min="0"
+                  name="quantity"
+                  value={variantForm.quantity}
+                  onChange={(event) => actions.setVariantField("quantity", event.target.value)}
+                  placeholder="Nhập số lượng"
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Màu sắc</label>
+                <input
+                  name="color"
+                  value={variantForm.color}
+                  onChange={(event) => actions.setVariantField("color", event.target.value)}
+                  placeholder="Ví dụ: Đen"
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Kích thước</label>
+                <input
+                  name="size"
+                  value={variantForm.size}
+                  onChange={(event) => actions.setVariantField("size", event.target.value)}
+                  placeholder="Ví dụ: 52-18-145"
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Kiểu gọng</label>
+                <input
+                  name="frameType"
+                  value={variantForm.frameType}
+                  onChange={(event) => actions.setVariantField("frameType", event.target.value)}
+                  placeholder="Ví dụ: Vuông"
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Khối lượng (gram)</label>
+                <input
+                  type="number"
+                  min="1"
+                  name="weightGram"
+                  value={variantForm.weightGram}
+                  onChange={(event) => actions.setVariantField("weightGram", event.target.value)}
+                  placeholder="Ví dụ: 200"
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Dài gói hàng (cm)</label>
+                <input
+                  type="number"
+                  min="1"
+                  name="packageLengthCm"
+                  value={variantForm.packageLengthCm}
+                  onChange={(event) => actions.setVariantField("packageLengthCm", event.target.value)}
+                  placeholder="Ví dụ: 10"
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Rộng gói hàng (cm)</label>
+                <input
+                  type="number"
+                  min="1"
+                  name="packageWidthCm"
+                  value={variantForm.packageWidthCm}
+                  onChange={(event) => actions.setVariantField("packageWidthCm", event.target.value)}
+                  placeholder="Ví dụ: 10"
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-gray-700">Cao gói hàng (cm)</label>
+                <input
+                  type="number"
+                  min="1"
+                  name="packageHeightCm"
+                  value={variantForm.packageHeightCm}
+                  onChange={(event) => actions.setVariantField("packageHeightCm", event.target.value)}
+                  placeholder="Ví dụ: 10"
+                  className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  required
+                />
+              </div>
             </div>
 
             <div className="mt-6 flex justify-end gap-3">

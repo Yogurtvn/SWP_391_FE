@@ -91,9 +91,11 @@ function StaffDashboard() {
       const prescriptionPendingRows = allPrescriptions.filter((item) =>
         ["submitted", "reviewing"].includes(normalizeValue(item?.prescriptionStatus)),
       );
-      const prescriptionReviews = await Promise.all(
-        prescriptionPendingRows.slice(0, 3).map((item) => buildPrescriptionReviewCard(item, auth.accessToken)),
+      const rawPrescriptionReviews = await Promise.all(
+        prescriptionPendingRows.map((item) => buildPrescriptionReviewCard(item, auth.accessToken)),
       );
+      const activePrescriptionReviews = dedupePrescriptionReviews(rawPrescriptionReviews.filter(Boolean));
+      const prescriptionReviews = activePrescriptionReviews.slice(0, 3);
 
       setState({
         status: "succeeded",
@@ -104,7 +106,7 @@ function StaffDashboard() {
           pendingOrders: normalizedOrders.filter((order) => order.normalizedStatus === "pending").length,
           processingOrders: normalizedOrders.filter((order) => order.normalizedStatus === "processing").length,
           awaitingStockOrders: normalizedOrders.filter((order) => order.normalizedStatus === "awaitingstock").length,
-          prescriptionReviewPending: prescriptionPendingRows.length,
+          prescriptionReviewPending: activePrescriptionReviews.length,
           todayCompletedOrders: normalizedOrders.filter(
             (order) => order.normalizedStatus === "completed" && isSameVnDate(order.updatedAt || order.createdAt, new Date()),
           ).length,
@@ -555,6 +557,11 @@ async function buildPrescriptionReviewCard(item, accessToken) {
       : Promise.resolve(null),
   ]);
 
+  const orderStatus = normalizeValue(order?.orderStatus ?? item?.orderStatus);
+  if (orderStatus === "cancelled") {
+    return null;
+  }
+
   const firstOrderItem = Array.isArray(order?.items) ? order.items[0] : null;
 
   return {
@@ -570,6 +577,30 @@ async function buildPrescriptionReviewCard(item, accessToken) {
     uploadedImage: Boolean(item?.prescriptionImageUrl || detail?.prescriptionImageUrl),
     createdAt: item?.createdAt ?? detail?.createdAt ?? order?.createdAt ?? null,
   };
+}
+
+function dedupePrescriptionReviews(reviews) {
+  const uniqueMap = new Map();
+
+  (Array.isArray(reviews) ? reviews : []).forEach((review) => {
+    const orderId = Number(review?.orderId ?? 0);
+    const key = orderId > 0
+      ? `order-${orderId}`
+      : [
+          normalizeValue(review?.customer),
+          normalizeValue(review?.frameName),
+          normalizeValue(review?.prescriptionData?.odSph),
+          normalizeValue(review?.prescriptionData?.osSph),
+          normalizeValue(review?.prescriptionData?.pd),
+        ].join("|");
+
+    const current = uniqueMap.get(key);
+    if (!current || toTimestamp(review?.createdAt) > toTimestamp(current?.createdAt)) {
+      uniqueMap.set(key, review);
+    }
+  });
+
+  return Array.from(uniqueMap.values()).sort((left, right) => toTimestamp(right?.createdAt) - toTimestamp(left?.createdAt));
 }
 
 function resolvePriority(orderType, normalizedStatus) {
@@ -648,6 +679,16 @@ function formatPdValue(value) {
   return Number.isInteger(numericValue) ? String(numericValue) : numericValue.toFixed(2);
 }
 
+function toTimestamp(value) {
+  if (!value) {
+    return 0;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  const timestamp = date.getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
 function isSameVnDate(left, right) {
   const leftKey = toVnDateKey(left);
   const rightKey = toVnDateKey(right);
@@ -681,3 +722,5 @@ function resolveErrorMessage(error, fallbackMessage) {
 }
 
 export { StaffDashboard as default };
+
+

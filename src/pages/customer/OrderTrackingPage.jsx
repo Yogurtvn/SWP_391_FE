@@ -167,7 +167,7 @@ export default function OrderTrackingPage() {
                         <span className="text-sm text-muted-foreground">{history.updatedAtLabel}</span>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground">Cập nhật bởi: {history.updatedByName}</p>
-                      {history.note ? <p className="mt-2 text-sm leading-6 text-foreground/80">{history.note}</p> : null}
+                      {history.note ? <p className="mt-2 text-sm leading-6 text-foreground/80">{translateOrderHistoryNote(history.note)}</p> : null}
                     </div>
                   </div>
                 ))}
@@ -458,6 +458,25 @@ function createFallbackHistory(order) {
     note: "",
     updatedAtLabel: order.updatedAtLabel,
   };
+}
+
+function translateOrderHistoryNote(note) {
+  const normalized = String(note ?? "").trim().toLowerCase();
+
+  if (normalized === "order moved to awaiting stock." || normalized === "order moved to awaiting stock") {
+    return "Đơn hàng đã chuyển sang trạng thái chờ hàng.";
+  }
+
+  if (
+    normalized === "order moved to processing automatically after stock receipt and basic-stock email."
+    || normalized === "order moved to processing automatically after stock receipt and basic-stock email"
+    || normalized === "order moved to processing automatically after stock receipt and basic stock email."
+    || normalized === "order moved to processing automatically after stock receipt and basic stock email"
+  ) {
+    return "Đơn hàng đã tự động chuyển sang đang xử lý sau khi nhập kho và gửi email thông báo có hàng.";
+  }
+
+  return note;
 }
 
 function getPrescriptionTone(status) {

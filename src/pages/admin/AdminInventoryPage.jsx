@@ -426,6 +426,7 @@ export default function AdminInventoryPage() {
 
               {paginatedInventories.map((item) => {
                 const latestReceipt = latestReceiptByVariantId.get(Number(item.variantId));
+                const isInStock = Number(item?.quantity ?? 0) > 0;
 
                 return (
                   <tr key={item.variantId} className="transition hover:bg-orange-50/40">
@@ -472,6 +473,8 @@ export default function AdminInventoryPage() {
                       <button
                         type="button"
                         onClick={() => actions.editPreOrder(item)}
+                        disabled={isInStock}
+                        title={isInStock ? "Biến thể còn hàng nên không thể sửa pre-order." : undefined}
                         className="inline-flex items-center justify-center rounded-[1rem] border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-bold text-orange-700 shadow-[0_6px_12px_rgba(249,115,22,0.08)] transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Sửa pre-order

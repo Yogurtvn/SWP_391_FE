@@ -7,6 +7,7 @@ export default function ProductDetailPage() {
   const canBuyNow = product?.availabilityStatus === "available";
   const canPreOrder = Boolean(product?.canPreOrder);
   const canOpenPreOrder = Boolean(product?.hasPreOrderVariant || product?.canPreOrder);
+  const canOrderPrescription = Boolean(product?.prescriptionCompatible) && canBuyNow;
   const shouldShowOutOfStock = !canBuyNow && !canPreOrder;
 
   if (ui.loading) {
@@ -196,7 +197,7 @@ export default function ProductDetailPage() {
             </div>
           ) : null}
 
-          {product.prescriptionCompatible ? (
+          {canOrderPrescription ? (
             <div className="mb-6 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
               <Check className="h-4 w-4 shrink-0" />
               <span>Sản phẩm này hỗ trợ đo kính theo toa.</span>
@@ -246,7 +247,7 @@ export default function ProductDetailPage() {
           ) : null}
 
           <div className="space-y-3">
-            {product.prescriptionCompatible ? (
+            {canOrderPrescription ? (
               <button
                 type="button"
                 onClick={actions.goToPrescriptionFlow}

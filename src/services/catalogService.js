@@ -9,9 +9,11 @@ const DEFAULT_IMAGE_URL =
 export async function getCatalogProducts(filters = {}) {
   const queryString = createQueryString(filters);
   const response = await apiGet(queryString ? `${PRODUCTS_BASE_PATH}?${queryString}` : PRODUCTS_BASE_PATH);
+  const normalizedItems = Array.isArray(response?.items) ? response.items.map(normalizeCatalogListItem) : [];
+  const customerVisibleItems = normalizedItems.filter(isCustomerVisibleCatalogItem);
 
   return {
-    items: Array.isArray(response?.items) ? response.items.map(normalizeCatalogListItem) : [],
+    items: customerVisibleItems,
     page: response?.page ?? 1,
     pageSize: response?.pageSize ?? 12,
     totalItems: response?.totalItems ?? 0,
@@ -330,6 +332,10 @@ function resolveAvailabilityStatus(isAvailable, isPreOrderAllowed) {
   }
 
   return "unavailable";
+}
+
+function isCustomerVisibleCatalogItem(item) {
+  return item?.availabilityStatus === "available" || item?.availabilityStatus === "preorder";
 }
 
 function resolveDetailAvailabilityStatus(variants) {

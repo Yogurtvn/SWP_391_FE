@@ -42,9 +42,39 @@ function translateNote(note) {
 
   if (normalized === "order created." || normalized === "order created") return "Đơn hàng đã được tạo.";
   if (normalized === "payment created." || normalized === "payment created") return "Thanh toán đã được tạo.";
+  if (normalized === "payos payment initialized." || normalized === "payos payment initialized") {
+    return "Thanh toán PayOS đã được khởi tạo.";
+  }
+  if (
+    normalized === "payos reconcile marked payment as failed after return."
+    || normalized === "payos reconcile marked payment as failed after return"
+  ) {
+    return "PayOS đối soát và đánh dấu thanh toán thất bại sau khi quay về.";
+  }
+  if (
+    normalized === "order cancelled automatically because online payment failed (payment:reconcile)."
+    || normalized === "order cancelled automatically because online payment failed (payment:reconcile)"
+  ) {
+    return "Đơn hàng đã tự động hủy do thanh toán online thất bại (payment:reconcile).";
+  }
   if (normalized === "order is being processed." || normalized === "order is being processed") return "Đơn hàng đang được xử lý.";
   if (normalized === "order shipped." || normalized === "order shipped") return "Đơn hàng đã được giao cho đơn vị vận chuyển.";
   if (normalized === "order completed." || normalized === "order completed") return "Đơn hàng đã hoàn thành.";
+  if (normalized === "order moved to awaiting stock." || normalized === "order moved to awaiting stock") {
+    return "Đơn hàng đã chuyển sang trạng thái chờ hàng.";
+  }
+  if (
+    normalized === "order moved to processing automatically after stock receipt and basic-stock email."
+    || normalized === "order moved to processing automatically after stock receipt and basic-stock email"
+    || normalized === "order moved to processing automatically after stock receipt and basic stock email."
+    || normalized === "order moved to processing automatically after stock receipt and basic stock email"
+    || normalized === "order moved to processing automatically after stock receipt and back-in-stock email."
+    || normalized === "order moved to processing automatically after stock receipt and back-in-stock email"
+    || normalized === "order moved to processing automatically after stock receipt and back in stock email."
+    || normalized === "order moved to processing automatically after stock receipt and back in stock email"
+  ) {
+    return "Đơn hàng đã tự động chuyển sang đang xử lý sau khi nhập kho và gửi email thông báo có hàng.";
+  }
   if (normalized === "payment collected when the order was completed." || normalized === "payment collected when the order was completed") {
     return "Đã thu tiền khi đơn hàng hoàn thành.";
   }
@@ -203,9 +233,6 @@ export default function AdminOrderDetailPage() {
                 </DetailField> : null}
                 {hasValue(order.orderStatus) ? <DetailField label="Trạng thái đơn">
                   <StatusPill value={order.orderStatus} type="order" />
-                </DetailField> : null}
-                {hasValue(order.shippingStatus) ? <DetailField label="Vận chuyển">
-                  <StatusPill value={order.shippingStatus} type="shipping" />
                 </DetailField> : null}
                 <DetailField label="Tổng tiền" value={formatCurrency(order.totalAmount)} emphasize />
                 <DetailField label="Người nhận" value={order.receiverName} />

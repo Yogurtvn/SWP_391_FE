@@ -136,6 +136,8 @@ function normalizePrescriptionListItem(item) {
     prescriptionImageUrl: normalizeText(item?.prescriptionImageUrl) ?? "",
     prescriptionStatus: item?.prescriptionStatus ?? "",
     prescriptionStatusLabel: getPrescriptionStatusLabel(item?.prescriptionStatus),
+    orderStatus: item?.orderStatus ?? "",
+    orderStatusLabel: normalizeText(item?.orderStatusLabel) ?? "",
     notes: normalizeText(item?.notes) ?? "",
     createdAt: item?.createdAt ?? null,
     createdAtLabel: formatDateTime(item?.createdAt),

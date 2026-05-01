@@ -719,7 +719,7 @@ export default function CheckoutPage() {
                 <div>
                   <h2 className="text-xl">Tóm tắt đơn hàng</h2>
                   <p className="text-sm text-muted-foreground">
-                    Đang checkout nhóm sản phẩm `{getOrderTypeLabel(checkoutOrderType)}`.
+                    Đang thanh toán nhóm sản phẩm {getOrderTypeLabel(checkoutOrderType)}.
                   </p>
                 </div>
               </div>

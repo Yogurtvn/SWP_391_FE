@@ -124,6 +124,11 @@ export function useAdminInventoryPage() {
   }, [receiptForm.sku, receiptForm.variantId, skuToVariantMap]);
 
   async function editPreOrder(item) {
+    if (Number(item?.quantity ?? 0) > 0) {
+      await popupAlert("Biến thể còn hàng nên không thể sửa pre-order.");
+      return;
+    }
+
     const formValues = await popupForm({
       title: "Cập nhật pre-order",
       message: `SKU: ${item.sku || "-"} | Variant ID: ${item.variantId}`,

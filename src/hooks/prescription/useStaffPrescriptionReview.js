@@ -23,6 +23,7 @@ export function useStaffPrescriptionReview() {
   const [relatedOrder, setRelatedOrder] = useState(null);
   const [relatedOrderStatus, setRelatedOrderStatus] = useState("idle");
   const [relatedOrderError, setRelatedOrderError] = useState("");
+  const [orderStatusById, setOrderStatusById] = useState({});
 
   useEffect(() => {
     if (!auth.accessToken) {
@@ -100,7 +101,11 @@ export function useStaffPrescriptionReview() {
   }, [prescriptionState.detail.data, selectedId]);
 
   useEffect(() => {
-    const items = prescriptionState.list.items;
+    const items = prescriptionState.list.items.filter((item) => {
+      const orderId = Number(item?.orderId ?? 0);
+      const normalizedOrderStatus = normalizeStatus(orderStatusById[orderId] || item?.orderStatus);
+      return normalizedOrderStatus !== "cancelled";
+    });
 
     if (prescriptionState.list.status !== "succeeded") {
       return;
@@ -114,11 +119,98 @@ export function useStaffPrescriptionReview() {
     if (selectedId && !items.some((item) => item.prescriptionId === selectedId)) {
       setSelectedId(items[0]?.prescriptionId ?? null);
     }
-  }, [prescriptionState.list.items, prescriptionState.list.status, selectedId]);
+  }, [orderStatusById, prescriptionState.list.items, prescriptionState.list.status, selectedId]);
+
+  useEffect(() => {
+    if (!auth.accessToken || prescriptionState.list.status !== "succeeded") {
+      return;
+    }
+
+    const items = Array.isArray(prescriptionState.list.items) ? prescriptionState.list.items : [];
+    const knownStatusEntries = items
+      .map((item) => [Number(item?.orderId ?? 0), normalizeStatus(item?.orderStatus)])
+      .filter(([orderId, status]) => orderId > 0 && status.length > 0);
+
+    const mergedKnownStatuses = Object.fromEntries(knownStatusEntries);
+    if (Object.keys(mergedKnownStatuses).length > 0) {
+      setOrderStatusById((current) => {
+        const next = { ...current };
+        let hasChange = false;
+
+        Object.entries(mergedKnownStatuses).forEach(([orderId, status]) => {
+          if (status && next[orderId] !== status) {
+            next[orderId] = status;
+            hasChange = true;
+          }
+        });
+
+        return hasChange ? next : current;
+      });
+    }
+
+    const unresolvedOrderIds = Array.from(
+      new Set(
+        items
+          .map((item) => Number(item?.orderId ?? 0))
+          .filter((orderId) => Number.isFinite(orderId) && orderId > 0)
+          .filter((orderId) => !mergedKnownStatuses[orderId] && !orderStatusById[orderId]),
+      ),
+    );
+
+    if (unresolvedOrderIds.length === 0) {
+      return;
+    }
+
+    let ignore = false;
+
+    async function loadOrderStatuses() {
+      const results = await Promise.all(
+        unresolvedOrderIds.map(async (orderId) => {
+          try {
+            const order = await getOrderById(orderId, auth.accessToken);
+            return [orderId, normalizeStatus(order?.orderStatus)];
+          } catch {
+            return [orderId, ""];
+          }
+        }),
+      );
+
+      if (ignore) {
+        return;
+      }
+
+      const nextStatuses = Object.fromEntries(results.filter(([, status]) => status.length > 0));
+      if (Object.keys(nextStatuses).length > 0) {
+        setOrderStatusById((current) => {
+          const next = { ...current };
+          let hasChange = false;
+
+          Object.entries(nextStatuses).forEach(([orderId, status]) => {
+            if (status && next[orderId] !== status) {
+              next[orderId] = status;
+              hasChange = true;
+            }
+          });
+
+          return hasChange ? next : current;
+        });
+      }
+    }
+
+    void loadOrderStatuses();
+
+    return () => {
+      ignore = true;
+    };
+  }, [auth.accessToken, orderStatusById, prescriptionState.list.items, prescriptionState.list.status]);
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
-    const items = prescriptionState.list.items;
+    const items = prescriptionState.list.items.filter((item) => {
+      const orderId = Number(item?.orderId ?? 0);
+      const normalizedOrderStatus = normalizeStatus(orderStatusById[orderId] || item?.orderStatus);
+      return normalizedOrderStatus !== "cancelled";
+    });
 
     if (!normalizedQuery) {
       return items;
@@ -129,11 +221,18 @@ export function useStaffPrescriptionReview() {
       || String(item.prescriptionId || "").includes(normalizedQuery)
       || String(item.customerName || "").toLowerCase().includes(normalizedQuery)
       || String(item.customerEmail || "").toLowerCase().includes(normalizedQuery));
-  }, [prescriptionState.list.items, searchQuery]);
+  }, [orderStatusById, prescriptionState.list.items, searchQuery]);
 
   const pendingCount = useMemo(
-    () => prescriptionState.list.items.filter((item) => ["submitted", "reviewing"].includes(normalizeStatus(item.prescriptionStatus))).length,
-    [prescriptionState.list.items],
+    () =>
+      prescriptionState.list.items
+        .filter((item) => {
+          const orderId = Number(item?.orderId ?? 0);
+          const normalizedOrderStatus = normalizeStatus(orderStatusById[orderId] || item?.orderStatus);
+          return normalizedOrderStatus !== "cancelled";
+        })
+        .filter((item) => ["submitted", "reviewing"].includes(normalizeStatus(item.prescriptionStatus))).length,
+    [orderStatusById, prescriptionState.list.items],
   );
 
   async function loadList() {

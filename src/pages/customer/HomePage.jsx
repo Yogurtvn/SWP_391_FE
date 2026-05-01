@@ -7,7 +7,10 @@ import { products } from "@/constants/products";
 import { getCatalogProducts } from "@/services/catalogService";
 import { resolveColorHex } from "@/utils/color";
 
-const fallbackFeaturedProducts = products.slice(0, 4).map((p) => ({
+const fallbackFeaturedProducts = products
+  .filter((p) => Boolean(p.inStock) || Boolean(p.allowPreOrder))
+  .slice(0, 4)
+  .map((p) => ({
   id: p.id,
   name: p.name,
   price: p.price,
@@ -411,6 +414,10 @@ export {
 
 function mapCatalogProductToFeaturedCard(item) {
   if (!item) {
+    return null;
+  }
+
+  if (item.availabilityStatus === "unavailable") {
     return null;
   }
 

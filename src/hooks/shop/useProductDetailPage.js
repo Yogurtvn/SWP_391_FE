@@ -78,6 +78,16 @@ export function useProductDetailPage() {
         }
 
         const detailProduct = await getCatalogProductById(numericId);
+        if (detailProduct.availabilityStatus === "unavailable") {
+          if (!isMounted) {
+            return;
+          }
+
+          setProduct(null);
+          setRelatedProducts([]);
+          return;
+        }
+
         const recommendations = await getRecommendedCatalogProducts({
           productType: detailProduct.productType,
           excludeProductId: detailProduct.productId,
@@ -278,6 +288,11 @@ export function useProductDetailPage() {
       goToPrescriptionFlow: () => {
         if (!resolvedProduct?.prescriptionCompatible) {
           toast.error(resolvedProduct?.prescriptionEligibilityReason || "Sản phẩm này hiện không hỗ trợ kính theo toa.");
+          return;
+        }
+
+        if (resolvedProduct?.availabilityStatus !== "available") {
+          toast.error("Chỉ sản phẩm còn hàng mới có thể đặt kính theo toa.");
           return;
         }
 

@@ -13,6 +13,7 @@ function ProductCard({
   id,
   name,
   price,
+  basePrice,
   image,
   subtitle,
   color = "Black",
@@ -26,7 +27,7 @@ function ProductCard({
   const { addStandardItem } = useCart();
   const { openDrawer } = useCartDrawer();
 
-  const displayPrice = Number(price ?? 0);
+  const displayPrice = Number(product?.basePrice ?? basePrice ?? price ?? 0);
   const displaySubtitle = subtitle || color;
   const displayColors = Array.isArray(colors) ? colors.filter(Boolean) : [];
   const hasPreOrderFlow = Boolean(
@@ -200,4 +201,3 @@ function resolveErrorMessage(error, fallbackMessage) {
 export {
   ProductCard as default
 };
-

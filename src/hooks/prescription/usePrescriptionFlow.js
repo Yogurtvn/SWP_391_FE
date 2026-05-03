@@ -82,12 +82,38 @@ export function usePrescriptionFlow() {
     [imagePreviewBlobUrl],
   );
 
+  const variants = useMemo(
+    () => (Array.isArray(flow.product?.variants) ? flow.product.variants : []),
+    [flow.product?.variants],
+  );
+
+  const sizeOrder = useMemo(() => {
+    const productSizes = Array.isArray(flow.product?.sizes)
+      ? flow.product.sizes.map(normalizeText).filter(Boolean)
+      : [];
+
+    if (productSizes.length > 0) {
+      return productSizes;
+    }
+
+    return Array.from(
+      new Set(
+        variants
+          .map((variant) => normalizeText(variant?.size))
+          .filter(Boolean),
+      ),
+    );
+  }, [flow.product?.sizes, variants]);
+
+  const availableSizesForSelectedColor = useMemo(
+    () => getAvailableSizesForColor(variants, selectedColor, sizeOrder),
+    [selectedColor, sizeOrder, variants],
+  );
+
   const selectedVariant = useMemo(() => {
     if (!flow.product) {
       return null;
     }
-
-    const variants = Array.isArray(flow.product.variants) ? flow.product.variants : [];
 
     const exactMatch = variants.find((variant) => {
       const colorMatches = !selectedColor || variant.color === selectedColor;
@@ -96,7 +122,22 @@ export function usePrescriptionFlow() {
     });
 
     return exactMatch ?? resolvePreferredVariant(flow.product);
-  }, [flow.product, selectedColor, selectedSize]);
+  }, [flow.product, selectedColor, selectedSize, variants]);
+
+  useEffect(() => {
+    if (!flow.product || availableSizesForSelectedColor.length === 0) {
+      return;
+    }
+
+    if (availableSizesForSelectedColor.includes(selectedSize)) {
+      return;
+    }
+
+    const nextSize = pickNearestSize(selectedSize, sizeOrder, availableSizesForSelectedColor);
+    if (nextSize && nextSize !== selectedSize) {
+      setSelectedSize(nextSize);
+    }
+  }, [availableSizesForSelectedColor, flow.product, selectedSize, sizeOrder]);
 
   const selectedLensType = useMemo(
     () => flow.lensTypes.find((item) => String(item.lensTypeId) === String(selectedLensTypeId)) ?? null,
@@ -232,6 +273,7 @@ export function usePrescriptionFlow() {
     selectedLensMaterialOption,
     selectedColor,
     selectedSize,
+    availableSizesForSelectedColor,
     selectedLensTypeId,
     selectedLensMaterial,
     selectedCoatings,
@@ -252,8 +294,38 @@ export function usePrescriptionFlow() {
     actions: {
       submit,
       updateField,
-      setSelectedColor,
-      setSelectedSize,
+      setSelectedColor: (color) => {
+        const normalizedColor = normalizeText(color) ?? "";
+        setSelectedColor(normalizedColor);
+
+        const sizesForColor = getAvailableSizesForColor(variants, normalizedColor, sizeOrder);
+        if (sizesForColor.length === 0) {
+          return;
+        }
+
+        if (sizesForColor.includes(selectedSize)) {
+          return;
+        }
+
+        const nextSize = pickNearestSize(selectedSize, sizeOrder, sizesForColor);
+        if (nextSize) {
+          setSelectedSize(nextSize);
+        }
+      },
+      setSelectedSize: (size) => {
+        const normalizedSize = normalizeText(size) ?? "";
+        if (!normalizedSize) {
+          return;
+        }
+
+        if (availableSizesForSelectedColor.length > 0 && !availableSizesForSelectedColor.includes(normalizedSize)) {
+          const fallbackSize = pickNearestSize(normalizedSize, sizeOrder, availableSizesForSelectedColor);
+          setSelectedSize(fallbackSize || normalizedSize);
+          return;
+        }
+
+        setSelectedSize(normalizedSize);
+      },
       setSelectedLensTypeId,
       setSelectedLensMaterial,
       toggleCoating,
@@ -309,4 +381,62 @@ function normalizeOptionalField(value) {
 function normalizeText(value) {
   const normalizedValue = String(value ?? "").trim();
   return normalizedValue.length > 0 ? normalizedValue : null;
+}
+
+function getAvailableSizesForColor(variants, selectedColor, sizeOrder) {
+  const normalizedColor = normalizeText(selectedColor);
+  const baseVariants = Array.isArray(variants) ? variants : [];
+  const filteredVariants = normalizedColor
+    ? baseVariants.filter((variant) => normalizeText(variant?.color) === normalizedColor)
+    : baseVariants;
+
+  const variantSizes = new Set(
+    filteredVariants
+      .map((variant) => normalizeText(variant?.size))
+      .filter(Boolean),
+  );
+
+  const orderedSizes = Array.isArray(sizeOrder) ? sizeOrder : [];
+  if (orderedSizes.length === 0) {
+    return Array.from(variantSizes);
+  }
+
+  return orderedSizes.filter((size) => variantSizes.has(size));
+}
+
+function pickNearestSize(currentSize, orderedSizes, availableSizes) {
+  const normalizedCurrentSize = normalizeText(currentSize);
+  const validOrderedSizes = Array.isArray(orderedSizes) ? orderedSizes : [];
+  const validAvailableSizes = Array.isArray(availableSizes) ? availableSizes : [];
+
+  if (validAvailableSizes.length === 0) {
+    return "";
+  }
+
+  if (normalizedCurrentSize && validAvailableSizes.includes(normalizedCurrentSize)) {
+    return normalizedCurrentSize;
+  }
+
+  if (!normalizedCurrentSize || validOrderedSizes.length === 0) {
+    return validAvailableSizes[0];
+  }
+
+  const currentIndex = validOrderedSizes.indexOf(normalizedCurrentSize);
+  if (currentIndex < 0) {
+    return validAvailableSizes[0];
+  }
+
+  for (let offset = 1; offset < validOrderedSizes.length; offset += 1) {
+    const rightSize = validOrderedSizes[currentIndex + offset];
+    if (rightSize && validAvailableSizes.includes(rightSize)) {
+      return rightSize;
+    }
+
+    const leftSize = validOrderedSizes[currentIndex - offset];
+    if (leftSize && validAvailableSizes.includes(leftSize)) {
+      return leftSize;
+    }
+  }
+
+  return validAvailableSizes[0];
 }

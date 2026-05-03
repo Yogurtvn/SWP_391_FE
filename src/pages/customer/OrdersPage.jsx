@@ -59,9 +59,10 @@ export default function OrdersPage() {
             className="rounded-lg border border-border px-4 py-2 focus:border-primary focus:outline-none"
           >
             <option value="all">Tất cả trạng thái</option>
+            <option value="pending">Chờ xác nhận</option>
             <option value="processing">Đang xử lý</option>
-            <option value="shipping">Đang giao hàng</option>
-            <option value="delivered">Đã giao hàng</option>
+            <option value="shipped">Đang giao hàng</option>
+            <option value="completed">Hoàn tất</option>
             <option value="cancelled">Đã hủy</option>
           </select>
         </div>
@@ -210,10 +211,14 @@ function Column({ label, value, isAccent = false }) {
 
 function getStatusColor(statusKey) {
   switch (statusKey) {
-    case "delivered":
+    case "completed":
       return "bg-green-100 text-green-700";
-    case "shipping":
+    case "shipped":
       return "bg-blue-100 text-blue-700";
+    case "pending":
+      return "bg-yellow-100 text-yellow-700";
+    case "awaitingstock":
+      return "bg-orange-100 text-orange-700";
     case "cancelled":
       return "bg-red-100 text-red-700";
     default:

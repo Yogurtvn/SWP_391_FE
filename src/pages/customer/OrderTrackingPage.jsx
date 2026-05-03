@@ -180,8 +180,8 @@ export default function OrderTrackingPage() {
               <div className="space-y-4">
                 {order.items.map((item) => (
                   <div key={item.orderItemId} className="rounded-2xl bg-secondary/60 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
                         <p>{item.productName}</p>
                         <p className="mt-1 text-sm text-muted-foreground">
                           SKU {item.sku || "Đang cập nhật"} - Màu {item.selectedColor}
@@ -195,7 +195,7 @@ export default function OrderTrackingPage() {
                           </div>
                         ) : null}
                       </div>
-                      <p className="text-primary">{formatCurrency(item.lineTotal)}</p>
+                      <p className="shrink-0 whitespace-nowrap text-primary">{formatCurrency(item.lineTotal)}</p>
                     </div>
 
                     {item.prescription ? <PrescriptionPanel item={item} /> : null}
@@ -463,12 +463,42 @@ function createFallbackHistory(order) {
 function translateOrderHistoryNote(note) {
   const normalized = String(note ?? "").trim().toLowerCase();
 
+  if (normalized === "order created." || normalized === "order created") {
+    return "Đơn hàng đã được tạo.";
+  }
+
+  if (
+    normalized === "order cancelled by customer."
+    || normalized === "order cancelled by customer"
+    || normalized === "order canceled by customer."
+    || normalized === "order canceled by customer"
+  ) {
+    return "Đơn hàng đã bị khách hàng hủy.";
+  }
+
+  if (
+    normalized === "order cancelled automatically because online payment failed (payment:reconcile)."
+    || normalized === "order cancelled automatically because online payment failed (payment:reconcile)"
+    || normalized === "order canceled automatically because online payment failed (payment:reconcile)."
+    || normalized === "order canceled automatically because online payment failed (payment:reconcile)"
+  ) {
+    return "Đơn hàng đã tự động hủy do thanh toán online thất bại (đối soát thanh toán).";
+  }
+
+  if (normalized === "payment created." || normalized === "payment created") {
+    return "Thanh toán đã được tạo.";
+  }
+
   if (normalized === "order moved to awaiting stock." || normalized === "order moved to awaiting stock") {
     return "Đơn hàng đã chuyển sang trạng thái chờ hàng.";
   }
 
   if (
-    normalized === "order moved to processing automatically after stock receipt and basic-stock email."
+    normalized === "order moved to processing automatically after stock receipt and back-in-stock email."
+    || normalized === "order moved to processing automatically after stock receipt and back-in-stock email"
+    || normalized === "order moved to processing automatically after stock receipt and back in stock email."
+    || normalized === "order moved to processing automatically after stock receipt and back in stock email"
+    || normalized === "order moved to processing automatically after stock receipt and basic-stock email."
     || normalized === "order moved to processing automatically after stock receipt and basic-stock email"
     || normalized === "order moved to processing automatically after stock receipt and basic stock email."
     || normalized === "order moved to processing automatically after stock receipt and basic stock email"

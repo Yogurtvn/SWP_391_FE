@@ -1,4 +1,4 @@
-import { Link } from "react-router";
+﻿import { Link } from "react-router";
 import { ArrowRight, Star, Sparkles, Zap, Clock, Users, User, Sun, Briefcase } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
 import { motion, AnimatePresence } from "motion/react";
@@ -58,17 +58,20 @@ const heroSlides = [
   {
     image: "https://images.unsplash.com/photo-1749032707146-40d374a4108d?w=1920",
     title: "Nh\xECn R\xF5 H\u01A1n, \u0110\u1EB9p H\u01A1n",
-    subtitle: "K\xEDnh m\u1EAFt cao c\u1EA5p \u0111\u01B0\u1EE3c thi\u1EBFt k\u1EBF cho phong c\xE1ch ri\xEAng v\xE0 t\u1EA7m nh\xECn ho\xE0n h\u1EA3o c\u1EE7a b\u1EA1n"
+    subtitle: "K\xEDnh m\u1EAFt cao c\u1EA5p \u0111\u01B0\u1EE3c thi\u1EBFt k\u1EBF cho phong c\xE1ch ri\xEAng v\xE0 t\u1EA7m nh\xECn ho\xE0n h\u1EA3o c\u1EE7a b\u1EA1n",
+    objectPosition: "62% 18%"
   },
   {
     image: "https://images.unsplash.com/photo-1715418554358-d34e420b18ab?w=1920",
     title: "B\u1ED9 S\u01B0u T\u1EADp M\u1EDBi 2026",
-    subtitle: "Kh\xE1m ph\xE1 nh\u1EEFng thi\u1EBFt k\u1EBF hi\u1EC7n \u0111\u1EA1i nh\u1EA5t v\u1EDBi c\xF4ng ngh\u1EC7 tr\xF2ng k\xEDnh ti\xEAn ti\u1EBFn"
+    subtitle: "Kh\xE1m ph\xE1 nh\u1EEFng thi\u1EBFt k\u1EBF hi\u1EC7n \u0111\u1EA1i nh\u1EA5t v\u1EDBi c\xF4ng ngh\u1EC7 tr\xF2ng k\xEDnh ti\xEAn ti\u1EBFn",
+    objectPosition: "80% 16%"
   },
   {
     image: "https://images.unsplash.com/photo-1749032712013-6f21d1be6a6c?w=1920",
     title: "Phong C\xE1ch C\u1EE7a B\u1EA1n",
-    subtitle: "H\xE0ng ngh\xECn m\u1EABu m\xE3 \u0111a d\u1EA1ng, ph\xF9 h\u1EE3p v\u1EDBi m\u1ECDi khu\xF4n m\u1EB7t v\xE0 c\xE1 t\xEDnh"
+    subtitle: "H\xE0ng ngh\xECn m\u1EABu m\xE3 \u0111a d\u1EA1ng, ph\xF9 h\u1EE3p v\u1EDBi m\u1ECDi khu\xF4n m\u1EB7t v\xE0 c\xE1 t\xEDnh",
+    objectPosition: "50% 24%"
   }
 ];
 function HomePage() {
@@ -131,6 +134,7 @@ function HomePage() {
     src={heroSlides[currentSlide].image}
     alt="Hero slide"
     className="w-full h-full object-cover"
+    style={{ objectPosition: heroSlides[currentSlide].objectPosition || "50% 50%" }}
   />
             <div className="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent" />
           </motion.div>
@@ -219,18 +223,18 @@ function HomePage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold text-white">
-                    KHUYẾN MÃI ĐẶC BIỆT
+                    KHUYáº¾N MÃƒI Äáº¶C BIá»†T
                   </span>
                   <div className="flex items-center gap-2 text-white/90 text-sm">
                     <Clock className="w-4 h-4" />
-                    <span>Còn 6 ngày 14:32:18</span>
+                    <span>CÃ²n 6 ngÃ y 14:32:18</span>
                   </div>
                 </div>
                 <h3 className="text-2xl lg:text-3xl font-bold text-white">
-                  Giảm <span className="text-yellow-300">30%</span> Tròng Kính Cận + Quà Tặng Miễn Phí
+                  Giáº£m <span className="text-yellow-300">30%</span> TrÃ²ng KÃ­nh Cáº­n + QuÃ  Táº·ng Miá»…n PhÃ­
                 </h3>
                 <p className="text-white/90 text-sm mt-1">
-                  Áp dụng khi mua kèm gọng kính - Flash Sale cho 50 đơn đầu tiên
+                  Ãp dá»¥ng khi mua kÃ¨m gá»ng kÃ­nh - Flash Sale cho 50 Ä‘Æ¡n Ä‘áº§u tiÃªn
                 </p>
               </div>
             </div>
@@ -251,7 +255,7 @@ function HomePage() {
     to="/shop"
     className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm text-white rounded-lg hover:bg-white/20 transition-all border-2 border-white/30 font-semibold whitespace-nowrap"
   >
-                Xem Chi Tiết
+                Xem Chi Tiáº¿t
               </Link>
             </div>
           </div>
@@ -260,7 +264,7 @@ function HomePage() {
 
       <section className="py-20 bg-secondary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center mb-12">Mua Theo Danh Mục</h2>
+          <h2 className="text-center mb-12">Mua Theo Danh Má»¥c</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {categories.map((category, index) => {
     const Icon = category.icon;
@@ -331,9 +335,9 @@ function HomePage() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-12">
-            <h2>Sản Phẩm Nổi Bật</h2>
+            <h2>Sáº£n Pháº©m Ná»•i Báº­t</h2>
             <Link to="/shop" className="text-primary hover:underline flex items-center gap-1">
-              Xem tất cả
+              Xem táº¥t cáº£
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -345,7 +349,7 @@ function HomePage() {
 
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center mb-12">Khách Hàng Nói Gì</h2>
+          <h2 className="text-center mb-12">KhÃ¡ch HÃ ng NÃ³i GÃ¬</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {[
     {
@@ -399,7 +403,7 @@ function HomePage() {
   />
                   <div>
                     <p className="font-semibold text-foreground">{testimonial.name}</p>
-                    <p className="text-xs text-muted-foreground">Khách hàng thân thiết</p>
+                    <p className="text-xs text-muted-foreground">KhÃ¡ch hÃ ng thÃ¢n thiáº¿t</p>
                   </div>
                 </div>
               </motion.div>)}
@@ -424,13 +428,14 @@ function mapCatalogProductToFeaturedCard(item) {
   const colorNames = Array.from(
     new Set((Array.isArray(item.variants) ? item.variants : []).map((variant) => variant?.color).filter(Boolean)),
   );
-  const primaryColor = colorNames[0] || "Đen";
+  const primaryColor = colorNames[0] || "Äen";
   const colorSwatches = colorNames.map(resolveColorHex).filter(Boolean);
 
   return {
     id: String(item.id ?? item.productId ?? ""),
-    name: item.name || "Sản phẩm",
+    name: item.name || "Sáº£n pháº©m",
     price: Number(item.price ?? 0),
+    basePrice: Number(item.basePrice ?? item.price ?? 0),
     image: item.image,
     color: primaryColor,
     subtitle: primaryColor,
@@ -442,3 +447,4 @@ function mapCatalogProductToFeaturedCard(item) {
     product: item.product ?? item,
   };
 }
+

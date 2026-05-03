@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Edit3, Heart, Minus, Plus, Shield, ShoppingBag, Tag, Trash2, Truck, Upload, X } from "lucide-react";
+import { Edit3, Heart, Minus, Plus, Shield, ShoppingBag, Trash2, Truck, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "@/hooks/cart/useCart";
+import { getLensTypeErrorMessage, getLensTypes } from "@/services/lensTypeService";
 
 const EMPTY_PRESCRIPTION_EDIT_FORM = {
   lensTypeId: "",
@@ -23,20 +24,20 @@ function CartPage() {
   const navigate = useNavigate();
   const { getTotal, isCustomerSession, items, mutationStatus, removeItem, status, updatePrescriptionItem, updateQuantity } = useCart();
 
-  const [couponCode, setCouponCode] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [savedItems, setSavedItems] = useState([]);
   const [prescriptionEditItem, setPrescriptionEditItem] = useState(null);
   const [prescriptionEditForm, setPrescriptionEditForm] = useState(EMPTY_PRESCRIPTION_EDIT_FORM);
   const [prescriptionEditError, setPrescriptionEditError] = useState("");
   const [prescriptionEditImageFile, setPrescriptionEditImageFile] = useState(null);
   const [prescriptionEditImagePreviewBlobUrl, setPrescriptionEditImagePreviewBlobUrl] = useState("");
+  const [lensTypeOptions, setLensTypeOptions] = useState([]);
+  const [lensTypeStatus, setLensTypeStatus] = useState("idle");
+  const [lensTypeLoadError, setLensTypeLoadError] = useState("");
 
   const isLoading = status === "loading" && items.length === 0;
   const isMutating = mutationStatus === "loading";
   const subtotal = getTotal();
-  const discount = appliedCoupon ? (subtotal * appliedCoupon.discount) / 100 : 0;
-  const total = subtotal - discount;
+  const total = subtotal;
   const overStockReadyItems = items.filter((item) => {
     if (item.hasPrescription) {
       return false;
@@ -98,6 +99,63 @@ function CartPage() {
     };
   }, [isCustomerSession, isMutating, overStockReadyItems, updateQuantity]);
 
+  useEffect(() => {
+    if (!prescriptionEditItem) {
+      return;
+    }
+
+    let isActive = true;
+    setLensTypeStatus("loading");
+    setLensTypeLoadError("");
+
+    async function loadLensTypeOptions() {
+      try {
+        const lensTypes = await getLensTypes({
+          page: 1,
+          pageSize: 100,
+          isActive: true,
+          sortBy: "lensName",
+          sortOrder: "asc",
+        });
+
+        if (!isActive) {
+          return;
+        }
+
+        setLensTypeOptions(lensTypes);
+        setLensTypeStatus("succeeded");
+        setPrescriptionEditForm((current) => {
+          if (String(current.lensTypeId ?? "").trim().length > 0) {
+            return current;
+          }
+
+          const defaultLensTypeId = Number(lensTypes[0]?.lensTypeId ?? 0);
+          if (!Number.isFinite(defaultLensTypeId) || defaultLensTypeId <= 0) {
+            return current;
+          }
+
+          return {
+            ...current,
+            lensTypeId: String(defaultLensTypeId),
+          };
+        });
+      } catch (error) {
+        if (!isActive) {
+          return;
+        }
+
+        setLensTypeStatus("failed");
+        setLensTypeLoadError(getLensTypeErrorMessage(error, "KhÃ´ng thá»ƒ táº£i danh sÃ¡ch gÃ³i trÃ²ng kÃ­nh."));
+      }
+    }
+
+    void loadLensTypeOptions();
+
+    return () => {
+      isActive = false;
+    };
+  }, [prescriptionEditItem]);
+
   async function handleUpdateQuantity(cartItemId, change) {
     const item = items.find((currentItem) => currentItem.cartItemId === cartItemId);
 
@@ -106,7 +164,7 @@ function CartPage() {
     }
 
     if (item.hasPrescription) {
-      toast.error("Sản phẩm theo toa chỉ hỗ trợ số lượng 1. Hãy sửa thông tin toa nếu cần.");
+      toast.error("Sáº£n pháº©m theo toa chá»‰ há»— trá»£ sá»‘ lÆ°á»£ng 1. HÃ£y sá»­a thÃ´ng tin toa náº¿u cáº§n.");
       return;
     }
 
@@ -116,7 +174,7 @@ function CartPage() {
     const availableQuantity = Math.max(0, stockQuantity);
 
     if (change > 0 && isStockLimited && Number(item.quantity ?? 0) >= availableQuantity) {
-      toast.error(availableQuantity > 0 ? `Chỉ còn ${availableQuantity} sản phẩm trong kho.` : "Sản phẩm đã hết hàng.");
+      toast.error(availableQuantity > 0 ? `Chá»‰ cÃ²n ${availableQuantity} sáº£n pháº©m trong kho.` : "Sáº£n pháº©m Ä‘Ã£ háº¿t hÃ ng.");
       return;
     }
 
@@ -133,24 +191,8 @@ function CartPage() {
     try {
       await updateQuantity(cartItemId, nextQuantity);
     } catch (error) {
-      toast.error(resolveErrorMessage(error, "Không thể cập nhật số lượng sản phẩm."));
+      toast.error(resolveErrorMessage(error, "KhÃ´ng thá»ƒ cáº­p nháº­t sá»‘ lÆ°á»£ng sáº£n pháº©m."));
     }
-  }
-
-  function handleApplyCoupon() {
-    if (couponCode.toUpperCase() === "WELCOME10") {
-      setAppliedCoupon({ code: "WELCOME10", discount: 10 });
-      toast.success("Mã giảm giá đã được áp dụng!");
-      return;
-    }
-
-    if (couponCode.toUpperCase() === "SAVE20") {
-      setAppliedCoupon({ code: "SAVE20", discount: 20 });
-      toast.success("Mã giảm giá đã được áp dụng!");
-      return;
-    }
-
-    toast.error("Mã giảm giá không hợp lệ");
   }
 
   async function handleSaveForLater(item) {
@@ -158,18 +200,18 @@ function CartPage() {
 
     try {
       await removeItem(item.cartItemId, item.itemType);
-      toast.success("Đã lưu sản phẩm để mua sau");
+      toast.success("ÄÃ£ lÆ°u sáº£n pháº©m Ä‘á»ƒ mua sau");
     } catch (error) {
-      toast.error(resolveErrorMessage(error, "Không thể lưu sản phẩm để mua sau."));
+      toast.error(resolveErrorMessage(error, "KhÃ´ng thá»ƒ lÆ°u sáº£n pháº©m Ä‘á»ƒ mua sau."));
     }
   }
 
   async function handleRemoveItem(item) {
     try {
       await removeItem(item.cartItemId, item.itemType);
-      toast.success("Đã xóa sản phẩm khỏi giỏ hàng");
+      toast.success("ÄÃ£ xÃ³a sáº£n pháº©m khá»i giá» hÃ ng");
     } catch (error) {
-      toast.error(resolveErrorMessage(error, "Không thể xóa sản phẩm khỏi giỏ hàng."));
+      toast.error(resolveErrorMessage(error, "KhÃ´ng thá»ƒ xÃ³a sáº£n pháº©m khá»i giá» hÃ ng."));
     }
   }
 
@@ -290,48 +332,48 @@ function CartPage() {
         notes: normalizeOptionalField(prescriptionEditForm.notes),
       });
 
-      toast.success("Đã cập nhật sản phẩm theo toa.");
+      toast.success("ÄÃ£ cáº­p nháº­t sáº£n pháº©m theo toa.");
       closePrescriptionEditor();
     } catch (error) {
-      setPrescriptionEditError(resolveErrorMessage(error, "Không thể cập nhật sản phẩm theo toa."));
+      setPrescriptionEditError(resolveErrorMessage(error, "KhÃ´ng thá»ƒ cáº­p nháº­t sáº£n pháº©m theo toa."));
     }
   }
 
   return <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="mb-2">Giỏ Hàng</h1>
+          <h1 className="mb-2">Giá» HÃ ng</h1>
           <p className="text-muted-foreground">
-            {items.length > 0 ? `${items.length} sản phẩm` : "Giỏ hàng trống"}
+            {items.length > 0 ? `${items.length} sáº£n pháº©m` : "Giá» hÃ ng trá»‘ng"}
           </p>
         </div>
 
         {!isCustomerSession ? <div className="text-center py-16 bg-secondary rounded-2xl">
             <ShoppingBag className="w-20 h-20 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h2 className="mb-2">Giỏ hàng cần tài khoản khách hàng</h2>
+            <h2 className="mb-2">Giá» hÃ ng cáº§n tÃ i khoáº£n khÃ¡ch hÃ ng</h2>
             <p className="text-muted-foreground mb-6">
-              Vui lòng đăng nhập để đồng bộ và thanh toán đơn hàng của bạn
+              Vui lÃ²ng Ä‘Äƒng nháº­p Ä‘á»ƒ Ä‘á»“ng bá»™ vÃ  thanh toÃ¡n Ä‘Æ¡n hÃ ng cá»§a báº¡n
             </p>
             <Link
               to="/login"
               className="inline-block px-8 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             >
-              Đăng Nhập
+              ÄÄƒng Nháº­p
             </Link>
           </div> : isLoading ? <div className="text-center py-16 bg-secondary rounded-2xl">
             <div className="h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin mx-auto mb-4" />
-            <p className="text-muted-foreground">Đang tải giỏ hàng...</p>
+            <p className="text-muted-foreground">Äang táº£i giá» hÃ ng...</p>
           </div> : items.length === 0 ? <div className="text-center py-16 bg-secondary rounded-2xl">
             <ShoppingBag className="w-20 h-20 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h2 className="mb-2">Giỏ hàng của bạn đang trống</h2>
+            <h2 className="mb-2">Giá» hÃ ng cá»§a báº¡n Ä‘ang trá»‘ng</h2>
             <p className="text-muted-foreground mb-6">
-              Hãy khám phá bộ sưu tập kính mắt đa dạng của chúng tôi
+              HÃ£y khÃ¡m phÃ¡ bá»™ sÆ°u táº­p kÃ­nh máº¯t Ä‘a dáº¡ng cá»§a chÃºng tÃ´i
             </p>
             <Link
               to="/shop"
               className="inline-block px-8 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             >
-              Khám Phá Sản Phẩm
+              KhÃ¡m PhÃ¡ Sáº£n Pháº©m
             </Link>
           </div> : <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
@@ -355,20 +397,20 @@ function CartPage() {
                             <h3 className="mb-2 text-lg">{item.name}</h3>
                             <div className="space-y-1 text-sm text-muted-foreground">
                               <p className="flex items-center gap-2">
-                                <span className="w-4 h-4 rounded-full border border-border" style={{ backgroundColor: item.color === "Đen" ? "#000" : item.color === "Tortoise" ? "#8B4513" : "#E5E7EB" }} />
-                                Màu: {item.color}
+                                <span className="w-4 h-4 rounded-full border border-border" style={{ backgroundColor: item.color === "Äen" ? "#000" : item.color === "Tortoise" ? "#8B4513" : "#E5E7EB" }} />
+                                MÃ u: {item.color}
                               </p>
-                              {item.size && <p>Kích thước: {item.size}</p>}
+                              {item.size && <p>KÃ­ch thÆ°á»›c: {item.size}</p>}
                               {item.sku && <p>SKU: {item.sku}</p>}
                               {item.hasPrescription ? <>
-                                  <p>✓ Tròng: {item.prescriptionDetails?.lensType}</p>
-                                  <p>✓ Theo toa</p>
-                                </> : item.orderType === "preOrder" ? <p className="text-blue-600">• Đặt trước</p> : <p className="text-amber-600">• Hàng sẵn</p>}
+                                  <p>âœ“ TrÃ²ng: {item.prescriptionDetails?.lensType}</p>
+                                  <p>âœ“ Theo toa</p>
+                                </> : item.orderType === "preOrder" ? <p className="text-blue-600">â€¢ Äáº·t trÆ°á»›c</p> : <p className="text-amber-600">â€¢ HÃ ng sáºµn</p>}
                               {!item.hasPrescription && (
                                 <p>
-                                  Tồn kho: {Number(item.stockQuantity ?? 0)}
+                                  Tá»“n kho: {Number(item.stockQuantity ?? 0)}
                                   {item.orderType === "preOrder" && item.expectedRestockDate
-                                    ? ` · Dự kiến ${formatDate(item.expectedRestockDate)}`
+                                    ? ` Â· Dá»± kiáº¿n ${formatDate(item.expectedRestockDate)}`
                                     : ""}
                                 </p>
                               )}
@@ -379,7 +421,7 @@ function CartPage() {
                           </div>
                           <div className="text-right">
                             <p className="text-xl text-primary mb-1">{formatCurrency(item.unitPrice)}</p>
-                            <p className="text-sm text-muted-foreground">mỗi sản phẩm</p>
+                            <p className="text-sm text-muted-foreground">má»—i sáº£n pháº©m</p>
                           </div>
                         </div>
 
@@ -414,7 +456,7 @@ function CartPage() {
                               </div>
                             )}
                             <span className="text-sm text-muted-foreground">
-                              Tổng: <span className="text-foreground font-semibold">{formatCurrency(item.totalPrice)}</span>
+                              Tá»•ng: <span className="text-foreground font-semibold">{formatCurrency(item.totalPrice)}</span>
                             </span>
                           </div>
 
@@ -424,7 +466,7 @@ function CartPage() {
                                 onClick={() => openPrescriptionEditor(item)}
                                 disabled={isMutating}
                                 className="p-2 text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors"
-                                title="Sửa toa"
+                                title="Sá»­a toa"
                               >
                                 <Edit3 className="w-5 h-5" />
                               </button>
@@ -433,7 +475,7 @@ function CartPage() {
                               onClick={() => handleSaveForLater(item)}
                               disabled={isMutating}
                               className="p-2 text-muted-foreground hover:text-primary hover:bg-secondary rounded-lg transition-colors"
-                              title="Lưu để mua sau"
+                              title="LÆ°u Ä‘á»ƒ mua sau"
                             >
                               <Heart className="w-5 h-5" />
                             </button>
@@ -441,7 +483,7 @@ function CartPage() {
                               onClick={() => handleRemoveItem(item)}
                               disabled={isMutating}
                               className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-                              title="Xóa"
+                              title="XÃ³a"
                             >
                               <Trash2 className="w-5 h-5" />
                             </button>
@@ -456,56 +498,26 @@ function CartPage() {
                 to="/shop"
                 className="inline-flex items-center gap-2 text-primary hover:underline"
               >
-                ← Tiếp tục mua sắm
+                â† Tiáº¿p tá»¥c mua sáº¯m
               </Link>
             </div>
 
             <div className="lg:col-span-1">
               <div className="bg-secondary rounded-xl p-6 sticky top-24 space-y-6">
-                <h3>Tóm Tắt Đơn Hàng</h3>
-
-                <div>
-                  <label className="block text-sm mb-2">Mã giảm giá</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(event) => setCouponCode(event.target.value)}
-                      placeholder="Nhập mã"
-                      className="flex-1 px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <button
-                      onClick={handleApplyCoupon}
-                      className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors whitespace-nowrap"
-                    >
-                      Áp dụng
-                    </button>
-                  </div>
-                  {appliedCoupon && <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
-                      <Tag className="w-4 h-4" />
-                      <span>Giảm {appliedCoupon.discount}% với mã {appliedCoupon.code}</span>
-                    </div>}
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Thử: WELCOME10 hoặc SAVE20
-                  </p>
-                </div>
+                <h3>TÃ³m Táº¯t ÄÆ¡n HÃ ng</h3>
 
                 <div className="space-y-3 pt-4 border-t border-border">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tạm tính</span>
+                    <span className="text-muted-foreground">Táº¡m tÃ­nh</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  {appliedCoupon && <div className="flex justify-between text-sm text-green-600">
-                      <span>Giảm giá ({appliedCoupon.discount}%)</span>
-                      <span>-{formatCurrency(discount)}</span>
-                    </div>}
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Vận chuyển</span>
-                    <span className="text-muted-foreground">Tính ở checkout</span>
+                    <span className="text-muted-foreground">Váº­n chuyá»ƒn</span>
+                    <span className="text-muted-foreground">TÃ­nh á»Ÿ checkout</span>
                   </div>
                   <div className="border-t border-border pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-lg">Tổng cộng</span>
+                      <span className="text-lg">Tá»•ng cá»™ng</span>
                       <span className="text-2xl text-primary">{formatCurrency(total)}</span>
                     </div>
                   </div>
@@ -516,11 +528,11 @@ function CartPage() {
                   disabled={isMutating || hasOverStockReadyItems}
                   className="w-full py-4 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium disabled:opacity-60"
                 >
-                  Thanh Toán Ngay
+                  Thanh ToÃ¡n Ngay
                 </button>
                 {hasOverStockReadyItems ? (
                   <p className="text-xs text-red-600">
-                    Một số sản phẩm đang vượt tồn kho. Vui lòng giảm số lượng hoặc xóa sản phẩm hết hàng trước khi checkout.
+                    Má»™t sá»‘ sáº£n pháº©m Ä‘ang vÆ°á»£t tá»“n kho. Vui lÃ²ng giáº£m sá»‘ lÆ°á»£ng hoáº·c xÃ³a sáº£n pháº©m háº¿t hÃ ng trÆ°á»›c khi checkout.
                   </p>
                 ) : null}
 
@@ -528,22 +540,22 @@ function CartPage() {
                   <div className="flex items-start gap-3 text-sm">
                     <Shield className="w-5 h-5 text-green-600 shrink-0" />
                     <div>
-                      <p className="font-medium">Thanh toán an toàn</p>
-                      <p className="text-muted-foreground text-xs">Bảo mật SSL 256-bit</p>
+                      <p className="font-medium">Thanh toÃ¡n an toÃ n</p>
+                      <p className="text-muted-foreground text-xs">Báº£o máº­t SSL 256-bit</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3 text-sm">
                     <Truck className="w-5 h-5 text-blue-600 shrink-0" />
                     <div>
-                      <p className="font-medium">Phí vận chuyển GHN</p>
-                      <p className="text-muted-foreground text-xs">Được tính ở checkout theo địa chỉ giao hàng</p>
+                      <p className="font-medium">PhÃ­ váº­n chuyá»ƒn GHN</p>
+                      <p className="text-muted-foreground text-xs">ÄÆ°á»£c tÃ­nh á»Ÿ checkout theo Ä‘á»‹a chá»‰ giao hÃ ng</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3 text-sm">
                     <Heart className="w-5 h-5 text-red-600 shrink-0" />
                     <div>
-                      <p className="font-medium">Đổi trả dễ dàng</p>
-                      <p className="text-muted-foreground text-xs">Trong vòng 30 ngày</p>
+                      <p className="font-medium">Äá»•i tráº£ dá»… dÃ ng</p>
+                      <p className="text-muted-foreground text-xs">Trong vÃ²ng 30 ngÃ y</p>
                     </div>
                   </div>
                 </div>
@@ -557,6 +569,9 @@ function CartPage() {
           item={prescriptionEditItem}
           error={prescriptionEditError}
           isSaving={isMutating}
+          lensTypeOptions={lensTypeOptions}
+          lensTypeStatus={lensTypeStatus}
+          lensTypeLoadError={lensTypeLoadError}
           imagePreviewUrl={currentPrescriptionImagePreview}
           imageFileName={prescriptionEditImageFile?.name ?? ""}
           onSelectImageFile={handlePrescriptionEditImageSelect}
@@ -574,6 +589,9 @@ function PrescriptionEditor({
   form,
   error,
   isSaving,
+  lensTypeOptions,
+  lensTypeStatus,
+  lensTypeLoadError,
   imagePreviewUrl,
   imageFileName,
   onSelectImageFile,
@@ -587,7 +605,7 @@ function PrescriptionEditor({
       <form onSubmit={onSubmit} className="max-h-full w-full max-w-5xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl">Sửa sản phẩm theo toa</h2>
+            <h2 className="text-2xl">Sá»­a sáº£n pháº©m theo toa</h2>
             <p className="mt-1 text-sm text-muted-foreground">{item.name}</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-2 text-muted-foreground hover:bg-secondary">
@@ -596,13 +614,21 @@ function PrescriptionEditor({
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <ReadonlyField label="Gói tròng kính" value={resolveLensPackageLabel(item, form)} />
-          <EditField label="SPH phải" value={form.rightSph} onChange={(value) => onChange("rightSph", value)} />
-          <EditField label="CYL phải" value={form.rightCyl} onChange={(value) => onChange("rightCyl", value)} />
-          <EditField label="AXIS phải" value={form.rightAxis} onChange={(value) => onChange("rightAxis", value)} />
-          <EditField label="SPH trái" value={form.leftSph} onChange={(value) => onChange("leftSph", value)} />
-          <EditField label="CYL trái" value={form.leftCyl} onChange={(value) => onChange("leftCyl", value)} />
-          <EditField label="AXIS trái" value={form.leftAxis} onChange={(value) => onChange("leftAxis", value)} />
+          <LensTypeSelectField
+            label="GÃ³i trÃ²ng kÃ­nh"
+            value={form.lensTypeId}
+            options={lensTypeOptions}
+            isLoading={lensTypeStatus === "loading"}
+            errorMessage={lensTypeLoadError}
+            fallbackLabel={resolveLensPackageLabel(item, form)}
+            onChange={(value) => onChange("lensTypeId", value)}
+          />
+          <EditField label="SPH pháº£i" value={form.rightSph} onChange={(value) => onChange("rightSph", value)} />
+          <EditField label="CYL pháº£i" value={form.rightCyl} onChange={(value) => onChange("rightCyl", value)} />
+          <EditField label="AXIS pháº£i" value={form.rightAxis} onChange={(value) => onChange("rightAxis", value)} />
+          <EditField label="SPH trÃ¡i" value={form.leftSph} onChange={(value) => onChange("leftSph", value)} />
+          <EditField label="CYL trÃ¡i" value={form.leftCyl} onChange={(value) => onChange("leftCyl", value)} />
+          <EditField label="AXIS trÃ¡i" value={form.leftAxis} onChange={(value) => onChange("leftAxis", value)} />
           <EditField label="PD" value={form.pd} onChange={(value) => onChange("pd", value)} />
         </div>
 
@@ -614,7 +640,7 @@ function PrescriptionEditor({
         />
 
         <label className="mt-4 block">
-          <span className="mb-2 block text-sm">Ghi chú</span>
+          <span className="mb-2 block text-sm">Ghi chÃº</span>
           <textarea
             value={form.notes}
             onChange={(event) => onChange("notes", event.target.value)}
@@ -627,10 +653,10 @@ function PrescriptionEditor({
 
         <div className="mt-6 flex flex-wrap justify-end gap-3">
           <button type="button" onClick={onClose} className="rounded-xl border border-border px-5 py-3 hover:bg-secondary">
-            Hủy
+            Há»§y
           </button>
           <button type="submit" disabled={isSaving} className="rounded-xl bg-primary px-5 py-3 text-white hover:bg-primary/90 disabled:opacity-60">
-            {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
+            {isSaving ? "Äang lÆ°u..." : "LÆ°u thay Ä‘á»•i"}
           </button>
         </div>
       </form>
@@ -643,7 +669,7 @@ function PrescriptionImageField({ imagePreviewUrl, imageFileName, onSelectImageF
     <div className="mt-4 rounded-xl border border-dashed border-border p-4">
       <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl bg-secondary/30 px-4 py-5 text-center">
         <Upload className="h-7 w-7 text-primary" />
-        <span className="text-sm font-medium">Cập nhật ảnh toa từ máy tính</span>
+        <span className="text-sm font-medium">Cáº­p nháº­t áº£nh toa tá»« mÃ¡y tÃ­nh</span>
         <span className="text-xs text-muted-foreground">JPG, PNG, WEBP...</span>
         <input
           type="file"
@@ -653,13 +679,13 @@ function PrescriptionImageField({ imagePreviewUrl, imageFileName, onSelectImageF
         />
       </label>
 
-      {imageFileName ? <p className="mt-3 text-sm text-muted-foreground">Đã chọn: {imageFileName}</p> : null}
+      {imageFileName ? <p className="mt-3 text-sm text-muted-foreground">ÄÃ£ chá»n: {imageFileName}</p> : null}
 
       {imagePreviewUrl ? (
         <div className="mt-3 rounded-xl border border-border bg-secondary/20 p-2">
           <img
             src={imagePreviewUrl}
-            alt="Ảnh toa"
+            alt="áº¢nh toa"
             className="max-h-[320px] w-full rounded-lg object-contain"
           />
           <div className="mt-2 flex justify-end">
@@ -668,7 +694,7 @@ function PrescriptionImageField({ imagePreviewUrl, imageFileName, onSelectImageF
               onClick={onClearImage}
               className="rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-secondary"
             >
-              Xóa ảnh
+              XÃ³a áº£nh
             </button>
           </div>
         </div>
@@ -693,17 +719,38 @@ function EditField({ label, value, onChange, placeholder }) {
   );
 }
 
-function ReadonlyField({ label, value, placeholder }) {
+function LensTypeSelectField({
+  label,
+  value,
+  options,
+  isLoading,
+  errorMessage,
+  fallbackLabel,
+  onChange,
+}) {
+  const normalizedValue = String(value ?? "").trim();
+  const hasMatchingOption = options.some(
+    (option) => String(option?.lensTypeId ?? "") === normalizedValue,
+  );
+
   return (
     <label className="block">
       <span className="mb-2 block text-sm">{label}</span>
-      <input
-        type="text"
-        value={value}
-        readOnly
-        placeholder={placeholder}
-        className="w-full rounded-xl border border-border bg-secondary/30 px-4 py-3 text-sm outline-none"
-      />
+      <select
+        value={normalizedValue}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm outline-none focus:border-primary"
+      >
+        <option value="">Chá»n gÃ³i trÃ²ng kÃ­nh</option>
+        {!hasMatchingOption && normalizedValue ? <option value={normalizedValue}>{fallbackLabel}</option> : null}
+        {options.map((option) => (
+          <option key={option.lensTypeId} value={String(option.lensTypeId)}>
+            {formatLensTypeOptionLabel(option)}
+          </option>
+        ))}
+      </select>
+      {isLoading ? <p className="mt-2 text-xs text-muted-foreground">Äang táº£i danh sÃ¡ch gÃ³i trÃ²ng...</p> : null}
+      {errorMessage ? <p className="mt-2 text-xs text-red-600">{errorMessage}</p> : null}
     </label>
   );
 }
@@ -721,29 +768,41 @@ function resolveLensPackageLabel(item, form) {
   }
 
   const lensTypeId = Number(form?.lensTypeId ?? 0);
-  return lensTypeId > 0 ? `Gói #${lensTypeId}` : "Chưa xác định";
+  return lensTypeId > 0 ? `GÃ³i #${lensTypeId}` : "ChÆ°a xÃ¡c Ä‘á»‹nh";
+}
+
+function formatLensTypeOptionLabel(option) {
+  const lensName = String(option?.lensName ?? "").trim();
+  const lensCode = String(option?.lensCode ?? "").trim();
+  const price = Number(option?.price ?? 0);
+
+  if (lensCode) {
+    return `${lensName || "TrÃ²ng kÃ­nh"} - ${lensCode} - ${formatCurrency(price)}`;
+  }
+
+  return `${lensName || "TrÃ²ng kÃ­nh"} - ${formatCurrency(price)}`;
 }
 
 function validatePrescriptionEditForm(form) {
   if (!Number.isFinite(Number(form.lensTypeId)) || Number(form.lensTypeId) <= 0) {
-    return "Gói tròng kính không hợp lệ.";
+    return "GÃ³i trÃ²ng kÃ­nh khÃ´ng há»£p lá»‡.";
   }
 
   const requiredValues = [form.rightSph, form.rightCyl, form.leftSph, form.leftCyl, form.pd];
 
   if (requiredValues.some((value) => !Number.isFinite(parseDecimal(value)))) {
-    return "Vui lòng nhập đầy đủ thông số toa.";
+    return "Vui lÃ²ng nháº­p Ä‘áº§y Ä‘á»§ thÃ´ng sá»‘ toa.";
   }
 
   const rightAxis = parseInteger(form.rightAxis);
   const leftAxis = parseInteger(form.leftAxis);
 
   if (!Number.isInteger(rightAxis) || rightAxis < 0 || rightAxis > 180 || !Number.isInteger(leftAxis) || leftAxis < 0 || leftAxis > 180) {
-    return "AXIS phải nằm trong khoảng 0-180.";
+    return "AXIS pháº£i náº±m trong khoáº£ng 0-180.";
   }
 
   if (parseDecimal(form.pd) <= 0) {
-    return "PD phải lớn hơn 0.";
+    return "PD pháº£i lá»›n hÆ¡n 0.";
   }
 
   return "";
@@ -780,7 +839,7 @@ function formatDate(value) {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "chưa cập nhật";
+    return "chÆ°a cáº­p nháº­t";
   }
 
   return new Intl.DateTimeFormat("vi-VN", {
@@ -812,3 +871,6 @@ function resolveErrorMessage(error, fallbackMessage) {
 export {
   CartPage as default
 };
+
+
+

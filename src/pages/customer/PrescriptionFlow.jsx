@@ -10,6 +10,7 @@ export default function PrescriptionFlow() {
     selectedLensType,
     selectedColor,
     selectedSize,
+    availableSizesForSelectedColor,
     selectedLensTypeId,
     formState,
     imageFileName,
@@ -97,18 +98,24 @@ export default function PrescriptionFlow() {
                 <div>
                   <p className="mb-3 text-sm">Kích thước</p>
                   <div className="flex flex-wrap gap-3">
-                    {product.sizes.map((size) => (
-                      <button
+                    {product.sizes.map((size) => {
+                      const isSizeAvailable = availableSizesForSelectedColor.includes(size);
+                      return <button
                         key={size}
                         type="button"
+                        disabled={!isSizeAvailable}
                         onClick={() => actions.setSelectedSize(size)}
                         className={`rounded-full border px-4 py-2 text-sm transition-colors ${
-                          selectedSize === size ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/40"
+                          selectedSize === size
+                            ? "border-primary bg-primary/10 text-primary"
+                            : isSizeAvailable
+                              ? "border-border hover:border-primary/40"
+                              : "cursor-not-allowed border-border/60 bg-muted/40 text-muted-foreground"
                         }`}
                       >
-                        {size}
-                      </button>
-                    ))}
+                          {size}
+                        </button>;
+                    })}
                   </div>
                 </div>
               )}

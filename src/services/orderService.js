@@ -295,21 +295,31 @@ export function getDisplayOrderStatus(orderStatus, shippingStatus) {
     };
   }
 
-  if (normalizedShippingStatus === "delivered") {
+  if (normalizedOrderStatus === "completed") {
     return {
-      key: "delivered",
-      label: "Đã giao hàng",
+      key: "completed",
+      label: "Hoàn tất",
     };
   }
 
-  if (
-    normalizedShippingStatus === "picking" ||
-    normalizedShippingStatus === "delivering" ||
-    normalizedOrderStatus === "shipped"
-  ) {
+  if (normalizedOrderStatus === "shipped" || normalizedShippingStatus === "picking" || normalizedShippingStatus === "delivering") {
     return {
-      key: "shipping",
+      key: "shipped",
       label: "Đang giao hàng",
+    };
+  }
+
+  if (normalizedOrderStatus === "awaitingstock") {
+    return {
+      key: "awaitingstock",
+      label: "Chờ bổ sung hàng",
+    };
+  }
+
+  if (normalizedOrderStatus === "pending" || normalizedOrderStatus === "confirmed") {
+    return {
+      key: "pending",
+      label: "Chờ xác nhận",
     };
   }
 
@@ -350,6 +360,12 @@ function translateOrderHistoryNote(note) {
     case "order created.":
     case "order created":
       return "Đơn hàng đã được tạo.";
+    case "order cancelled by customer.":
+    case "order cancelled by customer":
+      return "Đơn hàng đã bị khách hàng hủy.";
+    case "order canceled by customer.":
+    case "order canceled by customer":
+      return "Đơn hàng đã bị khách hàng hủy.";
     case "payment created.":
     case "payment created":
       return "Thanh toán đã được tạo.";
@@ -365,6 +381,21 @@ function translateOrderHistoryNote(note) {
     case "payment collected when the order was completed.":
     case "payment collected when the order was completed":
       return "Đã thu tiền khi đơn hàng hoàn thành.";
+    case "order cancelled automatically because online payment failed (payment:reconcile).":
+    case "order cancelled automatically because online payment failed (payment:reconcile)":
+      return "Đơn hàng đã tự động hủy do thanh toán online thất bại (đối soát thanh toán).";
+    case "order canceled automatically because online payment failed (payment:reconcile).":
+    case "order canceled automatically because online payment failed (payment:reconcile)":
+      return "Đơn hàng đã tự động hủy do thanh toán online thất bại (đối soát thanh toán).";
+    case "order moved to processing automatically after stock receipt and back-in-stock email.":
+    case "order moved to processing automatically after stock receipt and back-in-stock email":
+    case "order moved to processing automatically after stock receipt and back in stock email.":
+    case "order moved to processing automatically after stock receipt and back in stock email":
+    case "order moved to processing automatically after stock receipt and basic-stock email.":
+    case "order moved to processing automatically after stock receipt and basic-stock email":
+    case "order moved to processing automatically after stock receipt and basic stock email.":
+    case "order moved to processing automatically after stock receipt and basic stock email":
+      return "Đơn hàng đã tự động chuyển sang đang xử lý sau khi nhập kho và gửi email thông báo có hàng.";
     case "updated by admin":
       return "Quản trị viên đã cập nhật.";
     default:

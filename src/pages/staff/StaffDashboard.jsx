@@ -95,7 +95,8 @@ function StaffDashboard() {
         prescriptionPendingRows.map((item) => buildPrescriptionReviewCard(item, auth.accessToken)),
       );
       const activePrescriptionReviews = dedupePrescriptionReviews(rawPrescriptionReviews.filter(Boolean));
-      const prescriptionReviews = activePrescriptionReviews.slice(0, 3);
+      const groupedPrescriptionReviews = groupPrescriptionReviewsByOrder(activePrescriptionReviews);
+      const prescriptionReviews = groupedPrescriptionReviews.slice(0, 3);
 
       setState({
         status: "succeeded",
@@ -106,7 +107,7 @@ function StaffDashboard() {
           pendingOrders: normalizedOrders.filter((order) => order.normalizedStatus === "pending").length,
           processingOrders: normalizedOrders.filter((order) => order.normalizedStatus === "processing").length,
           awaitingStockOrders: normalizedOrders.filter((order) => order.normalizedStatus === "awaitingstock").length,
-          prescriptionReviewPending: activePrescriptionReviews.length,
+          prescriptionReviewPending: groupedPrescriptionReviews.length,
           todayCompletedOrders: normalizedOrders.filter(
             (order) => order.normalizedStatus === "completed" && isSameVnDate(order.updatedAt || order.createdAt, new Date()),
           ).length,
@@ -343,50 +344,57 @@ function StaffDashboard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {state.prescriptionReviews.map((review) => (
+            {state.prescriptionReviews.map((reviewGroup) => (
               <div
-                key={`${review.orderId || "na"}-${review.prescriptionId}`}
+                key={reviewGroup.groupKey}
                 className="p-4 bg-cyan-50 rounded-lg border border-cyan-200 hover:border-cyan-300 transition-colors"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <p className="font-medium mb-1">#{review.orderId || review.prescriptionId}</p>
-                    <p className="text-sm text-gray-600">{review.customer}</p>
+                    <p className="font-medium mb-1">#{reviewGroup.orderId || reviewGroup.primaryPrescriptionId}</p>
+                    <p className="text-sm text-gray-600">{reviewGroup.customer}</p>
                   </div>
                   <div className="text-right text-xs text-gray-500">
-                    <div>{formatDate(review.createdAt)}</div>
-                    <div>{formatTime(review.createdAt)}</div>
+                    <div>{formatDate(reviewGroup.createdAt)}</div>
+                    <div>{formatTime(reviewGroup.createdAt)}</div>
                   </div>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4 mb-4 p-3 bg-white rounded-lg">
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Gọng kính:</p>
-                    <p className="text-sm font-medium">{review.frameName}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-1">Đơn kính:</p>
-                    <div className="text-sm">
-                      <span className="font-mono">OD: {review.prescriptionData.odSph}</span>
-                      {" | "}
-                      <span className="font-mono">OS: {review.prescriptionData.osSph}</span>
-                      {" | "}
-                      <span className="font-mono">PD: {review.prescriptionData.pd}</span>
+                <div className="space-y-3 mb-4">
+                  {reviewGroup.items.map((reviewItem) => (
+                    <div key={`${reviewGroup.groupKey}-${reviewItem.prescriptionId}`} className="p-3 bg-white rounded-lg">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Gọng kính:</p>
+                          <p className="text-sm font-medium">{reviewItem.frameName}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Đơn kính:</p>
+                          <div className="text-sm">
+                            <span className="font-mono">OD: {reviewItem.prescriptionData.odSph}</span>
+                            {" | "}
+                            <span className="font-mono">OS: {reviewItem.prescriptionData.osSph}</span>
+                            {" | "}
+                            <span className="font-mono">PD: {reviewItem.prescriptionData.pd}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {reviewItem.uploadedImage ? (
+                        <div className="mt-3">
+                          <span className="text-xs px-2.5 py-1 bg-white border border-cyan-300 rounded-md inline-flex items-center gap-1">
+                            Có ảnh đơn thuốc
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
-                  </div>
+                  ))}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    {review.uploadedImage ? (
-                      <span className="text-xs px-2.5 py-1 bg-white border border-cyan-300 rounded-md inline-flex items-center gap-1">
-                        Có ảnh đơn thuốc
-                      </span>
-                    ) : null}
-                  </div>
+                <div className="flex items-center justify-end">
                   <button
                     type="button"
-                    onClick={() => navigate(review.prescriptionId > 0 ? `/staff/prescriptions?prescriptionId=${review.prescriptionId}` : "/staff/prescriptions")}
+                    onClick={() => navigate(reviewGroup.primaryPrescriptionId > 0 ? `/staff/prescriptions?prescriptionId=${reviewGroup.primaryPrescriptionId}` : "/staff/prescriptions")}
                     className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors text-sm font-medium flex items-center gap-2"
                   >
                     Kiểm tra ngay
@@ -562,13 +570,22 @@ async function buildPrescriptionReviewCard(item, accessToken) {
     return null;
   }
 
-  const firstOrderItem = Array.isArray(order?.items) ? order.items[0] : null;
+  const orderItems = Array.isArray(order?.items) ? order.items : [];
+  const matchedOrderItem = orderItems.find((orderItem) => {
+    const directPrescriptionId = Number(orderItem?.prescriptionId ?? 0);
+    const nestedPrescriptionId = Number(orderItem?.prescription?.prescriptionId ?? 0);
+    return (
+      (Number.isFinite(directPrescriptionId) && directPrescriptionId > 0 && directPrescriptionId === prescriptionId)
+      || (Number.isFinite(nestedPrescriptionId) && nestedPrescriptionId > 0 && nestedPrescriptionId === prescriptionId)
+    );
+  });
+  const resolvedOrderItem = matchedOrderItem ?? orderItems[0] ?? null;
 
   return {
     prescriptionId,
     orderId,
     customer: String(item?.customerName ?? "").trim() || String(order?.receiverName ?? "").trim() || "Khách hàng",
-    frameName: firstOrderItem?.productName || firstOrderItem?.sku || "Chưa có thông tin gọng",
+    frameName: resolvedOrderItem?.productName || resolvedOrderItem?.sku || "Chưa có thông tin gọng",
     prescriptionData: {
       odSph: formatPrescriptionValue(detail?.rightEye?.sph),
       osSph: formatPrescriptionValue(detail?.leftEye?.sph),
@@ -583,9 +600,12 @@ function dedupePrescriptionReviews(reviews) {
   const uniqueMap = new Map();
 
   (Array.isArray(reviews) ? reviews : []).forEach((review) => {
+    const prescriptionId = Number(review?.prescriptionId ?? 0);
     const orderId = Number(review?.orderId ?? 0);
-    const key = orderId > 0
-      ? `order-${orderId}`
+    const key = prescriptionId > 0
+      ? `prescription-${prescriptionId}`
+      : orderId > 0
+        ? `order-${orderId}-${normalizeValue(review?.frameName)}-${normalizeValue(review?.createdAt)}`
       : [
           normalizeValue(review?.customer),
           normalizeValue(review?.frameName),
@@ -601,6 +621,48 @@ function dedupePrescriptionReviews(reviews) {
   });
 
   return Array.from(uniqueMap.values()).sort((left, right) => toTimestamp(right?.createdAt) - toTimestamp(left?.createdAt));
+}
+
+function groupPrescriptionReviewsByOrder(reviews) {
+  const groups = new Map();
+
+  (Array.isArray(reviews) ? reviews : []).forEach((review) => {
+    const orderId = Number(review?.orderId ?? 0);
+    const prescriptionId = Number(review?.prescriptionId ?? 0);
+    const groupKey = orderId > 0
+      ? `order-${orderId}`
+      : `prescription-${prescriptionId || normalizeValue(review?.customer)}`;
+
+    const current = groups.get(groupKey);
+    if (!current) {
+      groups.set(groupKey, {
+        groupKey,
+        orderId,
+        customer: review?.customer || "Khách hàng",
+        createdAt: review?.createdAt ?? null,
+        primaryPrescriptionId: prescriptionId,
+        items: [review],
+      });
+      return;
+    }
+
+    current.items.push(review);
+
+    if (toTimestamp(review?.createdAt) > toTimestamp(current.createdAt)) {
+      current.createdAt = review?.createdAt ?? current.createdAt;
+    }
+
+    if ((!current.customer || current.customer === "Khách hàng") && review?.customer) {
+      current.customer = review.customer;
+    }
+  });
+
+  return Array.from(groups.values())
+    .map((group) => ({
+      ...group,
+      items: group.items.sort((left, right) => toTimestamp(right?.createdAt) - toTimestamp(left?.createdAt)),
+    }))
+    .sort((left, right) => toTimestamp(right?.createdAt) - toTimestamp(left?.createdAt));
 }
 
 function resolvePriority(orderType, normalizedStatus) {

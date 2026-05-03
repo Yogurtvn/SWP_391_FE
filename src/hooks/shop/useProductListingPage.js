@@ -147,7 +147,7 @@ export function useProductListingPage() {
       error: catalog.error,
       isEmpty: catalog.listStatus === "succeeded" && catalog.items.length === 0,
       categoriesLoading: catalog.categoriesStatus === "loading",
-      prescriptionFilterLocked: routeConfig.prescriptionCompatible === true,
+      prescriptionFilterLocked: false,
     },
     actions: {
       setSort: (sort) => updateQuery({ sort }),
@@ -158,11 +158,7 @@ export function useProductListingPage() {
       setMinPrice: (minPrice) => updateQuery({ minPrice }),
       setMaxPrice: (maxPrice) => updateQuery({ maxPrice }),
       setPrescriptionOnly: (enabled) => {
-        if (routeConfig.prescriptionCompatible === true) {
-          return;
-        }
-
-        updateQuery({ prescription: enabled ? 1 : "" });
+        updateQuery({ prescription: enabled ? 1 : 0 });
       },
       goToPage: (page) => updateQuery({ page }, false),
       retry: () => {
@@ -187,7 +183,7 @@ function normalizeSort(value) {
 }
 
 function resolvePrescriptionFilter(rawValue, routeConfig) {
-  if (routeConfig.prescriptionCompatible === true) {
+  if (routeConfig.prescriptionCompatible === true && rawValue == null) {
     return true;
   }
 

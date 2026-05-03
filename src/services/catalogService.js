@@ -10,7 +10,10 @@ export async function getCatalogProducts(filters = {}) {
   const queryString = createQueryString(filters);
   const response = await apiGet(queryString ? `${PRODUCTS_BASE_PATH}?${queryString}` : PRODUCTS_BASE_PATH);
   const normalizedItems = Array.isArray(response?.items) ? response.items.map(normalizeCatalogListItem) : [];
-  const customerVisibleItems = normalizedItems.filter(isCustomerVisibleCatalogItem);
+  const prescriptionOnly = filters?.prescriptionCompatible === true;
+  const customerVisibleItems = normalizedItems
+    .filter(isCustomerVisibleCatalogItem)
+    .filter((item) => (prescriptionOnly ? item?.availabilityStatus === "available" : true));
 
   return {
     items: customerVisibleItems,
@@ -116,7 +119,8 @@ export function getCatalogSortOptions() {
 
 function normalizeCatalogListItem(item) {
   const productType = normalizeProductType(item?.productType);
-  const price = normalizePrice(item?.basePrice);
+  const basePrice = normalizePrice(item?.basePrice);
+  const price = basePrice;
   const image = resolveAssetUrl(item?.thumbnailUrl) ?? DEFAULT_IMAGE_URL;
   const variants = Array.isArray(item?.variants) ? item.variants.map(normalizeVariant) : [];
   const isReadyAvailable = variants.length > 0
@@ -133,6 +137,7 @@ function normalizeCatalogListItem(item) {
     productId: item?.productId ?? 0,
     name: item?.productName?.trim() || "Sản phẩm",
     price,
+    basePrice,
     image,
     subtitle: getProductTypeLabel(productType),
     colors: [],
@@ -148,6 +153,7 @@ function normalizeCatalogListItem(item) {
       id: item?.productId,
       name: item?.productName,
       price,
+      basePrice,
       image,
       productType,
       inStock: availabilityStatus === "available",
@@ -172,6 +178,7 @@ function normalizeCatalogDetail(item) {
   const canPreOrder = variants.some(isOutOfStockPreOrderVariant);
   const baseImage = images[0] ?? DEFAULT_IMAGE_URL;
   const displayPrice = activeVariant?.price ?? normalizePrice(item?.basePrice);
+  const basePrice = normalizePrice(item?.basePrice);
 
   return {
     id: String(item?.productId ?? ""),
@@ -179,7 +186,7 @@ function normalizeCatalogDetail(item) {
     name: item?.productName?.trim() || "Sản phẩm",
     description: item?.description?.trim() || "Sản phẩm hiện chưa có mô tả.",
     price: displayPrice,
-    basePrice: normalizePrice(item?.basePrice),
+    basePrice,
     images: images.length > 0 ? images : [DEFAULT_IMAGE_URL],
     image: baseImage,
     productType,
@@ -199,6 +206,7 @@ function normalizeCatalogDetail(item) {
       id: item?.productId,
       name: item?.productName,
       price: displayPrice,
+      basePrice,
       image: baseImage,
       productType,
       inStock: availabilityStatus === "available",
@@ -255,6 +263,7 @@ function createCartProduct({
   id,
   name,
   price,
+  basePrice,
   image,
   productType,
   inStock,
@@ -268,6 +277,7 @@ function createCartProduct({
     productId: id ?? 0,
     name: name?.trim() || "Sản phẩm",
     price: normalizePrice(price),
+    basePrice: normalizePrice(basePrice ?? price),
     image: image ?? DEFAULT_IMAGE_URL,
     images: Array.isArray(images) && images.length > 0 ? images : [image ?? DEFAULT_IMAGE_URL],
     type: productType,

@@ -42,7 +42,7 @@ export function useOrdersPage() {
         return false;
       }
 
-      if (filterStatus !== "all" && item.statusKey !== filterStatus) {
+      if (filterStatus !== "all" && normalizeStatusKey(item.statusKey) !== normalizeStatusKey(filterStatus)) {
         return false;
       }
 
@@ -84,4 +84,8 @@ export function useOrdersPage() {
 
 function normalizeOrderType(orderType) {
   return String(orderType ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+}
+
+function normalizeStatusKey(statusKey) {
+  return String(statusKey ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "");
 }

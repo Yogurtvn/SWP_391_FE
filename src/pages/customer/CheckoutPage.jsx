@@ -514,10 +514,10 @@ export default function CheckoutPage() {
             <div className="mb-6 flex items-start gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
               <AlertCircle className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" />
               <div>
-                <h1 className="mb-2 text-2xl">Checkout hiện chỉ xử lý giỏ hàng cùng một loại đơn</h1>
+                <h1 className="mb-2 text-2xl">Thanh toán hiện chỉ xử lý giỏ hàng cùng 1 loại đơn</h1>
                 <p className="text-sm leading-6 text-amber-900">
-                  Backend checkout yêu cầu tất cả cart item trong cùng một lần thanh toán phải có chung `orderType`.
-                  Bạn hãy tách riêng đơn có sẵn, đơn đặt trước, hoặc đơn theo toa trước khi checkout.
+                  Tất cả sản phẩm trong cùng một lần thanh toán phải thuộc cùng loại đơn.
+                  Bạn hãy tách riêng đơn có sẵn, đơn đặt trước hoặc đơn theo toa trước khi thanh toán.
                 </p>
               </div>
             </div>

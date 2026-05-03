@@ -483,48 +483,7 @@ export function useAdminProductsPage() {
   }
 
   async function addDraftVariant() {
-    if (!form.sku.trim()) {
-      await popupAlert("Vui lòng nhập SKU gốc trong phần thông tin cơ bản.");
-      return;
-    }
-
-    const selectedVariantId = Number(currentVariantPickerForm.selectedVariantId);
-    if (!Number.isFinite(selectedVariantId) || selectedVariantId <= 0) {
-      await popupAlert("Vui lòng chọn variant có sẵn trong DB.");
-      return;
-    }
-
-    const selectedVariant = availableDbVariants.find((variant) => variant.variantId === selectedVariantId);
-    if (!selectedVariant) {
-      await popupAlert("Variant đã chọn không tồn tại hoặc chưa tải xong.");
-      return;
-    }
-
-    if (draftVariants.some((variant) => variant.sourceVariantId === selectedVariant.variantId)) {
-      await popupAlert("Variant này đã được thêm.");
-      return;
-    }
-
-    setDraftVariants((current) => [
-      ...current,
-      {
-        sourceVariantId: selectedVariant.variantId,
-        sourceProductId: selectedVariant.sourceProductId,
-        sourceProductName: selectedVariant.sourceProductName,
-        sourceSku: selectedVariant.sourceSku,
-        colorName: selectedVariant.colorName,
-        quantity: selectedVariant.quantity,
-        size: selectedVariant.size,
-        frameType: selectedVariant.frameType,
-        price: selectedVariant.price,
-        weightGram: selectedVariant.weightGram,
-        packageLengthCm: selectedVariant.packageLengthCm,
-        packageWidthCm: selectedVariant.packageWidthCm,
-        packageHeightCm: selectedVariant.packageHeightCm,
-      },
-    ]);
-
-    setCurrentVariantPickerForm(DEFAULT_CREATE_VARIANT_PICKER_FORM);
+    await popupAlert("Chỉ hỗ trợ tạo variant mới. Không thể thêm variant cũ.");
   }
 
   async function addManualDraftVariant() {
@@ -722,7 +681,7 @@ export function useAdminProductsPage() {
     }
 
     if (draftVariants.length === 0) {
-      await popupAlert("Vui lòng thêm ít nhất 1 variant có sẵn trong DB.");
+      await popupAlert("Vui lòng thêm ít nhất 1 variant mới.");
       return null;
     }
 
@@ -749,9 +708,11 @@ export function useAdminProductsPage() {
       const usedSkus = new Set();
 
       for (const draft of draftVariants) {
-        const generatedSku = draft.isCustom
-          ? buildUniqueSku(draft.sourceSku, usedSkus)
-          : buildGeneratedVariantSku(form.sku, productId, draft.sourceVariantId, usedSkus);
+        if (!draft.isCustom) {
+          throw new Error("Chỉ được phép tạo variant mới cho sản phẩm mới.");
+        }
+
+        const generatedSku = buildUniqueSku(draft.sourceSku, usedSkus);
         usedSkus.add(generatedSku);
 
         await dispatch(

@@ -98,10 +98,8 @@ export default function AdminProductsPage() {
     form,
     editForm,
     editVariants,
-    currentVariantPickerForm,
     createImageForm,
     draftVariants,
-    availableDbVariants,
     productSummaries,
     variantForm,
     ui,
@@ -115,8 +113,6 @@ export default function AdminProductsPage() {
   const [stockFilter, setStockFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [isCreateMởdalOpen, setIsCreateMởdalOpen] = useState(false);
-  const [variantSearchQuery, setVariantSearchQuery] = useState("");
-  const [variantStockFilter, setVariantStockFilter] = useState("all");
   const [page, setPage] = useState(1);
 
   const filteredProducts = useMemo(() => {
@@ -159,47 +155,6 @@ export default function AdminProductsPage() {
     () => filteredProducts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
     [filteredProducts, page],
   );
-  const selectedVariantId = Number(currentVariantPickerForm.selectedVariantId || 0);
-  const selectedDraftVariantIds = useMemo(
-    () => new Set(draftVariants.map((draft) => Number(draft.sourceVariantId ?? 0))),
-    [draftVariants],
-  );
-  const selectedVariant = useMemo(
-    () => availableDbVariants.find((variant) => variant.variantId === selectedVariantId) ?? null,
-    [availableDbVariants, selectedVariantId],
-  );
-  const filteredAvailableDbVariants = useMemo(() => {
-    const normalizedQuery = variantSearchQuery.trim().toLowerCase();
-
-    return availableDbVariants.filter((variant) => {
-      const matchesStock =
-        variantStockFilter === "all" ||
-        (variantStockFilter === "inStock" && Number(variant.quantity ?? 0) > 0) ||
-        (variantStockFilter === "outStock" && Number(variant.quantity ?? 0) <= 0);
-
-      if (!matchesStock) {
-        return false;
-      }
-
-      if (!normalizedQuery) {
-        return true;
-      }
-
-      const searchable = [
-        variant.variantId,
-        variant.sourceSku,
-        variant.sourceProductName,
-        variant.colorName,
-        variant.size,
-        variant.frameType,
-      ]
-        .map((value) => String(value ?? "").toLowerCase())
-        .join(" ");
-
-      return searchable.includes(normalizedQuery);
-    });
-  }, [availableDbVariants, variantSearchQuery, variantStockFilter]);
-
   useEffect(() => {
     setPage(1);
   }, [availabilityFilter, searchQuery, stockFilter, typeFilter]);
@@ -212,15 +167,11 @@ export default function AdminProductsPage() {
 
   function openCreateMởdal() {
     actions.resetCreateProductBuilder();
-    setVariantSearchQuery("");
-    setVariantStockFilter("all");
     setIsCreateMởdalOpen(true);
   }
 
   function closeCreateMởdal() {
     actions.resetCreateProductBuilder();
-    setVariantSearchQuery("");
-    setVariantStockFilter("all");
     setIsCreateMởdalOpen(false);
   }
 
@@ -901,7 +852,7 @@ export default function AdminProductsPage() {
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Thêm Sản Phẩm Mới</h2>
                 <p className="mt-1 text-sm text-gray-500">
-                  Tạo thông tin sản phẩm cơ bản, chọn variant và tải ảnh sản phẩm.
+                  Tạo thông tin sản phẩm cơ bản, tạo variant mới và tải ảnh sản phẩm.
                 </p>  
               </div>
               <button
@@ -1074,140 +1025,8 @@ export default function AdminProductsPage() {
                   </div>
                 ) : null}
 
-                <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4">
-                  <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">
-                    <div className="relative">
-                      <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                      <input
-                        type="text"
-                        value={variantSearchQuery}
-                        onChange={(event) => setVariantSearchQuery(event.target.value)}
-                        placeholder="Tìm theo mã variant, SKU, tên sản phẩm, màu..."
-                        className="w-full rounded-xl border-2 border-gray-300 bg-white py-3 pl-11 pr-4 text-sm focus:border-primary focus:outline-none"
-                      />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setVariantStockFilter("all")}
-                        className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${
-                          variantStockFilter === "all"
-                            ? "border-primary bg-primary text-white"
-                            : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        Tất cả
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setVariantStockFilter("inStock")}
-                        className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${
-                          variantStockFilter === "inStock"
-                            ? "border-emerald-600 bg-emerald-600 text-white"
-                            : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        Còn hàng
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setVariantStockFilter("outStock")}
-                        className={`rounded-lg border px-3 py-2 text-xs font-bold transition ${
-                          variantStockFilter === "outStock"
-                            ? "border-red-600 bg-red-600 text-white"
-                            : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        Hết hàng
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs text-gray-600">
-                    Hiển thị {filteredAvailableDbVariants.length}/{availableDbVariants.length} variant.
-                  </div>
-
-                  {selectedVariant ? (
-                    <div className="mt-3 rounded-xl border-2 border-primary/25 bg-white p-3">
-                      <p className="text-xs font-bold uppercase tracking-wide text-primary">Variant đang chọn</p>
-                      <p className="mt-1 text-sm font-bold text-gray-900">
-                        #{selectedVariant.variantId} - {selectedVariant.sourceSku}
-                      </p>
-                      <p className="mt-1 text-sm text-gray-600">
-                        {selectedVariant.sourceProductName} | Màu: {selectedVariant.colorName || "-"} | Tồn: {selectedVariant.quantity}
-                      </p>
-                    </div>
-                  ) : null}
-
-                  <div className="mt-3 max-h-64 overflow-y-auto rounded-xl border-2 border-gray-200 bg-white">
-                    {filteredAvailableDbVariants.length === 0 ? (
-                      <div className="px-4 py-8 text-center text-sm text-gray-500">
-                        Không tìm thấy variant phù hợp.
-                      </div>
-                    ) : (
-                      <div className="divide-y divide-gray-100">
-                        {filteredAvailableDbVariants.map((variant) => {
-                          const isSelected = selectedVariantId === variant.variantId;
-                          const isAdded = selectedDraftVariantIds.has(variant.variantId);
-
-                          return (
-                            <button
-                              key={variant.variantId}
-                              type="button"
-                              onClick={() => actions.setCurrentVariantPickerField("selectedVariantId", String(variant.variantId))}
-                              disabled={isAdded}
-                              className={`w-full px-4 py-3 text-left transition ${
-                                isAdded
-                                  ? "cursor-not-allowed bg-gray-50 text-gray-400"
-                                  : isSelected
-                                    ? "bg-primary/10"
-                                    : "hover:bg-orange-50"
-                              }`}
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <p className="text-sm font-bold">
-                                  #{variant.variantId} - {variant.sourceSku}
-                                </p>
-                                <div className="flex items-center gap-2">
-                                  <span
-                                    className={`rounded-full px-2 py-1 text-[11px] font-bold ${
-                                      Number(variant.quantity ?? 0) > 0
-                                        ? "bg-emerald-100 text-emerald-700"
-                                        : "bg-red-100 text-red-700"
-                                    }`}
-                                  >
-                                    Tồn: {variant.quantity}
-                                  </span>
-                                  {isAdded ? (
-                                    <span className="rounded-full bg-gray-200 px-2 py-1 text-[11px] font-bold text-gray-600">
-                                      Đã thêm
-                                    </span>
-                                  ) : null}
-                                </div>
-                              </div>
-                              <p className="mt-1 text-sm text-gray-600">{variant.sourceProductName}</p>
-                              <p className="mt-1 text-xs text-gray-500">
-                                Màu: {variant.colorName || "-"} | Kích thước: {variant.size || "-"} | Kiểu gọng: {variant.frameType || "-"}
-                              </p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={actions.addDraftVariant}
-                    disabled={!selectedVariant || selectedDraftVariantIds.has(selectedVariant.variantId)}
-                    className="mt-4 w-full rounded-xl border-2 border-primary bg-primary px-4 py-3 text-base font-bold text-white transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {!selectedVariant
-                      ? "Chọn variant có sẵn để thêm"
-                      : selectedDraftVariantIds.has(selectedVariant.variantId)
-                        ? "Variant này đã được thêm"
-                        : "+ Thêm variant đã chọn"}
-                  </button>
+                <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-4 text-sm text-gray-700">
+                  Chỉ hỗ trợ tạo variant mới cho sản phẩm mới. Không thể thêm variant cũ từ sản phẩm khác.
                 </div>
               </div>
 

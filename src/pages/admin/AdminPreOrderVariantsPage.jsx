@@ -467,7 +467,7 @@ export default function AdminPreOrderVariantsPage() {
 
   return (
     <AdminPageShell
-      title="Theo Dõi Pre-order Variants"
+      title="Theo Dõi Pre-order"
       actions={
         <button type="button" className={adminStyles.secondaryButton} onClick={() => void loadData()} disabled={loading}>
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
@@ -520,7 +520,7 @@ export default function AdminPreOrderVariantsPage() {
             {!loading && paginatedRows.length === 0 ? (
               <tr>
                 <td colSpan={7} className={adminStyles.emptyState}>
-                  Không có biến thể pre-order nào.
+                  Không có đơn đặt trước nào.
                 </td>
               </tr>
             ) : null}

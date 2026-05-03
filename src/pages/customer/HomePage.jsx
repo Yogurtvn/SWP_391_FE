@@ -223,18 +223,18 @@ function HomePage() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold text-white">
-                    KHUYáº¾N MÃƒI Äáº¶C BIá»†T
+                    KHUYẾN MÃI ĐẶC BIỆT
                   </span>
                   <div className="flex items-center gap-2 text-white/90 text-sm">
                     <Clock className="w-4 h-4" />
-                    <span>CÃ²n 6 ngÃ y 14:32:18</span>
+                    <span>Còn 6 ngày 14:32:18</span>
                   </div>
                 </div>
                 <h3 className="text-2xl lg:text-3xl font-bold text-white">
-                  Giáº£m <span className="text-yellow-300">30%</span> TrÃ²ng KÃ­nh Cáº­n + QuÃ  Táº·ng Miá»…n PhÃ­
+                  Giảm <span className="text-yellow-300">30%</span> Tròng Kính Cận + Quà Tặng Miễn Phí
                 </h3>
                 <p className="text-white/90 text-sm mt-1">
-                  Ãp dá»¥ng khi mua kÃ¨m gá»ng kÃ­nh - Flash Sale cho 50 Ä‘Æ¡n Ä‘áº§u tiÃªn
+                  Áp dụng khi mua kèm gọng kính - Flash Sale cho 50 đơn đầu tiên
                 </p>
               </div>
             </div>
@@ -255,7 +255,7 @@ function HomePage() {
     to="/shop"
     className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm text-white rounded-lg hover:bg-white/20 transition-all border-2 border-white/30 font-semibold whitespace-nowrap"
   >
-                Xem Chi Tiáº¿t
+                Xem Chi Tiết
               </Link>
             </div>
           </div>
@@ -264,7 +264,7 @@ function HomePage() {
 
       <section className="py-20 bg-secondary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center mb-12">Mua Theo Danh Má»¥c</h2>
+          <h2 className="text-center mb-12">Mua Theo Danh Mục</h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {categories.map((category, index) => {
     const Icon = category.icon;
@@ -335,9 +335,9 @@ function HomePage() {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-12">
-            <h2>Sáº£n Pháº©m Ná»•i Báº­t</h2>
+            <h2>Sản Phẩm Nổi Bật</h2>
             <Link to="/shop" className="text-primary hover:underline flex items-center gap-1">
-              Xem táº¥t cáº£
+              Xem tất cả
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
@@ -349,7 +349,7 @@ function HomePage() {
 
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center mb-12">KhÃ¡ch HÃ ng NÃ³i GÃ¬</h2>
+          <h2 className="text-center mb-12">Khách Hàng Nói Gì</h2>
           <div className="grid md:grid-cols-3 gap-8">
             {[
     {
@@ -403,7 +403,7 @@ function HomePage() {
   />
                   <div>
                     <p className="font-semibold text-foreground">{testimonial.name}</p>
-                    <p className="text-xs text-muted-foreground">KhÃ¡ch hÃ ng thÃ¢n thiáº¿t</p>
+                    <p className="text-xs text-muted-foreground">Khách hàng thân thiết</p>
                   </div>
                 </div>
               </motion.div>)}
@@ -428,12 +428,12 @@ function mapCatalogProductToFeaturedCard(item) {
   const colorNames = Array.from(
     new Set((Array.isArray(item.variants) ? item.variants : []).map((variant) => variant?.color).filter(Boolean)),
   );
-  const primaryColor = colorNames[0] || "Äen";
+  const primaryColor = colorNames[0] || "Đen";
   const colorSwatches = colorNames.map(resolveColorHex).filter(Boolean);
 
   return {
     id: String(item.id ?? item.productId ?? ""),
-    name: item.name || "Sáº£n pháº©m",
+    name: item.name || "Sản phẩm",
     price: Number(item.price ?? 0),
     basePrice: Number(item.basePrice ?? item.price ?? 0),
     image: item.image,
@@ -447,4 +447,5 @@ function mapCatalogProductToFeaturedCard(item) {
     product: item.product ?? item,
   };
 }
+
 

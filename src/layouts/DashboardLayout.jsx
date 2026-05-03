@@ -60,7 +60,7 @@ function DashboardLayout() {
           icon: Package,
           children: [
             { name: "Danh sách sản phẩm", path: "/admin/products" },
-            { name: "Biến thể pre-order", path: "/admin/products/pre-orders" },
+            { name: "Theo dõi pre-order", path: "/admin/products/pre-orders" },
           ],
         },
         { name: "Thanh toán", path: "/admin/payments", icon: CreditCard },

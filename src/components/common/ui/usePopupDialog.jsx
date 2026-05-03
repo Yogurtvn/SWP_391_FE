@@ -1,4 +1,4 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 const DEFAULT_STATE = {
@@ -253,6 +253,20 @@ export function usePopupDialog() {
     resolveAndClose(state.formValues);
   }
 
+  function closePopupFromHeader() {
+    if (state.type === "confirm") {
+      resolveAndClose(false);
+      return;
+    }
+
+    if (state.type === "prompt" || state.type === "form") {
+      resolveAndClose(null);
+      return;
+    }
+
+    resolveAndClose(true);
+  }
+
   function renderField(field) {
     const value = state.formValues[field.name];
 
@@ -331,8 +345,16 @@ export function usePopupDialog() {
   const popupElement = state.isOpen ? (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]">
       <div
-        className={`w-full ${dialogWidthClass} max-h-[calc(100vh-2rem)] overflow-y-auto rounded-[1.5rem] border border-orange-200 bg-white p-6 shadow-[0_24px_60px_rgba(15,23,42,0.24)]`}
+        className={`relative w-full ${dialogWidthClass} max-h-[calc(100vh-2rem)] overflow-y-auto rounded-[1.5rem] border border-orange-200 bg-white p-6 shadow-[0_24px_60px_rgba(15,23,42,0.24)]`}
       >
+        <button
+          type="button"
+          onClick={closePopupFromHeader}
+          className="absolute right-8 top-8 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+          aria-label="Đóng modal"
+        >
+          <X className="h-5 w-5" />
+        </button>
         <div className="flex items-start gap-3">
           {isAlertDialog ? (
             <div className="mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-orange-200 bg-orange-50 text-orange-600">

@@ -149,8 +149,8 @@ export function normalizeOrderDetail(order) {
 
   return {
     orderId: Number(order?.orderId ?? 0),
-    orderType: order?.orderType ?? "",
-    orderTypeLabel: getOrderTypeLabel(order?.orderType),
+    orderType: normalizedOrderType,
+    orderTypeLabel: getOrderTypeLabel(normalizedOrderType),
     orderStatus: order?.orderStatus ?? "",
     orderStatusLabel: getOrderStatusLabel(order?.orderStatus),
     totalAmount: Number(order?.totalAmount ?? 0),

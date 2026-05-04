@@ -6,7 +6,7 @@ export default function ProductDetailPage() {
   const { product, relatedProducts, selectedColor, selectedSize, currentImage, ui, actions } = useProductDetailPage();
   const canBuyNow = product?.availabilityStatus === "available";
   const canPreOrder = Boolean(product?.canPreOrder);
-  const canOpenPreOrder = Boolean(product?.hasPreOrderVariant || product?.canPreOrder);
+  const canOpenPreOrder = Boolean(product?.canPreOrder);
   const canOrderPrescription = Boolean(product?.prescriptionCompatible) && canBuyNow;
   const shouldShowOutOfStock = !canBuyNow && !canPreOrder;
   const displayBasePrice = Number(product?.basePrice ?? product?.price ?? 0);

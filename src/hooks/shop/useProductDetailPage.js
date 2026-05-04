@@ -313,14 +313,14 @@ export function useProductDetailPage() {
       },
       goBackToShop: () => navigate("/shop"),
       goToPreOrder: () => {
-        if (!resolvedProduct?.hasPreOrderVariant) {
+        if (!resolvedProduct?.canPreOrder) {
           toast.error("Chỉ biến thể đã hết hàng và bật pre-order mới được đặt trước.");
           return;
         }
 
         navigate(`/preorder/${id}`, {
           state: {
-            selectedVariantId: resolvedProduct?.canPreOrder ? resolvedProduct?.selectedVariant?.variantId ?? null : null,
+            selectedVariantId: resolvedProduct?.selectedVariant?.variantId ?? null,
           },
         });
       },

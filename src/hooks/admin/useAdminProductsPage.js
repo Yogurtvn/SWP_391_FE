@@ -23,6 +23,14 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
 const PRODUCT_TYPES = ["Frame", "Lens", "Sunglasses"];
 
+function isSunglassesProductType(value) {
+  return String(value ?? "").trim().toLowerCase() === "sunglasses";
+}
+
+function sanitizePrescriptionCompatible(productType, prescriptionCompatible) {
+  return !isSunglassesProductType(productType) && Boolean(prescriptionCompatible);
+}
+
 const DEFAULT_PRODUCT_FORM = {
   productName: "",
   sku: "",
@@ -231,7 +239,7 @@ function buildEditProductForm(detail) {
     categoryId: detail?.categoryId != null ? String(detail.categoryId) : "",
     productType: detail?.productType || PRODUCT_TYPES[0],
     basePrice: detail?.basePrice != null ? String(detail.basePrice) : "",
-    prescriptionCompatible: Boolean(detail?.prescriptionCompatible),
+    prescriptionCompatible: sanitizePrescriptionCompatible(detail?.productType, detail?.prescriptionCompatible),
     description: detail?.description ?? "",
   };
 }
@@ -696,7 +704,7 @@ export function useAdminProductsPage() {
           categoryId: Number(form.categoryId),
           productType: form.productType,
           basePrice: Number(form.basePrice || 0),
-          prescriptionCompatible: form.prescriptionCompatible,
+          prescriptionCompatible: sanitizePrescriptionCompatible(form.productType, form.prescriptionCompatible),
           description: form.description.trim() || null,
         }),
       ).unwrap();
@@ -833,7 +841,7 @@ export function useAdminProductsPage() {
             categoryId: Number(editForm.categoryId),
             productType: editForm.productType,
             basePrice: Number(editForm.basePrice || 0),
-            prescriptionCompatible: editForm.prescriptionCompatible,
+            prescriptionCompatible: sanitizePrescriptionCompatible(editForm.productType, editForm.prescriptionCompatible),
             description: editForm.description.trim() || null,
           },
         }),
@@ -1157,6 +1165,21 @@ export function useAdminProductsPage() {
     }
   }
 
+  function setCreateFormField(field, value) {
+    setForm((current) => {
+      const next = { ...current, [field]: value };
+      next.prescriptionCompatible = sanitizePrescriptionCompatible(next.productType, next.prescriptionCompatible);
+      return next;
+    });
+  }
+
+  function setEditProductFormField(field, value) {
+    setEditForm((current) => {
+      const next = { ...current, [field]: value };
+      next.prescriptionCompatible = sanitizePrescriptionCompatible(next.productType, next.prescriptionCompatible);
+      return next;
+    });
+  }
   return {
     products: admin.products.items,
     categories: admin.products.categories,
@@ -1186,8 +1209,8 @@ export function useAdminProductsPage() {
       deletingVariantIds,
     },
     actions: {
-      setFormField: (field, value) => setForm((current) => ({ ...current, [field]: value })),
-      setEditFormField: (field, value) => setEditForm((current) => ({ ...current, [field]: value })),
+      setFormField: setCreateFormField,
+      setEditFormField: setEditProductFormField,
       setEditVariantField,
       setCurrentVariantPickerField,
       attachCreateProductImages,

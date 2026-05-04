@@ -25,6 +25,7 @@ export function useProductListingPage() {
   const [displayPriceOverrides, setDisplayPriceOverrides] = useState({});
 
   const routeConfig = useMemo(() => getCatalogRouteConfig(category), [category]);
+  const isPrescriptionFilterLocked = routeConfig.productType === "sunglasses";
 
   const filters = useMemo(
     () => ({
@@ -210,7 +211,7 @@ export function useProductListingPage() {
       categoriesLoading: catalog.categoriesStatus === "loading",
       filterOptionsLoading: catalog.filterOptionsStatus === "loading",
       filterOptionsError: catalog.filterOptionsError,
-      prescriptionFilterLocked: false,
+      prescriptionFilterLocked: isPrescriptionFilterLocked,
     },
     actions: {
       setSort: (sort) => updateQuery({ sort }),
@@ -221,6 +222,9 @@ export function useProductListingPage() {
       setMinPrice: (minPrice) => updateQuery({ minPrice }),
       setMaxPrice: (maxPrice) => updateQuery({ maxPrice }),
       setPrescriptionOnly: (enabled) => {
+        if (isPrescriptionFilterLocked) {
+          return;
+        }
         updateQuery({ prescription: enabled ? 1 : 0 });
       },
       goToPage: (page) => updateQuery({ page }, false),
@@ -246,6 +250,10 @@ function normalizeSort(value) {
 }
 
 function resolvePrescriptionFilter(rawValue, routeConfig) {
+  if (routeConfig.productType === "sunglasses") {
+    return undefined;
+  }
+
   if (routeConfig.prescriptionCompatible === true && rawValue == null) {
     return true;
   }

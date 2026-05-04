@@ -129,6 +129,8 @@ export default function AdminProductsPage() {
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [isCreateMởdalOpen, setIsCreateMởdalOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const isCreateSunglasses = normalizeValue(form.productType) === "sunglasses";
+  const isEditSunglasses = normalizeValue(editForm.productType) === "sunglasses";
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -596,6 +598,7 @@ export default function AdminProductsPage() {
                           <input
                             type="checkbox"
                             checked={editForm.prescriptionCompatible}
+                            disabled={isEditSunglasses}
                             onChange={(event) => actions.setEditFormField("prescriptionCompatible", event.target.checked)}
                           />
                           Hỗ trợ kính thuốc
@@ -979,6 +982,7 @@ export default function AdminProductsPage() {
                     <input
                       type="checkbox"
                       checked={form.prescriptionCompatible}
+                      disabled={isCreateSunglasses}
                       onChange={(event) => actions.setFormField("prescriptionCompatible", event.target.checked)}
                     />
                     Hỗ trợ kính thuốc

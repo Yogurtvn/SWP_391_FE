@@ -11,6 +11,7 @@ export default function PrescriptionFlow() {
     selectedColor,
     selectedSize,
     availableSizesForSelectedColor,
+    availableColorsForPrescription,
     selectedLensTypeId,
     formState,
     imageFileName,
@@ -32,7 +33,7 @@ export default function PrescriptionFlow() {
     );
   }
 
-  if (ui.error || !product) {
+  if (ui.error || !product || !ui.hasReadyPrescriptionVariant) {
     return (
       <StateCard
         title="Chưa thể đặt kính theo toa"
@@ -78,18 +79,27 @@ export default function PrescriptionFlow() {
                 <div className="mb-5">
                   <p className="mb-3 text-sm">Màu sắc</p>
                   <div className="flex flex-wrap gap-3">
-                    {product.colors.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => actions.setSelectedColor(color)}
-                        className={`rounded-full border px-4 py-2 text-sm transition-colors ${
-                          selectedColor === color ? "border-primary bg-primary/10 text-primary" : "border-border hover:border-primary/40"
-                        }`}
-                      >
-                        {color}
-                      </button>
-                    ))}
+                    {product.colors.map((color) => {
+                      const isColorAvailable = availableColorsForPrescription.includes(color);
+
+                      return (
+                        <button
+                          key={color}
+                          type="button"
+                          disabled={!isColorAvailable}
+                          onClick={() => actions.setSelectedColor(color)}
+                          className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                            selectedColor === color
+                              ? "border-primary bg-primary/10 text-primary"
+                              : isColorAvailable
+                                ? "border-border hover:border-primary/40"
+                                : "cursor-not-allowed border-border/60 bg-muted/40 text-muted-foreground"
+                          }`}
+                        >
+                          {color}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -359,3 +369,4 @@ function formatCurrency(value) {
     currency: "VND",
   }).format(Number(value ?? 0));
 }
+

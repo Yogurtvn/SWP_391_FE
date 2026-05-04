@@ -218,7 +218,6 @@ function derivePrescriptionsFromOrders(orders) {
           prescriptionId: Number(item.prescription.prescriptionId ?? item.prescriptionId ?? 0),
           orderId: Number(order.orderId ?? 0),
           lensTypeCode: item.prescription.lensTypeCode || `Lens #${item.prescription.lensTypeId ?? ""}`,
-          lensMaterial: item.prescription.lensMaterial || "Mặc định",
           prescriptionStatus: item.prescription.prescriptionStatus || "",
           prescriptionStatusLabel: item.prescription.prescriptionStatusLabel || "Đang cập nhật",
           totalLensPrice: Number(item.prescription.totalLensPrice ?? item.lensPrice ?? 0),

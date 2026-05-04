@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { selectAuthState } from "@/store/auth/authSlice";
-import { resolvePreferredVariant } from "@/services/cartService";
 import {
   clearPrescriptionFlowSubmit,
   fetchPrescriptionPricing,
@@ -33,8 +32,6 @@ export function usePrescriptionFlow() {
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedLensTypeId, setSelectedLensTypeId] = useState("");
-  const [selectedLensMaterial, setSelectedLensMaterial] = useState("");
-  const [selectedCoatings, setSelectedCoatings] = useState([]);
   const [formState, setFormState] = useState(INITIAL_FORM_STATE);
   const [imageFile, setImageFile] = useState(null);
   const [imageFileName, setImageFileName] = useState("");
@@ -51,15 +48,7 @@ export function usePrescriptionFlow() {
       return;
     }
 
-    const preferredVariant = resolvePreferredVariant(flow.product);
-    const nextColor = normalizeText(location.state?.selectedColor) ?? flow.product.colors?.[0] ?? preferredVariant?.color ?? "";
-    const nextSize = normalizeText(location.state?.selectedSize) ?? flow.product.sizes?.[0] ?? preferredVariant?.size ?? "";
-
-    setSelectedColor(nextColor);
-    setSelectedSize(nextSize);
     setSelectedLensTypeId(String(flow.lensTypes[0]?.lensTypeId ?? ""));
-    setSelectedLensMaterial("");
-    setSelectedCoatings([]);
     setFormState(INITIAL_FORM_STATE);
     setImage(null);
     setFormError("");
@@ -69,8 +58,6 @@ export function usePrescriptionFlow() {
     flow.lensTypes,
     flow.product,
     flow.status,
-    location.state?.selectedColor,
-    location.state?.selectedSize,
   ]);
 
   useEffect(
@@ -87,27 +74,52 @@ export function usePrescriptionFlow() {
     [flow.product?.variants],
   );
 
+  const prescriptionReadyVariants = useMemo(
+    () => variants.filter(isReadyPrescriptionVariant),
+    [variants],
+  );
+
+  const availableColorsForPrescription = useMemo(() => {
+    const colorsInStock = getDistinctValues(
+      prescriptionReadyVariants
+        .map((variant) => normalizeText(variant?.color)),
+    );
+
+    const productColorOrder = Array.isArray(flow.product?.colors)
+      ? flow.product.colors.map(normalizeText).filter(Boolean)
+      : [];
+
+    if (productColorOrder.length === 0) {
+      return colorsInStock;
+    }
+
+    return productColorOrder.filter((color) => colorsInStock.includes(color));
+  }, [flow.product?.colors, prescriptionReadyVariants]);
+
   const sizeOrder = useMemo(() => {
     const productSizes = Array.isArray(flow.product?.sizes)
       ? flow.product.sizes.map(normalizeText).filter(Boolean)
       : [];
 
+    const availableSizeSet = new Set(
+      prescriptionReadyVariants
+        .map((variant) => normalizeText(variant?.size))
+        .filter(Boolean),
+    );
+
     if (productSizes.length > 0) {
-      return productSizes;
+      return productSizes.filter((size) => availableSizeSet.has(size));
     }
 
-    return Array.from(
-      new Set(
-        variants
-          .map((variant) => normalizeText(variant?.size))
-          .filter(Boolean),
-      ),
+    return getDistinctValues(
+      prescriptionReadyVariants
+        .map((variant) => normalizeText(variant?.size)),
     );
-  }, [flow.product?.sizes, variants]);
+  }, [flow.product?.sizes, prescriptionReadyVariants]);
 
   const availableSizesForSelectedColor = useMemo(
-    () => getAvailableSizesForColor(variants, selectedColor, sizeOrder),
-    [selectedColor, sizeOrder, variants],
+    () => getAvailableSizesForColor(prescriptionReadyVariants, selectedColor, sizeOrder),
+    [prescriptionReadyVariants, selectedColor, sizeOrder],
   );
 
   const selectedVariant = useMemo(() => {
@@ -115,14 +127,53 @@ export function usePrescriptionFlow() {
       return null;
     }
 
-    const exactMatch = variants.find((variant) => {
+    const exactMatch = prescriptionReadyVariants.find((variant) => {
       const colorMatches = !selectedColor || variant.color === selectedColor;
       const sizeMatches = !selectedSize || variant.size === selectedSize;
       return colorMatches && sizeMatches;
     });
 
-    return exactMatch ?? resolvePreferredVariant(flow.product);
-  }, [flow.product, selectedColor, selectedSize, variants]);
+    if (exactMatch) {
+      return exactMatch;
+    }
+
+    const fallbackByColor = prescriptionReadyVariants.find(
+      (variant) => !selectedColor || variant.color === selectedColor,
+    );
+
+    return fallbackByColor ?? prescriptionReadyVariants[0] ?? null;
+  }, [flow.product, prescriptionReadyVariants, selectedColor, selectedSize]);
+
+  useEffect(() => {
+    if (flow.status !== "succeeded") {
+      return;
+    }
+
+    if (prescriptionReadyVariants.length === 0) {
+      setSelectedColor("");
+      setSelectedSize("");
+      return;
+    }
+
+    const requestedColor = normalizeText(location.state?.selectedColor);
+    const requestedSize = normalizeText(location.state?.selectedSize);
+    const initialVariant = resolveInitialPrescriptionVariant({
+      readyVariants: prescriptionReadyVariants,
+      requestedColor,
+      requestedSize,
+      fallbackColor: availableColorsForPrescription[0] ?? null,
+    });
+
+    setSelectedColor(initialVariant?.color ?? requestedColor ?? availableColorsForPrescription[0] ?? "");
+    setSelectedSize(initialVariant?.size ?? requestedSize ?? sizeOrder[0] ?? "");
+  }, [
+    availableColorsForPrescription,
+    flow.status,
+    location.state?.selectedColor,
+    location.state?.selectedSize,
+    prescriptionReadyVariants,
+    sizeOrder,
+  ]);
 
   useEffect(() => {
     if (!flow.product || availableSizesForSelectedColor.length === 0) {
@@ -144,11 +195,6 @@ export function usePrescriptionFlow() {
     [flow.lensTypes, selectedLensTypeId],
   );
 
-  const selectedLensMaterialOption = useMemo(
-    () => flow.pricingOptions.lensMaterials.find((item) => item.code === selectedLensMaterial) ?? null,
-    [flow.pricingOptions.lensMaterials, selectedLensMaterial],
-  );
-
   useEffect(() => {
     if (!selectedVariant?.variantId || !selectedLensType?.lensTypeId) {
       return;
@@ -157,14 +203,10 @@ export function usePrescriptionFlow() {
     void dispatch(fetchPrescriptionPricing({
       variantId: selectedVariant.variantId,
       lensTypeId: selectedLensType.lensTypeId,
-      lensMaterial: normalizeOptionalField(selectedLensMaterial),
-      coatings: selectedCoatings,
       quantity: 1,
     }));
   }, [
     dispatch,
-    selectedCoatings,
-    selectedLensMaterial,
     selectedLensType?.lensTypeId,
     selectedVariant?.variantId,
   ]);
@@ -204,8 +246,6 @@ export function usePrescriptionFlow() {
         product: flow.product,
         variant: selectedVariant,
         lensTypeId: selectedLensType.lensTypeId,
-        lensMaterial: selectedLensMaterial,
-        coatings: selectedCoatings,
         rightEye: {
           sph: parseDecimal(formState.rightSph),
           cyl: parseDecimal(formState.rightCyl),
@@ -232,14 +272,6 @@ export function usePrescriptionFlow() {
       ...current,
       [field]: value,
     }));
-  }
-
-  function toggleCoating(coatingCode) {
-    setSelectedCoatings((current) =>
-      current.includes(coatingCode)
-        ? current.filter((item) => item !== coatingCode)
-        : [...current, coatingCode],
-    );
   }
 
   function setImage(file) {
@@ -270,13 +302,10 @@ export function usePrescriptionFlow() {
     pricingOptions: flow.pricingOptions,
     selectedVariant,
     selectedLensType,
-    selectedLensMaterialOption,
     selectedColor,
     selectedSize,
     availableSizesForSelectedColor,
     selectedLensTypeId,
-    selectedLensMaterial,
-    selectedCoatings,
     formState,
     imageFileName,
     imagePreviewUrl,
@@ -284,6 +313,7 @@ export function usePrescriptionFlow() {
     ui: {
       isLoading: flow.status === "loading" || flow.status === "idle",
       error: flow.error,
+      hasReadyPrescriptionVariant: prescriptionReadyVariants.length > 0,
       pricing: flow.pricing,
       imageUpload: flow.imageUpload,
       isCustomerSession: Boolean(auth?.accessToken && auth?.user?.role === "customer"),
@@ -296,9 +326,13 @@ export function usePrescriptionFlow() {
       updateField,
       setSelectedColor: (color) => {
         const normalizedColor = normalizeText(color) ?? "";
+        if (availableColorsForPrescription.length > 0 && !availableColorsForPrescription.includes(normalizedColor)) {
+          return;
+        }
+
         setSelectedColor(normalizedColor);
 
-        const sizesForColor = getAvailableSizesForColor(variants, normalizedColor, sizeOrder);
+        const sizesForColor = getAvailableSizesForColor(prescriptionReadyVariants, normalizedColor, sizeOrder);
         if (sizesForColor.length === 0) {
           return;
         }
@@ -327,12 +361,11 @@ export function usePrescriptionFlow() {
         setSelectedSize(normalizedSize);
       },
       setSelectedLensTypeId,
-      setSelectedLensMaterial,
-      toggleCoating,
       setImage,
       clearImage: () => setImage(null),
       goBackToProduct: () => navigate(`/product/${productId}`),
     },
+    availableColorsForPrescription,
   };
 }
 
@@ -373,11 +406,6 @@ function parseInteger(value) {
   return Number.parseInt(String(value ?? "").trim(), 10);
 }
 
-function normalizeOptionalField(value) {
-  const normalizedValue = String(value ?? "").trim();
-  return normalizedValue.length > 0 ? normalizedValue : undefined;
-}
-
 function normalizeText(value) {
   const normalizedValue = String(value ?? "").trim();
   return normalizedValue.length > 0 ? normalizedValue : null;
@@ -402,6 +430,55 @@ function getAvailableSizesForColor(variants, selectedColor, sizeOrder) {
   }
 
   return orderedSizes.filter((size) => variantSizes.has(size));
+}
+
+function getDistinctValues(values) {
+  return Array.from(new Set((Array.isArray(values) ? values : []).filter(Boolean)));
+}
+
+function isReadyPrescriptionVariant(variant) {
+  return Boolean(variant?.isReadyAvailable) || Number(variant?.quantity ?? 0) > 0;
+}
+
+function resolveInitialPrescriptionVariant({ readyVariants, requestedColor, requestedSize, fallbackColor }) {
+  const normalizedVariants = Array.isArray(readyVariants) ? readyVariants : [];
+
+  if (normalizedVariants.length === 0) {
+    return null;
+  }
+
+  const exactMatch = normalizedVariants.find((variant) => {
+    const colorMatches = !requestedColor || normalizeText(variant?.color) === requestedColor;
+    const sizeMatches = !requestedSize || normalizeText(variant?.size) === requestedSize;
+    return colorMatches && sizeMatches;
+  });
+
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  if (requestedColor) {
+    const byColor = normalizedVariants.find((variant) => normalizeText(variant?.color) === requestedColor);
+    if (byColor) {
+      return byColor;
+    }
+  }
+
+  if (requestedSize) {
+    const bySize = normalizedVariants.find((variant) => normalizeText(variant?.size) === requestedSize);
+    if (bySize) {
+      return bySize;
+    }
+  }
+
+  if (fallbackColor) {
+    const byFallbackColor = normalizedVariants.find((variant) => normalizeText(variant?.color) === fallbackColor);
+    if (byFallbackColor) {
+      return byFallbackColor;
+    }
+  }
+
+  return normalizedVariants[0];
 }
 
 function pickNearestSize(currentSize, orderedSizes, availableSizes) {

@@ -118,8 +118,6 @@ function createRecoverableCartItem(item) {
       variantId,
       quantity,
       lensTypeId: Number(item?.prescriptionDetails?.lensTypeId ?? 0),
-      lensMaterial: item?.prescriptionDetails?.lensMaterial ?? "",
-      coatings: Array.isArray(item?.prescriptionDetails?.coatings) ? item.prescriptionDetails.coatings : [],
       rightEye: item?.prescriptionDetails?.rightEye ?? null,
       leftEye: item?.prescriptionDetails?.leftEye ?? null,
       pd: item?.prescriptionDetails?.pd ?? null,

@@ -258,13 +258,9 @@ function DetailPanel({
           <SectionTitle icon={FileText} title="Tròng kính" />
           <div className="grid gap-3 md:grid-cols-2">
             <RowCard label="Loại tròng" value={detail.lensTypeCode || `#${detail.lensTypeId}`} />
-            <RowCard label="Chất liệu" value={detail.lensMaterial || "Mặc định"} />
             <RowCard label="Giá tròng cơ bản" value={formatCurrency(detail.lensBasePrice)} />
-            <RowCard label="Giá chất liệu" value={formatCurrency(detail.materialPrice)} />
-            <RowCard label="Giá coating" value={formatCurrency(detail.coatingPrice)} />
             <RowCard label="Tổng tiền tròng" value={formatCurrency(detail.totalLensPrice)} />
           </div>
-          {detail.coatings.length > 0 ? <p className="mt-3 text-sm text-muted-foreground">Lớp phủ: {detail.coatings.join(", ")}</p> : null}
         </section>
 
         {detail.prescriptionImageUrl ? (

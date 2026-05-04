@@ -7,7 +7,6 @@ import {
   getPrescriptionApiErrorMessage,
   getPrescriptionById,
   getPrescriptionEligibility,
-  getPrescriptionOptions,
   getPrescriptions,
   reviewPrescription,
   uploadPrescriptionImage,
@@ -31,10 +30,7 @@ const initialState = {
   flow: {
     product: null,
     lensTypes: [],
-    pricingOptions: {
-      lensMaterials: [],
-      coatings: [],
-    },
+    pricingOptions: {},
     eligibility: null,
     status: "idle",
     error: null,
@@ -43,8 +39,6 @@ const initialState = {
       error: "",
       framePrice: 0,
       lensBasePrice: 0,
-      materialPrice: 0,
-      coatingPrice: 0,
       lensPrice: 0,
       totalPrice: 0,
     },
@@ -89,11 +83,10 @@ export const loadPrescriptionFlow = createAsyncThunk(
     }
 
     try {
-      const [product, lensTypes, eligibility, pricingOptions] = await Promise.all([
+      const [product, lensTypes, eligibility] = await Promise.all([
         getCatalogProductById(numericProductId),
         getLensTypes({ page: 1, pageSize: 50, isActive: true }),
         getPrescriptionEligibility(numericProductId),
-        getPrescriptionOptions(),
       ]);
 
       if (!eligibility?.isEligible || !product?.prescriptionCompatible) {
@@ -108,7 +101,6 @@ export const loadPrescriptionFlow = createAsyncThunk(
         product,
         lensTypes,
         eligibility,
-        pricingOptions,
       };
     } catch (error) {
       return rejectWithValue(getPrescriptionApiErrorMessage(error, "Không thể tải luồng kính theo toa."));
@@ -184,8 +176,6 @@ export const submitPrescriptionCartItem = createAsyncThunk(
         variantId: variant.variantId,
         quantity: 1,
         lensTypeId: payload.lensTypeId,
-        lensMaterial: normalizeOptional(payload.lensMaterial),
-        coatings: payload.coatings,
         rightEye: payload.rightEye,
         leftEye: payload.leftEye,
         pd: payload.pd,
@@ -304,14 +294,7 @@ const prescriptionSlice = createSlice({
         state.flow.product = action.payload.product;
         state.flow.lensTypes = action.payload.lensTypes;
         state.flow.eligibility = action.payload.eligibility;
-        state.flow.pricingOptions = {
-          lensMaterials: Array.isArray(action.payload.pricingOptions?.lensMaterials)
-            ? action.payload.pricingOptions.lensMaterials
-            : [],
-          coatings: Array.isArray(action.payload.pricingOptions?.coatings)
-            ? action.payload.pricingOptions.coatings
-            : [],
-        };
+        state.flow.pricingOptions = {};
         state.flow.status = "succeeded";
         state.flow.error = null;
       })
@@ -332,8 +315,6 @@ const prescriptionSlice = createSlice({
           error: "",
           framePrice: Number(action.payload?.framePrice ?? 0),
           lensBasePrice: Number(action.payload?.lensBasePrice ?? 0),
-          materialPrice: Number(action.payload?.materialPrice ?? 0),
-          coatingPrice: Number(action.payload?.coatingPrice ?? 0),
           lensPrice: Number(action.payload?.lensPrice ?? 0),
           totalPrice: Number(action.payload?.totalPrice ?? 0),
         };

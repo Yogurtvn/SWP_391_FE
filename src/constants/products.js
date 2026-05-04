@@ -101,7 +101,6 @@ const products = [
     includedLenses: {
       type: "single-vision",
       material: "cr39",
-      coatings: ["anti-reflective", "blue-light", "scratch-resistant"],
       description: "Tr\xF2ng CR-39 ch\u1ED1ng \xE1nh s\xE1ng xanh, ch\u1ED1ng ph\u1EA3n chi\u1EBFu"
     },
     prescriptionCompatible: false,
@@ -140,7 +139,6 @@ const products = [
     includedLenses: {
       type: "single-vision",
       material: "cr39",
-      coatings: ["anti-reflective", "scratch-resistant"],
       description: "Tr\xF2ng CR-39 c\u01A1 b\u1EA3n ch\u1ED1ng ph\u1EA3n chi\u1EBFu"
     },
     prescriptionCompatible: false,
@@ -181,7 +179,6 @@ const products = [
     includedLenses: {
       type: "single-vision",
       material: "polycarbonate",
-      coatings: ["polarized", "uv-protection", "scratch-resistant"],
       description: "Tr\xF2ng ph\xE2n c\u1EF1c Polycarbonate ch\u1ED1ng UV400"
     },
     prescriptionCompatible: false,
@@ -221,7 +218,6 @@ const products = [
     includedLenses: {
       type: "single-vision",
       material: "cr39",
-      coatings: ["polarized", "uv-protection"],
       description: "Tr\xF2ng ph\xE2n c\u1EF1c ch\u1ED1ng UV"
     },
     prescriptionCompatible: false,
@@ -294,7 +290,6 @@ const products = [
     includedLenses: {
       type: "progressive",
       material: "high-index",
-      coatings: ["anti-reflective", "blue-light", "scratch-resistant", "uv-protection"],
       description: "Tr\xF2ng High-Index 1.67 \u0111a tr\xF2ng Progressive v\u1EDBi coating cao c\u1EA5p"
     },
     prescriptionCompatible: false,
@@ -316,14 +311,6 @@ const lensPricing = {
     "high-index": 4e5,
     "trivex": 3e5,
     "glass": 1e5
-  },
-  coatingPrice: {
-    "anti-reflective": 15e4,
-    "scratch-resistant": 1e5,
-    "uv-protection": 8e4,
-    "blue-light": 2e5,
-    "photochromic": 4e5,
-    "polarized": 35e4
   }
 };
 const deliveryTimeConfig = {

@@ -7,12 +7,7 @@ export async function getPrescriptionEligibility(productId) {
 }
 
 export async function getPrescriptionOptions() {
-  const response = await apiGet("/api/prescription-options");
-
-  return {
-    lensMaterials: normalizePricingOptions(response?.lensMaterials),
-    coatings: normalizePricingOptions(response?.coatings),
-  };
+  return apiGet("/api/prescription-options");
 }
 
 export async function calculatePrescriptionPricing(payload) {
@@ -110,18 +105,6 @@ export function normalizePrescriptionPayloadFromForm(formState, prescriptionImag
   };
 }
 
-function normalizePricingOptions(options) {
-  return Array.isArray(options)
-    ? options
-        .map((option) => ({
-          code: normalizeText(option?.code) ?? "",
-          label: normalizeText(option?.label) ?? normalizeText(option?.code) ?? "Option",
-          priceAdjustment: normalizePrice(option?.priceAdjustment),
-        }))
-        .filter((option) => option.code.length > 0)
-    : [];
-}
-
 function normalizePrescriptionListItem(item) {
   return {
     prescriptionId: Number(item?.prescriptionId ?? 0),
@@ -131,7 +114,6 @@ function normalizePrescriptionListItem(item) {
     orderId: Number(item?.orderId ?? 0),
     lensTypeId: Number(item?.lensTypeId ?? 0),
     lensTypeCode: normalizeText(item?.lensTypeCode) ?? "",
-    lensMaterial: normalizeText(item?.lensMaterial) ?? "",
     totalLensPrice: normalizePrice(item?.totalLensPrice),
     prescriptionImageUrl: normalizeText(item?.prescriptionImageUrl) ?? "",
     prescriptionStatus: item?.prescriptionStatus ?? "",
@@ -150,9 +132,6 @@ function normalizePrescriptionDetail(item) {
   return {
     ...normalized,
     lensBasePrice: normalizePrice(item?.lensBasePrice),
-    materialPrice: normalizePrice(item?.materialPrice),
-    coatingPrice: normalizePrice(item?.coatingPrice),
-    coatings: Array.isArray(item?.coatings) ? item.coatings.filter(Boolean) : [],
     rightEye: normalizeEye(item?.rightEye),
     leftEye: normalizeEye(item?.leftEye),
     pd: normalizePrice(item?.pd),

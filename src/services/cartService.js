@@ -217,8 +217,6 @@ function normalizeCartItem(item, { cachedView, variantDetail }) {
           lensType: item.prescription.lensName || item.prescription.lensCode || "Theo toa",
           lensCode: item.prescription.lensCode || "",
           lensName: item.prescription.lensName || "",
-          lensMaterial: item.prescription.lensMaterial || "",
-          coatings: Array.isArray(item.prescription.coatings) ? item.prescription.coatings : [],
           rightEye: item.prescription.rightEye ?? null,
           leftEye: item.prescription.leftEye ?? null,
           pd: item.prescription.pd ?? null,

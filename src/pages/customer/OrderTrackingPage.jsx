@@ -359,12 +359,8 @@ function PrescriptionPanel({ item }) {
 
       <div className="mt-3 grid gap-3 text-sm md:grid-cols-2">
         <Row label="PD" value={`${prescription.pd} mm`} />
-        <Row label="Chất liệu" value={prescription.lensMaterial || "Mặc định"} />
+        <Row label="Loại tròng" value={prescription.lensTypeCode || `Lens #${prescription.lensTypeId}`} />
       </div>
-
-      {prescription.coatings.length > 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">Coating: {prescription.coatings.join(", ")}</p>
-      ) : null}
 
       {prescription.notes ? (
         <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">

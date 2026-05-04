@@ -7,8 +7,6 @@ import { getLensTypeErrorMessage, getLensTypes } from "@/services/lensTypeServic
 
 const EMPTY_PRESCRIPTION_EDIT_FORM = {
   lensTypeId: "",
-  lensMaterial: "",
-  coatings: "",
   rightSph: "",
   rightCyl: "0",
   rightAxis: "0",
@@ -223,8 +221,6 @@ function CartPage() {
     setPrescriptionEditItem(item);
     setPrescriptionEditForm({
       lensTypeId: String(detail.lensTypeId ?? ""),
-      lensMaterial: detail.lensMaterial ?? "",
-      coatings: Array.isArray(detail.coatings) ? detail.coatings.join(", ") : "",
       rightSph: String(rightEye.sph ?? ""),
       rightCyl: String(rightEye.cyl ?? "0"),
       rightAxis: String(rightEye.axis ?? "0"),
@@ -314,8 +310,6 @@ function CartPage() {
         cartItemId: prescriptionEditItem.cartItemId,
         variantId: prescriptionEditItem.variantId,
         lensTypeId: Number(prescriptionEditForm.lensTypeId),
-        lensMaterial: normalizeOptionalField(prescriptionEditForm.lensMaterial),
-        coatings: parseCoatings(prescriptionEditForm.coatings),
         rightEye: {
           sph: parseDecimal(prescriptionEditForm.rightSph),
           cyl: parseDecimal(prescriptionEditForm.rightCyl),
@@ -814,13 +808,6 @@ function parseDecimal(value) {
 
 function parseInteger(value) {
   return Number.parseInt(String(value ?? "").trim(), 10);
-}
-
-function parseCoatings(value) {
-  return String(value ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
 }
 
 function normalizeOptionalField(value) {

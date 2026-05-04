@@ -270,47 +270,49 @@ export function useAdminInventoryPage() {
 
   async function editPreOrder(item) {
     if (isLoadingOrderLocks) {
-      await popupAlert("Dang kiem tra trang thai don hang. Vui long thu lai sau.");
+      await popupAlert("Đang kiểm tra trạng thái đơn hàng. Vui lòng thử lại sau.");
       return;
     }
 
     if (Number(item?.quantity ?? 0) > 0) {
-      await popupAlert("Bien the con hang nen khong the sua pre-order.");
+      await popupAlert("Biến thể còn hàng nên chưa thể sửa pre-order.");
       return;
     }
 
     const openOrderCount = getOpenOrderCountForVariant(item?.variantId);
     if (openOrderCount > 0) {
-      await popupAlert(`Bien the nay dang co ${openOrderCount} don hang chua hoan thanh hoac chua huy nen khong the sua pre-order.`);
+      await popupAlert(
+        `Biến thể này đang có ${openOrderCount} đơn chưa hoàn thành hoặc chưa hủy nên chưa thể sửa pre-order.`,
+      );
       return;
     }
 
     const formValues = await popupForm({
-      title: "Cap nhat pre-order",
+      title: "Cập nhật pre-order",
       message: `SKU: ${item.sku || "-"} | Variant ID: ${item.variantId}`,
-      okText: "Cap nhat",
-      cancelText: "Huy",
+      okText: "Cập nhật",
+      cancelText: "Hủy",
       fields: [
         {
           name: "isPreOrderAllowed",
-          label: "Cho phep pre-order",
+          label: "Cho phép pre-order",
           type: "select",
           required: true,
           options: [
-            { value: "true", label: "Bat" },
-            { value: "false", label: "Tat" },
+            { value: "true", label: "Bật" },
+            { value: "false", label: "Tắt" },
           ],
         },
         {
           name: "expectedRestockDate",
-          label: "Ngay du kien co hang",
+          label: "Ngày dự kiến có hàng",
           type: "date",
         },
         {
           name: "preOrderNote",
-          label: "Ghi chu pre-order",
+          label: "Ghi chú pre-order",
           type: "textarea",
-          placeholder: "Them ghi chu cho khach hang hoac kho...",
+          placeholder: "Thêm ghi chú cho khách hàng hoặc kho...",
         },
       ],
       initialValues: {
@@ -341,7 +343,7 @@ export function useAdminInventoryPage() {
       ).unwrap();
       await dispatch(fetchAdminInventory()).unwrap();
     } catch (error) {
-      await popupAlert(error || "Khong cap nhat duoc pre-order.");
+      await popupAlert(error || "Không cập nhật được pre-order.");
     }
   }
 

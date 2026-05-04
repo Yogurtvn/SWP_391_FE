@@ -340,34 +340,34 @@ export function usePopupDialog() {
   }
 
   const isAlertDialog = state.type === "alert";
-  const dialogWidthClass = state.type === "form" ? "max-w-xl" : "max-w-lg";
+  const dialogWidthClass = state.type === "form" ? "max-w-xl" : isAlertDialog ? "max-w-md" : "max-w-lg";
 
   const popupElement = state.isOpen ? (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-[2px]">
       <div
-        className={`relative w-full ${dialogWidthClass} max-h-[calc(100vh-2rem)] overflow-y-auto rounded-[1.5rem] border border-orange-200 bg-white p-6 shadow-[0_24px_60px_rgba(15,23,42,0.24)]`}
+        className={`relative w-full ${dialogWidthClass} max-h-[calc(100vh-2rem)] overflow-y-auto rounded-[1.5rem] border border-orange-200 bg-white ${isAlertDialog ? "p-5" : "p-6"} shadow-[0_24px_60px_rgba(15,23,42,0.24)]`}
       >
         <button
           type="button"
           onClick={closePopupFromHeader}
-          className="absolute right-8 top-8 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
+          className={`absolute rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 ${isAlertDialog ? "right-4 top-4" : "right-8 top-8"}`}
           aria-label="Đóng modal"
         >
           <X className="h-5 w-5" />
         </button>
         <div className="flex items-start gap-3">
           {isAlertDialog ? (
-            <div className="mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-orange-200 bg-orange-50 text-orange-600">
-              <AlertTriangle className="h-5 w-5" />
+            <div className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-orange-200 bg-orange-50 text-orange-600">
+              <AlertTriangle className="h-4 w-4" />
             </div>
           ) : null}
           <div className="min-w-0 flex-1">
-            <h3 className="text-2xl font-bold text-[#11284b]">{state.title}</h3>
+            <h3 className={`${isAlertDialog ? "text-xl" : "text-2xl"} font-bold text-[#11284b]`}>{state.title}</h3>
             {state.message ? (
               <p
                 className={`mt-2 whitespace-pre-line text-sm ${
                   isAlertDialog
-                    ? "rounded-xl border border-orange-100 bg-[#fff8ef] px-4 py-3 text-[#334a6b]"
+                    ? "rounded-xl border border-orange-100 bg-[#fff8ef] px-3 py-2 text-[#334a6b] leading-6"
                     : "text-slate-600"
                 }`}
               >
@@ -431,7 +431,7 @@ export function usePopupDialog() {
             </div>
           </form>
         ) : (
-          <div className="mt-5 flex justify-end gap-2">
+          <div className={`${isAlertDialog ? "mt-4" : "mt-5"} flex justify-end gap-2`}>
             {state.type !== "alert" ? (
               <button
                 type="button"
@@ -445,7 +445,7 @@ export function usePopupDialog() {
             <button
               type="button"
               onClick={() => resolveAndClose(state.type === "prompt" ? state.inputValue : true)}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_16px_rgba(15,23,42,0.2)] ${
+              className={`rounded-xl ${isAlertDialog ? "px-5 py-2.5" : "px-4 py-2"} text-sm font-semibold text-white shadow-[0_8px_16px_rgba(15,23,42,0.2)] ${
                 isAlertDialog ? "bg-orange-500 hover:bg-orange-600" : "bg-[#172033] hover:bg-[#0f172a]"
               }`}
             >

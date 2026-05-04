@@ -38,7 +38,8 @@ function hasValue(value) {
 }
 
 function translateNote(note) {
-  const normalized = String(note || "").trim().toLowerCase();
+  const rawNote = sanitizeSystemSuffix(String(note || "").trim());
+  const normalized = rawNote.toLowerCase();
 
   if (normalized === "order created." || normalized === "order created") return "Đơn hàng đã được tạo.";
   if (normalized === "payment created." || normalized === "payment created") return "Thanh toán đã được tạo.";
@@ -54,8 +55,10 @@ function translateNote(note) {
   if (
     normalized === "order cancelled automatically because online payment failed (payment:reconcile)."
     || normalized === "order cancelled automatically because online payment failed (payment:reconcile)"
+    || normalized === "order cancelled automatically because online payment failed."
+    || normalized === "order cancelled automatically because online payment failed"
   ) {
-    return "Đơn hàng đã tự động hủy do thanh toán online thất bại (payment:reconcile).";
+    return "Đơn hàng đã tự động hủy do thanh toán online thất bại.";
   }
   if (normalized === "order is being processed." || normalized === "order is being processed") return "Đơn hàng đang được xử lý.";
   if (normalized === "order shipped." || normalized === "order shipped") return "Đơn hàng đã được giao cho đơn vị vận chuyển.";
@@ -79,7 +82,34 @@ function translateNote(note) {
     return "Đã thu tiền khi đơn hàng hoàn thành.";
   }
   if (normalized === "updated by admin") return "Quản trị viên đã cập nhật.";
-  return note;
+  return rawNote;
+}
+
+function sanitizeSystemSuffix(note) {
+  return String(note || "")
+    .replace(/\s*\(payment:reconcile\)\.?$/i, "")
+    .trim();
+}
+
+function resolveHistoryActorName(history, order) {
+  if (hasValue(history?.updatedByName)) {
+    return history.updatedByName;
+  }
+
+  const orderStatus = String(history?.orderStatus || "").trim().toLowerCase();
+  const isCancelled = orderStatus === "cancelled" || orderStatus === "canceled";
+
+  if (isCancelled) {
+    return (
+      order?.receiverName
+      || order?.customerName
+      || order?.receiverEmail
+      || order?.customerEmail
+      || `User #${history?.updatedByUserId ?? "-"}`
+    );
+  }
+
+  return `User #${history?.updatedByUserId ?? "-"}`;
 }
 
 function getPaymentStatusLabel(value) {
@@ -353,7 +383,7 @@ export default function AdminOrderDetailPage() {
                           <p className="text-sm text-slate-500">{formatDateTime(history.updatedAt)}</p>
                         </div>
                         <p className="mt-3 text-sm font-semibold text-[#11284b]">
-                          {history.updatedByName || `User #${history.updatedByUserId ?? "-"}`}
+                          {resolveHistoryActorName(history, order)}
                         </p>
                         {history.note ? <p className="mt-1 text-sm text-slate-600">{translateNote(history.note)}</p> : null}
                       </li>

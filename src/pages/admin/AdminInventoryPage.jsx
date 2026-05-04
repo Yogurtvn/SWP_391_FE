@@ -571,7 +571,7 @@ export default function AdminInventoryPage() {
               <div>
                 <h3 className="text-xl font-bold text-[#11284b]">Chi tiết phiếu nhập #{receiptDetail.receiptId}</h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  Thông tin người ghi nhận được lấy trực tiếp từ response BE.
+                  Thông tin người ghi nhận được hiển thị theo dữ liệu hệ thống.
                 </p>
               </div>
               <button type="button" onClick={actions.closeReceiptDetail} className={adminStyles.secondaryButton}>
@@ -738,3 +738,4 @@ function ImporterCell({ name, role }) {
     </div>
   );
 }
+

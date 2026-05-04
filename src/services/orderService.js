@@ -351,7 +351,7 @@ export function getPaymentStatusLabel(paymentStatus) {
 }
 
 function translateOrderHistoryNote(note) {
-  const normalizedNote = normalizeText(note);
+  const normalizedNote = stripPaymentReconcileTag(normalizeText(note));
 
   if (!normalizedNote) {
     return "";
@@ -384,10 +384,10 @@ function translateOrderHistoryNote(note) {
       return "Đã thu tiền khi đơn hàng hoàn thành.";
     case "order cancelled automatically because online payment failed (payment:reconcile).":
     case "order cancelled automatically because online payment failed (payment:reconcile)":
-      return "Đơn hàng đã tự động hủy do thanh toán online thất bại (đối soát thanh toán).";
+      return "Đơn hàng đã tự động hủy do thanh toán online thất bại.";
     case "order canceled automatically because online payment failed (payment:reconcile).":
     case "order canceled automatically because online payment failed (payment:reconcile)":
-      return "Đơn hàng đã tự động hủy do thanh toán online thất bại (đối soát thanh toán).";
+      return "Đơn hàng đã tự động hủy do thanh toán online thất bại.";
     case "order moved to processing automatically after stock receipt and back-in-stock email.":
     case "order moved to processing automatically after stock receipt and back-in-stock email":
     case "order moved to processing automatically after stock receipt and back in stock email.":
@@ -402,6 +402,12 @@ function translateOrderHistoryNote(note) {
     default:
       return normalizedNote;
   }
+}
+
+function stripPaymentReconcileTag(note) {
+  return String(note ?? "")
+    .replace(/\s*\(payment:reconcile\)\.?/gi, "")
+    .trim();
 }
 
 export function formatDateTime(value) {

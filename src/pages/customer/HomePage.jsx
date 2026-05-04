@@ -4,7 +4,7 @@ import ProductCard from "@/components/product/ProductCard";
 import { motion, AnimatePresence } from "motion/react";
 import { useState, useEffect } from "react";
 import { products } from "@/constants/products";
-import { getCatalogProducts } from "@/services/catalogService";
+import { getAvailablePromotions, getCatalogProducts } from "@/services/catalogService";
 import { resolveColorHex } from "@/utils/color";
 
 const fallbackFeaturedProducts = products
@@ -77,6 +77,8 @@ const heroSlides = [
 function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [featuredProducts, setFeaturedProducts] = useState(fallbackFeaturedProducts);
+  const [activePromotion, setActivePromotion] = useState(null);
+  const [countdownNow, setCountdownNow] = useState(Date.now());
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -115,6 +117,44 @@ function HomePage() {
       isActive = false;
     };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadActivePromotion() {
+      try {
+        const promotions = await getAvailablePromotions(1);
+        if (!isMounted) {
+          return;
+        }
+
+        setActivePromotion(promotions[0] ?? null);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setActivePromotion(null);
+      }
+    }
+
+    void loadActivePromotion();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdownNow(Date.now());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const promotionBanner = mapPromotionToBanner(activePromotion);
+  const countdownText = formatPromotionCountdown(promotionBanner.endAt, countdownNow);
 
   return <div>
       {
@@ -227,14 +267,20 @@ function HomePage() {
                   </span>
                   <div className="flex items-center gap-2 text-white/90 text-sm">
                     <Clock className="w-4 h-4" />
-                    <span>Còn 6 ngày 14:32:18</span>
+                    <span>{countdownText}</span>
                   </div>
                 </div>
                 <h3 className="text-2xl lg:text-3xl font-bold text-white">
-                  Giảm <span className="text-yellow-300">30%</span> Tròng Kính Cận + Quà Tặng Miễn Phí
+                  {promotionBanner.discountPercent > 0 ? (
+                    <>
+                      Giảm <span className="text-yellow-300">{promotionBanner.discountPercent}%</span> {promotionBanner.title}
+                    </>
+                  ) : (
+                    promotionBanner.title
+                  )}
                 </h3>
                 <p className="text-white/90 text-sm mt-1">
-                  Áp dụng khi mua kèm gọng kính - Flash Sale cho 50 đơn đầu tiên
+                  {promotionBanner.description}
                 </p>
               </div>
             </div>
@@ -244,7 +290,7 @@ function HomePage() {
   }
             <div className="flex flex-col sm:flex-row gap-3 shrink-0">
               <Link
-    to="/shop/prescription"
+    to={promotionBanner.primaryActionTo}
     className="inline-flex items-center gap-2 px-6 py-3 bg-white text-amber-600 rounded-lg hover:bg-white/90 transition-all shadow-lg hover:scale-105 font-semibold whitespace-nowrap"
   >
                 <Zap className="w-5 h-5" />
@@ -252,7 +298,7 @@ function HomePage() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
-    to="/shop"
+    to={promotionBanner.secondaryActionTo}
     className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm text-white rounded-lg hover:bg-white/20 transition-all border-2 border-white/30 font-semibold whitespace-nowrap"
   >
                 Xem Chi Tiết
@@ -447,6 +493,53 @@ function mapCatalogProductToFeaturedCard(item) {
     availabilityStatus: item.availabilityStatus,
     product: item.product ?? item,
   };
+}
+
+function mapPromotionToBanner(promotion) {
+  const normalizedDiscount = Number(promotion?.discountPercent ?? 0);
+  const normalizedName = String(promotion?.name ?? "").trim();
+  const normalizedDescription = String(promotion?.description ?? "").trim();
+
+  return {
+    title: normalizedName || "Khuyến mãi mới dành cho bạn",
+    description: normalizedDescription || "Áp dụng cho đơn hàng đủ điều kiện trong thời gian khuyến mãi.",
+    discountPercent: Number.isFinite(normalizedDiscount) && normalizedDiscount > 0 ? normalizedDiscount : 0,
+    endAt: promotion?.endAt ?? null,
+    primaryActionTo: "/shop",
+    secondaryActionTo: "/shop",
+  };
+}
+
+function formatPromotionCountdown(endAt, nowMs) {
+  if (!endAt) {
+    return "Đang áp dụng";
+  }
+
+  const endTime = new Date(endAt).getTime();
+  if (!Number.isFinite(endTime)) {
+    return "Đang áp dụng";
+  }
+
+  const remainingMs = endTime - Number(nowMs || Date.now());
+  if (remainingMs <= 0) {
+    return "Sắp kết thúc";
+  }
+
+  const totalSeconds = Math.floor(remainingMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const hh = String(hours).padStart(2, "0");
+  const mm = String(minutes).padStart(2, "0");
+  const ss = String(seconds).padStart(2, "0");
+
+  if (days > 0) {
+    return `Còn ${days} ngày ${hh}:${mm}:${ss}`;
+  }
+
+  return `Còn ${hh}:${mm}:${ss}`;
 }
 
 

@@ -457,7 +457,8 @@ function createFallbackHistory(order) {
 }
 
 function translateOrderHistoryNote(note) {
-  const normalized = String(note ?? "").trim().toLowerCase();
+  const cleanedNote = stripPaymentReconcileTag(String(note ?? "").trim());
+  const normalized = cleanedNote.toLowerCase();
 
   if (normalized === "order created." || normalized === "order created") {
     return "Đơn hàng đã được tạo.";
@@ -478,7 +479,7 @@ function translateOrderHistoryNote(note) {
     || normalized === "order canceled automatically because online payment failed (payment:reconcile)."
     || normalized === "order canceled automatically because online payment failed (payment:reconcile)"
   ) {
-    return "Đơn hàng đã tự động hủy do thanh toán online thất bại (đối soát thanh toán).";
+    return "Đơn hàng đã tự động hủy do thanh toán online thất bại.";
   }
 
   if (normalized === "payment created." || normalized === "payment created") {
@@ -502,7 +503,13 @@ function translateOrderHistoryNote(note) {
     return "Đơn hàng đã tự động chuyển sang đang xử lý sau khi nhập kho và gửi email thông báo có hàng.";
   }
 
-  return note;
+  return cleanedNote;
+}
+
+function stripPaymentReconcileTag(note) {
+  return String(note ?? "")
+    .replace(/\s*\(payment:reconcile\)\.?/gi, "")
+    .trim();
 }
 
 function getPrescriptionTone(status) {

@@ -3,10 +3,16 @@ import { useParams, useSearchParams } from "react-router";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   fetchCatalogCategories,
+  fetchCatalogFilterOptions,
   fetchCatalogProducts,
   selectCatalogState,
 } from "@/store/catalog/catalogSlice";
-import { getAvailablePromotions, getCatalogRouteConfig, getCatalogSortOptions } from "@/services/catalogService";
+import {
+  getAvailablePromotions,
+  getCatalogProductById,
+  getCatalogRouteConfig,
+  getCatalogSortOptions,
+} from "@/services/catalogService";
 
 const DEFAULT_PAGE_SIZE = 12;
 
@@ -16,6 +22,7 @@ export function useProductListingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const catalog = useAppSelector(selectCatalogState);
   const [activePromotion, setActivePromotion] = useState(null);
+  const [displayPriceOverrides, setDisplayPriceOverrides] = useState({});
 
   const routeConfig = useMemo(() => getCatalogRouteConfig(category), [category]);
 
@@ -62,8 +69,60 @@ export function useProductListingPage() {
   }, [catalog.categoriesStatus, dispatch]);
 
   useEffect(() => {
+    void dispatch(fetchCatalogFilterOptions(routeConfig.productType));
+  }, [dispatch, routeConfig.productType]);
+
+  useEffect(() => {
     void dispatch(fetchCatalogProducts(productRequest));
   }, [dispatch, productRequest]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function syncListingDisplayPrice() {
+      const productIds = catalog.items
+        .map((item) => Number(item?.productId ?? item?.id))
+        .filter((productId) => Number.isFinite(productId) && productId > 0);
+
+      if (productIds.length === 0) {
+        if (isMounted) {
+          setDisplayPriceOverrides({});
+        }
+        return;
+      }
+
+      const details = await Promise.allSettled(
+        productIds.map((productId) => getCatalogProductById(productId)),
+      );
+
+      if (!isMounted) {
+        return;
+      }
+
+      const nextPriceOverrides = {};
+      details.forEach((result, index) => {
+        if (result.status !== "fulfilled") {
+          return;
+        }
+
+        const productId = productIds[index];
+        const detail = result.value;
+        const basePrice = Number(detail?.basePrice);
+
+        if (Number.isFinite(basePrice) && basePrice >= 0) {
+          nextPriceOverrides[productId] = basePrice;
+        }
+      });
+
+      setDisplayPriceOverrides(nextPriceOverrides);
+    }
+
+    void syncListingDisplayPrice();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [catalog.items]);
 
   useEffect(() => {
     let isMounted = true;
@@ -130,7 +189,9 @@ export function useProductListingPage() {
     routeNotice: routeConfig.notice ?? "",
     activePromotion,
     products: catalog.items,
+    displayPriceOverrides,
     categories: catalog.categories,
+    filterOptions: catalog.filterOptions,
     filters,
     sortOptions: getCatalogSortOptions(),
     pageInfo: {
@@ -147,6 +208,8 @@ export function useProductListingPage() {
       error: catalog.error,
       isEmpty: catalog.listStatus === "succeeded" && catalog.items.length === 0,
       categoriesLoading: catalog.categoriesStatus === "loading",
+      filterOptionsLoading: catalog.filterOptionsStatus === "loading",
+      filterOptionsError: catalog.filterOptionsError,
       prescriptionFilterLocked: false,
     },
     actions: {

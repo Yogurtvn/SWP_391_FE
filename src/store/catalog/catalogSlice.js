@@ -2,16 +2,24 @@
 import {
   getCatalogCategories,
   getCatalogErrorMessage,
+  getCatalogProductFilterOptions,
   getCatalogProducts,
 } from "@/services/catalogService";
 
 const initialState = {
   items: [],
   categories: [],
+  filterOptions: {
+    colors: [],
+    sizes: [],
+    frameTypes: [],
+  },
   listStatus: "idle",
   categoriesStatus: "idle",
+  filterOptionsStatus: "idle",
   error: null,
   categoriesError: null,
+  filterOptionsError: null,
   page: 1,
   pageSize: 12,
   totalItems: 0,
@@ -38,6 +46,17 @@ export const fetchCatalogCategories = createAsyncThunk(
       return await getCatalogCategories();
     } catch (error) {
       return rejectWithValue(getCatalogErrorMessage(error, "Không thể tải danh mục sản phẩm."));
+    }
+  },
+);
+
+export const fetchCatalogFilterOptions = createAsyncThunk(
+  "catalog/fetchFilterOptions",
+  async (productType, { rejectWithValue }) => {
+    try {
+      return await getCatalogProductFilterOptions(productType);
+    } catch (error) {
+      return rejectWithValue(getCatalogErrorMessage(error, "Không thể tải bộ lọc sản phẩm."));
     }
   },
 );
@@ -85,6 +104,28 @@ const catalogSlice = createSlice({
         state.categoriesStatus = "failed";
         state.categoriesError = action.payload ?? "Không thể tải danh mục sản phẩm.";
         state.categories = [];
+      })
+      .addCase(fetchCatalogFilterOptions.pending, (state) => {
+        state.filterOptionsStatus = "loading";
+        state.filterOptionsError = null;
+      })
+      .addCase(fetchCatalogFilterOptions.fulfilled, (state, action) => {
+        state.filterOptions = {
+          colors: Array.isArray(action.payload?.colors) ? action.payload.colors : [],
+          sizes: Array.isArray(action.payload?.sizes) ? action.payload.sizes : [],
+          frameTypes: Array.isArray(action.payload?.frameTypes) ? action.payload.frameTypes : [],
+        };
+        state.filterOptionsStatus = "succeeded";
+        state.filterOptionsError = null;
+      })
+      .addCase(fetchCatalogFilterOptions.rejected, (state, action) => {
+        state.filterOptions = {
+          colors: [],
+          sizes: [],
+          frameTypes: [],
+        };
+        state.filterOptionsStatus = "failed";
+        state.filterOptionsError = action.payload ?? "Không thể tải bộ lọc sản phẩm.";
       });
   },
 });

@@ -90,6 +90,21 @@ function getStockBadgeColor(stock) {
   return "border-green-300 bg-green-100 text-green-800";
 }
 
+function resolveProductDisplayPrice(product, summary) {
+  const summaryBasePrice = Number(summary?.basePrice);
+  if (Number.isFinite(summaryBasePrice)) {
+    return summaryBasePrice;
+  }
+
+  const basePrice = Number(product?.basePrice);
+  if (Number.isFinite(basePrice)) {
+    return basePrice;
+  }
+
+  const fallbackPrice = Number(product?.price);
+  return Number.isFinite(fallbackPrice) ? fallbackPrice : 0;
+}
+
 export default function AdminProductsPage() {
   const {
     products,
@@ -390,7 +405,7 @@ export default function AdminProductsPage() {
                           {getProductTypeLabel(product.productType)}
                         </span>
                       </td>
-                      <td className="px-6 py-5 text-base font-bold text-primary">{formatCurrency(product.basePrice)}</td>
+                      <td className="px-6 py-5 text-base font-bold text-primary">{formatCurrency(resolveProductDisplayPrice(product, summary))}</td>
                       <td className="px-6 py-5">
                         <div className="flex flex-wrap gap-1.5">
                           {summary.colors.length === 0 ? (

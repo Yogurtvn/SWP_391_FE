@@ -170,11 +170,19 @@ export function useProductDetailPage() {
     const availabilityStatus = activeVariant ? resolveCartAvailabilityStatus(activeVariant) : product.availabilityStatus;
     const activeVariantCanPreOrder = isOutOfStockPreOrderVariant(activeVariant);
     const hasPreOrderVariant = variants.some(isOutOfStockPreOrderVariant) || Boolean(product.canPreOrder);
+    const variantPrice = Number(activeVariant?.price);
+    const baseProductPrice = Number(product.basePrice ?? product.price);
+    const resolvedDisplayPrice =
+      Number.isFinite(variantPrice) && variantPrice > 0
+        ? variantPrice
+        : Number.isFinite(baseProductPrice)
+          ? baseProductPrice
+          : 0;
 
     return {
       ...product,
       selectedVariant: activeVariant,
-      price: activeVariant?.price ?? product.price,
+      price: resolvedDisplayPrice,
       availabilityStatus,
       inStock: availabilityStatus === "available",
       isPreOrderAllowed: Boolean(activeVariant?.isPreOrderAllowed),

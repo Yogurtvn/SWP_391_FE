@@ -319,6 +319,7 @@ export function useAdminProductsPage() {
               colors,
               totalStock,
               variantCount: variants.length,
+              basePrice: Number(detail?.basePrice ?? product?.basePrice ?? product?.price ?? 0),
             },
           ];
         } catch {
@@ -329,6 +330,7 @@ export function useAdminProductsPage() {
               colors: [],
               totalStock: 0,
               variantCount: 0,
+              basePrice: Number(product?.basePrice ?? product?.price ?? 0),
             },
           ];
         }

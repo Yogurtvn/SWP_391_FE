@@ -119,6 +119,25 @@ function normalizePagedPayload(payload) {
   };
 }
 
+function normalizeAdminPrice(value, fallbackValue = 0) {
+  const normalizedValue = Number(value);
+  if (Number.isFinite(normalizedValue)) {
+    return normalizedValue;
+  }
+
+  const normalizedFallback = Number(fallbackValue);
+  return Number.isFinite(normalizedFallback) ? normalizedFallback : 0;
+}
+
+function normalizeAdminProductListItem(product) {
+  return {
+    ...product,
+    productId: Number(product?.productId ?? 0),
+    basePrice: normalizeAdminPrice(product?.basePrice, product?.price),
+    price: normalizeAdminPrice(product?.price, product?.basePrice),
+  };
+}
+
 export const fetchAdminOrders = createAsyncThunk(
   "admin/fetchOrders",
   async (filters = {}, { getState, rejectWithValue }) => {
@@ -467,7 +486,9 @@ export const fetchAdminProducts = createAsyncThunk(
       ]);
 
       return {
-        products: productResult?.items ?? [],
+        products: Array.isArray(productResult?.items)
+          ? productResult.items.map(normalizeAdminProductListItem)
+          : [],
         categories: categoryResult?.items ?? [],
       };
     } catch (error) {

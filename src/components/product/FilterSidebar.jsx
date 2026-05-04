@@ -1,6 +1,7 @@
-import { Checkbox } from "@/components/common/ui/checkbox";
+﻿import { Checkbox } from "@/components/common/ui/checkbox";
+import { resolveColorHex } from "@/utils/color";
 
-const FRAME_SHAPE_OPTIONS = [
+const DEFAULT_FRAME_SHAPE_OPTIONS = [
   { label: "Aviator", value: "aviator" },
   { label: "Round", value: "round" },
   { label: "Rectangular", value: "rectangular" },
@@ -9,18 +10,8 @@ const FRAME_SHAPE_OPTIONS = [
   { label: "Rimless", value: "rimless" },
 ];
 
-const COLOR_OPTIONS = [
-  { label: "Đen", value: "đen", swatch: "#111111" },
-  { label: "Xám", value: "xám", swatch: "#707784" },
-  { label: "Trắng", value: "trắng", swatch: "#F6F7FA" },
-  { label: "Vàng", value: "vàng", swatch: "#F6D046" },
-  { label: "Nâu", value: "nâu", swatch: "#7A5B2E" },
-  { label: "Bạc", value: "bạc", swatch: "#D8DBE2" },
-  { label: "Xanh navy", value: "xanh navy", swatch: "#1E3A8A" },
-  { label: "Xanh dương", value: "xanh dương", swatch: "#2563EB" },
-];
-
-const SIZE_OPTIONS = ["48", "50", "52", "54", "56", "Oversize"];
+const DEFAULT_COLOR_OPTIONS = ["Đen", "Xám", "Trắng", "Vàng", "Nâu", "Bạc", "Xanh navy", "Xanh dương"];
+const DEFAULT_SIZE_OPTIONS = ["48", "50", "52", "54", "56", "Oversize"];
 
 const PRICE_RANGE_OPTIONS = [
   { label: "Dưới 500.000đ", min: 0, max: 500000 },
@@ -32,7 +23,10 @@ const PRICE_RANGE_OPTIONS = [
 function FilterSidebar({
   filters,
   categories,
+  filterOptions,
   categoriesLoading,
+  filterOptionsLoading,
+  filterOptionsError,
   prescriptionFilterLocked,
   onCategoryChange,
   onColorChange,
@@ -47,6 +41,9 @@ function FilterSidebar({
   const selectedColor = normalizeToken(filters.color);
   const selectedSize = normalizeToken(filters.size);
   const hasCategoryOptions = Array.isArray(categories) && categories.length > 0;
+  const frameTypeOptions = buildFrameTypeOptions(filterOptions?.frameTypes);
+  const colorOptions = buildColorOptions(filterOptions?.colors);
+  const sizeOptions = buildSizeOptions(filterOptions?.sizes);
 
   function handleToggleFrameType(value) {
     const normalizedValue = normalizeToken(value);
@@ -104,7 +101,7 @@ function FilterSidebar({
         <section>
           <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kiểu gọng</h4>
           <div className="space-y-2">
-            {FRAME_SHAPE_OPTIONS.map((option) => (
+            {frameTypeOptions.map((option) => (
               <label key={option.value} className="flex cursor-pointer items-center gap-3">
                 <Checkbox
                   className="border-slate-300 bg-white data-[state=checked]:bg-primary data-[state=checked]:border-primary"
@@ -115,12 +112,13 @@ function FilterSidebar({
               </label>
             ))}
           </div>
+          {filterOptionsLoading ? <p className="mt-2 text-xs text-muted-foreground">Đang tải kiểu gọng...</p> : null}
         </section>
 
         <section>
           <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Màu gọng</h4>
           <div className="grid grid-cols-4 gap-3">
-            {COLOR_OPTIONS.map((option) => {
+            {colorOptions.map((option) => {
               const selected = isSelectedValue(selectedColor, option.value);
 
               return (
@@ -134,7 +132,7 @@ function FilterSidebar({
                       ? "border-primary ring-2 ring-primary/40"
                       : "border-slate-300 hover:border-slate-500"
                   }`}
-                  style={{ backgroundColor: option.swatch }}
+                  style={{ backgroundColor: option.swatch || "#9ca3af" }}
                 />
               );
             })}
@@ -146,12 +144,13 @@ function FilterSidebar({
             placeholder="Ví dụ: Đen"
             className="mt-3 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary"
           />
+          {filterOptionsLoading ? <p className="mt-2 text-xs text-muted-foreground">Đang tải màu gọng...</p> : null}
         </section>
 
         <section>
           <h4 className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kích thước</h4>
           <div className="grid grid-cols-2 gap-y-2">
-            {SIZE_OPTIONS.map((sizeOption) => (
+            {sizeOptions.map((sizeOption) => (
               <label key={sizeOption} className="flex cursor-pointer items-center gap-3">
                 <Checkbox
                   className="border-slate-300 bg-white data-[state=checked]:bg-primary data-[state=checked]:border-primary"
@@ -169,6 +168,8 @@ function FilterSidebar({
             placeholder="Ví dụ: 52"
             className="mt-3 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary"
           />
+          {filterOptionsLoading ? <p className="mt-2 text-xs text-muted-foreground">Đang tải kích thước...</p> : null}
+          {filterOptionsError ? <p className="mt-2 text-xs text-amber-700">{filterOptionsError}</p> : null}
         </section>
 
         <section>
@@ -249,6 +250,32 @@ function normalizeToken(value) {
 function isSelectedValue(value, targetValue) {
   const normalizedTarget = normalizeToken(targetValue);
   return normalizeToken(value) === normalizedTarget;
+}
+
+function buildFrameTypeOptions(values) {
+  if (Array.isArray(values) && values.length > 0) {
+    return values.map((value) => ({ label: value, value }));
+  }
+
+  return DEFAULT_FRAME_SHAPE_OPTIONS;
+}
+
+function buildColorOptions(values) {
+  const sourceValues = Array.isArray(values) && values.length > 0 ? values : DEFAULT_COLOR_OPTIONS;
+
+  return sourceValues.map((value) => ({
+    label: value,
+    value,
+    swatch: resolveColorHex(value) || "#9ca3af",
+  }));
+}
+
+function buildSizeOptions(values) {
+  if (Array.isArray(values) && values.length > 0) {
+    return values;
+  }
+
+  return DEFAULT_SIZE_OPTIONS;
 }
 
 export { FilterSidebar as default };

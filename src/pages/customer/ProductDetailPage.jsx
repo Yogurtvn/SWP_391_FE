@@ -9,6 +9,8 @@ export default function ProductDetailPage() {
   const canOpenPreOrder = Boolean(product?.hasPreOrderVariant || product?.canPreOrder);
   const canOrderPrescription = Boolean(product?.prescriptionCompatible) && canBuyNow;
   const shouldShowOutOfStock = !canBuyNow && !canPreOrder;
+  const displayBasePrice = Number(product?.basePrice ?? product?.price ?? 0);
+  const displayBuyNowPrice = Number(product?.selectedVariant?.price ?? product?.basePrice ?? product?.price ?? 0);
 
   if (ui.loading) {
     return (
@@ -149,7 +151,7 @@ export default function ProductDetailPage() {
           </div>
 
           <h1 className="mb-4">{product.name}</h1>
-          <p className="mb-6 text-3xl text-primary">{formatCurrency(product.price)}</p>
+          <p className="mb-6 text-3xl text-primary">{formatCurrency(displayBasePrice)}</p>
 
           <p className="mb-6 leading-7 text-muted-foreground">{product.description}</p>
 
@@ -266,7 +268,7 @@ export default function ProductDetailPage() {
                   className="group flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-4 text-white transition-colors hover:bg-primary/90"
                 >
                   <Zap className="h-5 w-5 transition-transform group-hover:scale-110" />
-                  <span>Mua Ngay - {formatCurrency(product.price)}</span>
+                  <span>Mua Ngay - {formatCurrency(displayBuyNowPrice)}</span>
                 </button>
                 <button
                   type="button"

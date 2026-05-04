@@ -436,6 +436,7 @@ function mapCatalogProductToFeaturedCard(item) {
     name: item.name || "Sản phẩm",
     price: Number(item.price ?? 0),
     basePrice: Number(item.basePrice ?? item.price ?? 0),
+    displayPrice: Number(item.displayPrice ?? item.basePrice ?? item.price ?? 0),
     image: item.image,
     color: primaryColor,
     subtitle: primaryColor,

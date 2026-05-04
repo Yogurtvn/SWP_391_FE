@@ -14,6 +14,7 @@ function ProductCard({
   name,
   price,
   basePrice,
+  displayPrice,
   image,
   subtitle,
   color = "Black",
@@ -27,7 +28,7 @@ function ProductCard({
   const { addStandardItem } = useCart();
   const { openDrawer } = useCartDrawer();
 
-  const displayPrice = Number(product?.basePrice ?? basePrice ?? price ?? 0);
+  const resolvedDisplayPrice = resolveDisplayPrice({ displayPrice, basePrice, price, product });
   const displaySubtitle = subtitle || color;
   const displayColors = Array.isArray(colors) ? colors.filter(Boolean) : [];
   const hasPreOrderFlow = Boolean(
@@ -146,7 +147,7 @@ function ProductCard({
         <h3 className="text-sm mb-1 text-foreground line-clamp-1" style={{ fontWeight: 400 }}>
           {name}
         </h3>
-        <p className="text-sm mb-1" style={{ fontWeight: 600 }}>{formatCurrency(displayPrice)}</p>
+        <p className="text-sm mb-1" style={{ fontWeight: 600 }}>{formatCurrency(resolvedDisplayPrice)}</p>
         <p className="text-xs text-muted-foreground mb-2">{displaySubtitle}</p>
        
 
@@ -184,6 +185,26 @@ function formatCurrency(value) {
     style: "currency",
     currency: "VND",
   }).format(value);
+}
+
+function resolveDisplayPrice({ displayPrice, basePrice, price, product }) {
+  const candidates = [
+    displayPrice,
+    product?.displayPrice,
+    basePrice,
+    product?.basePrice,
+    price,
+    product?.price,
+  ];
+
+  for (const candidate of candidates) {
+    const normalizedPrice = Number(candidate);
+    if (Number.isFinite(normalizedPrice) && normalizedPrice >= 0) {
+      return normalizedPrice;
+    }
+  }
+
+  return 0;
 }
 
 function resolveErrorMessage(error, fallbackMessage) {

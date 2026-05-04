@@ -39,6 +39,21 @@ export async function getCatalogProductById(productId) {
   return normalizeCatalogDetail(response);
 }
 
+export async function getCatalogProductFilterOptions(productType) {
+  const query = new URLSearchParams();
+  appendQueryValue(query, "productType", productType);
+  const queryString = query.toString();
+  const response = await apiGet(
+    queryString ? `${PRODUCTS_BASE_PATH}/filter-options?${queryString}` : `${PRODUCTS_BASE_PATH}/filter-options`,
+  );
+
+  return {
+    colors: normalizeFilterOptionList(response?.colors),
+    sizes: normalizeFilterOptionList(response?.sizes),
+    frameTypes: normalizeFilterOptionList(response?.frameTypes),
+  };
+}
+
 export async function getRecommendedCatalogProducts({ productType, excludeProductId, pageSize = 4 }) {
   const response = await getCatalogProducts({
     page: 1,
@@ -120,7 +135,8 @@ export function getCatalogSortOptions() {
 function normalizeCatalogListItem(item) {
   const productType = normalizeProductType(item?.productType);
   const basePrice = normalizePrice(item?.basePrice);
-  const price = basePrice;
+  const displayPrice = basePrice;
+  const price = displayPrice;
   const image = resolveAssetUrl(item?.thumbnailUrl) ?? DEFAULT_IMAGE_URL;
   const variants = Array.isArray(item?.variants) ? item.variants.map(normalizeVariant) : [];
   const isReadyAvailable = variants.length > 0
@@ -138,6 +154,7 @@ function normalizeCatalogListItem(item) {
     name: item?.productName?.trim() || "Sản phẩm",
     price,
     basePrice,
+    displayPrice,
     image,
     subtitle: getProductTypeLabel(productType),
     colors: [],
@@ -154,6 +171,7 @@ function normalizeCatalogListItem(item) {
       name: item?.productName,
       price,
       basePrice,
+      displayPrice,
       image,
       productType,
       inStock: availabilityStatus === "available",
@@ -177,8 +195,8 @@ function normalizeCatalogDetail(item) {
   const availabilityStatus = resolveDetailAvailabilityStatus(variants);
   const canPreOrder = variants.some(isOutOfStockPreOrderVariant);
   const baseImage = images[0] ?? DEFAULT_IMAGE_URL;
-  const displayPrice = activeVariant?.price ?? normalizePrice(item?.basePrice);
   const basePrice = normalizePrice(item?.basePrice);
+  const displayPrice = basePrice;
 
   return {
     id: String(item?.productId ?? ""),
@@ -187,6 +205,7 @@ function normalizeCatalogDetail(item) {
     description: item?.description?.trim() || "Sản phẩm hiện chưa có mô tả.",
     price: displayPrice,
     basePrice,
+    displayPrice,
     images: images.length > 0 ? images : [DEFAULT_IMAGE_URL],
     image: baseImage,
     productType,
@@ -207,6 +226,7 @@ function normalizeCatalogDetail(item) {
       name: item?.productName,
       price: displayPrice,
       basePrice,
+      displayPrice,
       image: baseImage,
       productType,
       inStock: availabilityStatus === "available",
@@ -264,6 +284,7 @@ function createCartProduct({
   name,
   price,
   basePrice,
+  displayPrice,
   image,
   productType,
   inStock,
@@ -278,6 +299,7 @@ function createCartProduct({
     name: name?.trim() || "Sản phẩm",
     price: normalizePrice(price),
     basePrice: normalizePrice(basePrice ?? price),
+    displayPrice: normalizePrice(displayPrice ?? basePrice ?? price),
     image: image ?? DEFAULT_IMAGE_URL,
     images: Array.isArray(images) && images.length > 0 ? images : [image ?? DEFAULT_IMAGE_URL],
     type: productType,
@@ -387,6 +409,16 @@ function normalizeText(value) {
 function normalizePrice(value) {
   const price = Number(value ?? 0);
   return Number.isFinite(price) ? price : 0;
+}
+
+function normalizeFilterOptionList(values) {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+
+  return values
+    .map((value) => normalizeText(value))
+    .filter(Boolean);
 }
 
 function toTitleCase(value) {

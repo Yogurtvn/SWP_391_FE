@@ -46,11 +46,12 @@ function ShopPage() {
   };
   const brands = Array.from(new Set(products.map((p) => p.brand)));
   const filteredProducts = products.filter((product) => {
+    const productPrice = resolveShopProductPrice(product);
     if (filters.types.length > 0 && !filters.types.includes(product.type)) return false;
     if (filters.categories.length > 0 && !filters.categories.includes(product.category)) return false;
     if (filters.inStockOnly && !product.inStock) return false;
     if (filters.preOrderOnly && !product.allowPreOrder) return false;
-    if (product.price < filters.priceRange[0] || product.price > filters.priceRange[1]) return false;
+    if (productPrice < filters.priceRange[0] || productPrice > filters.priceRange[1]) return false;
     if (filters.brands.length > 0 && !filters.brands.includes(product.brand)) return false;
     return true;
   });
@@ -299,7 +300,7 @@ function ProductCard({ product, index }) {
           
           <div className="flex items-baseline gap-2">
             <span className="text-lg font-bold text-primary">
-              {formatPrice(product.price)}
+              {formatPrice(resolveShopProductPrice(product))}
             </span>
             {product.originalPrice && <span className="text-sm text-muted-foreground line-through">
                 {formatPrice(product.originalPrice)}
@@ -312,3 +313,21 @@ function ProductCard({ product, index }) {
 export {
   ShopPage as default
 };
+
+function resolveShopProductPrice(product) {
+  const candidates = [
+    product?.basePrice,
+    product?.product?.basePrice,
+    product?.price,
+    product?.product?.price,
+  ];
+
+  for (const candidate of candidates) {
+    const normalizedPrice = Number(candidate);
+    if (Number.isFinite(normalizedPrice) && normalizedPrice >= 0) {
+      return normalizedPrice;
+    }
+  }
+
+  return 0;
+}

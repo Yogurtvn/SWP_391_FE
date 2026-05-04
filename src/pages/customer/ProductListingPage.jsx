@@ -5,8 +5,22 @@ import ProductCard from "@/components/product/ProductCard";
 import { useProductListingPage } from "@/hooks/shop/useProductListingPage";
 
 function ProductListingPage() {
-  const { title, routeNotice, activePromotion, products, categories, filters, sortOptions, pageInfo, ui, actions } =
+  const {
+    title,
+    routeNotice,
+    activePromotion,
+    products,
+    displayPriceOverrides,
+    categories,
+    filterOptions,
+    filters,
+    sortOptions,
+    pageInfo,
+    ui,
+    actions,
+  } =
     useProductListingPage();
+  const normalizedProducts = products.map((product) => normalizeListingProduct(product, displayPriceOverrides));
 
   return (
     <div className="bg-white">
@@ -16,6 +30,9 @@ function ProductListingPage() {
             filters={filters}
             categories={categories}
             categoriesLoading={ui.categoriesLoading}
+            filterOptions={filterOptions}
+            filterOptionsLoading={ui.filterOptionsLoading}
+            filterOptionsError={ui.filterOptionsError}
             prescriptionFilterLocked={ui.prescriptionFilterLocked}
             onCategoryChange={actions.setCategoryId}
             onColorChange={actions.setColor}
@@ -151,7 +168,7 @@ function ProductListingPage() {
             {!ui.isLoading && !ui.isError && !ui.isEmpty ? (
               <>
                 <div className="grid grid-cols-3 gap-x-6 gap-y-10">
-                  {products.map((product) => (
+                  {normalizedProducts.map((product) => (
                     <ProductCard key={product.id} {...product} />
                   ))}
                 </div>
@@ -216,3 +233,44 @@ function formatDateTime(value) {
 }
 
 export { ProductListingPage as default };
+
+function normalizeListingProduct(product, displayPriceOverrides = {}) {
+  const productId = Number(product?.productId ?? product?.id);
+  const syncedBasePrice = displayPriceOverrides?.[productId];
+  const basePrice = Number.isFinite(Number(syncedBasePrice))
+    ? Number(syncedBasePrice)
+    : resolveBasePrice(product);
+
+  return {
+    ...product,
+    displayPrice: basePrice,
+    price: basePrice,
+    basePrice,
+    product: product?.product
+      ? {
+          ...product.product,
+          displayPrice: basePrice,
+          price: basePrice,
+          basePrice,
+        }
+      : product?.product,
+  };
+}
+
+function resolveBasePrice(product) {
+  const candidates = [
+    product?.basePrice,
+    product?.product?.basePrice,
+    product?.price,
+    product?.product?.price,
+  ];
+
+  for (const candidate of candidates) {
+    const normalizedPrice = Number(candidate);
+    if (Number.isFinite(normalizedPrice) && normalizedPrice >= 0) {
+      return normalizedPrice;
+    }
+  }
+
+  return 0;
+}

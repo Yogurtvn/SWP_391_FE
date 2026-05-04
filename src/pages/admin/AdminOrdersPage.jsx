@@ -11,7 +11,7 @@
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useAdminOrdersPage } from "@/hooks/admin/useAdminOrdersPage";
-import { getOrderStatusPresentation, getShippingStatusPresentation } from "@/utils/orderStatus";
+import { getOrderStatusPresentation } from "@/utils/orderStatus";
 import { getAllowedAdminOrderTransitions } from "@/utils/orderWorkflowPolicy";
 
 const ORDER_STATUS_FILTERS = [
@@ -342,11 +342,6 @@ export default function AdminOrdersPage() {
                     {hasValue(detailOrder.createdAt) ? (
                       <p>
                         <span className="font-bold text-gray-500">Ngày tạo:</span> {formatDateTime(detailOrder.createdAt)}
-                      </p>
-                    ) : null}
-                    {hasValue(detailOrder.shippingStatus) ? (
-                      <p>
-                        <span className="font-bold text-gray-500">Vận chuyển:</span> {getShippingStatusPresentation(detailOrder.shippingStatus).label}
                       </p>
                     ) : null}
                   </div>

@@ -98,6 +98,7 @@ export function buildOrderSummary({
 }
 
 export function normalizeOrderDetail(order) {
+  const normalizedOrderType = normalizeApiOrderType(order?.orderType);
   const items = Array.isArray(order?.items)
     ? order.items.map((item) => ({
         orderItemId: Number(item?.orderItemId ?? 0),
@@ -564,6 +565,22 @@ function normalizePaymentMethod(paymentMethod) {
 }
 
 function toApiOrderType(orderType) {
+  const normalizedOrderType = String(orderType ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+
+  switch (normalizedOrderType) {
+    case "preorder":
+      return "preOrder";
+    case "prescription":
+      return "prescription";
+    default:
+      return "ready";
+  }
+}
+
+function normalizeApiOrderType(orderType) {
   const normalizedOrderType = String(orderType ?? "")
     .trim()
     .toLowerCase()

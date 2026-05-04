@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePopupDialog } from "@/components/common/ui/usePopupDialog";
-import { getStockReceiptById } from "@/services/adminService";
+import { getAllOrders, getOrderItems, getStockReceiptById } from "@/services/adminService";
 import { selectAuthState } from "@/store/auth/authSlice";
 import {
   createAdminReceipt,
@@ -16,9 +16,121 @@ const DEFAULT_RECEIPT_FORM = {
   quantityReceived: "",
   note: "",
 };
+const CLOSED_ORDER_STATUSES = new Set(["completed", "cancelled", "canceled"]);
 
 function normalizeSku(value) {
   return String(value ?? "").trim().toLowerCase();
+}
+
+function normalizeToken(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, "");
+}
+
+function isOpenOrder(order) {
+  const status = normalizeToken(order?.orderStatus ?? order?.status);
+  return !CLOSED_ORDER_STATUSES.has(status);
+}
+
+function resolveOrderId(order) {
+  const orderId = Number(order?.orderId ?? order?.id ?? 0);
+  return Number.isFinite(orderId) && orderId > 0 ? orderId : 0;
+}
+
+function resolveVariantIdFromOrderItem(item) {
+  const variantId = Number(item?.variantId ?? item?.productVariantId ?? item?.variantID ?? 0);
+  return Number.isFinite(variantId) && variantId > 0 ? variantId : 0;
+}
+
+async function fetchAllPages(loader) {
+  const items = [];
+  let currentPage = 1;
+  let totalPages = 1;
+
+  while (currentPage <= totalPages) {
+    const response = await loader(currentPage);
+    const pageItems = Array.isArray(response?.items) ? response.items : [];
+    items.push(...pageItems);
+
+    const detectedTotalPages = Number(response?.totalPages ?? response?.totalPage ?? 1);
+    if (!Number.isFinite(detectedTotalPages) || detectedTotalPages < 1) {
+      break;
+    }
+
+    totalPages = detectedTotalPages;
+    if (currentPage >= totalPages) {
+      break;
+    }
+
+    currentPage += 1;
+  }
+
+  return items;
+}
+
+async function loadOpenOrderCountByVariantId(accessToken) {
+  const allOrders = await fetchAllPages((pageNumber) =>
+    getAllOrders(
+      {
+        page: pageNumber,
+        pageSize: 100,
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      },
+      accessToken,
+    ),
+  );
+
+  const openOrders = allOrders.filter(isOpenOrder);
+  if (openOrders.length === 0) {
+    return new Map();
+  }
+
+  const openOrderItems = await Promise.all(
+    openOrders.map(async (order) => {
+      const orderId = resolveOrderId(order);
+      if (orderId <= 0) {
+        return [];
+      }
+
+      try {
+        const result = await getOrderItems(orderId, accessToken);
+        const items = Array.isArray(result?.items) ? result.items : [];
+        return items.map((item) => ({ orderId, item }));
+      } catch {
+        return [];
+      }
+    }),
+  );
+
+  const countByVariantId = new Map();
+  for (const rows of openOrderItems) {
+    const seenOrderVariantPairs = new Set();
+
+    for (const row of rows) {
+      const variantId = resolveVariantIdFromOrderItem(row?.item);
+      if (variantId <= 0) {
+        continue;
+      }
+
+      const quantity = Number(row?.item?.quantity ?? 0);
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        continue;
+      }
+
+      const uniqueOrderVariantKey = `${row.orderId}-${variantId}`;
+      if (seenOrderVariantPairs.has(uniqueOrderVariantKey)) {
+        continue;
+      }
+
+      seenOrderVariantPairs.add(uniqueOrderVariantKey);
+      countByVariantId.set(variantId, (countByVariantId.get(variantId) ?? 0) + 1);
+    }
+  }
+
+  return countByVariantId;
 }
 
 export function useAdminInventoryPage() {
@@ -29,14 +141,47 @@ export function useAdminInventoryPage() {
   const [receiptForm, setReceiptForm] = useState(DEFAULT_RECEIPT_FORM);
   const [receiptDetail, setReceiptDetail] = useState(null);
   const [isLoadingReceiptDetail, setIsLoadingReceiptDetail] = useState(false);
+  const [openOrderCountByVariantId, setOpenOrderCountByVariantId] = useState(new Map());
+  const [isLoadingOrderLocks, setIsLoadingOrderLocks] = useState(false);
+
+  const refreshInventoryData = useCallback(async () => {
+    if (!auth.accessToken) {
+      return;
+    }
+
+    setIsLoadingOrderLocks(true);
+
+    try {
+      const [_, openOrderCounts] = await Promise.all([
+        dispatch(fetchAdminInventory()).unwrap(),
+        loadOpenOrderCountByVariantId(auth.accessToken),
+      ]);
+
+      setOpenOrderCountByVariantId(openOrderCounts);
+    } finally {
+      setIsLoadingOrderLocks(false);
+    }
+  }, [auth.accessToken, dispatch]);
+
+  const getOpenOrderCountForVariant = useCallback(
+    (variantId) => {
+      const normalizedVariantId = Number(variantId ?? 0);
+      if (!Number.isFinite(normalizedVariantId) || normalizedVariantId <= 0) {
+        return 0;
+      }
+
+      return Number(openOrderCountByVariantId.get(normalizedVariantId) ?? 0);
+    },
+    [openOrderCountByVariantId],
+  );
 
   useEffect(() => {
     if (!auth.isReady || !auth.accessToken) {
       return;
     }
 
-    void dispatch(fetchAdminInventory());
-  }, [auth.accessToken, auth.isReady, dispatch]);
+    void refreshInventoryData();
+  }, [auth.accessToken, auth.isReady, refreshInventoryData]);
 
   const skuToVariantMap = useMemo(() => {
     const map = new Map();
@@ -124,37 +269,48 @@ export function useAdminInventoryPage() {
   }, [receiptForm.sku, receiptForm.variantId, skuToVariantMap]);
 
   async function editPreOrder(item) {
+    if (isLoadingOrderLocks) {
+      await popupAlert("Dang kiem tra trang thai don hang. Vui long thu lai sau.");
+      return;
+    }
+
     if (Number(item?.quantity ?? 0) > 0) {
-      await popupAlert("Biến thể còn hàng nên không thể sửa pre-order.");
+      await popupAlert("Bien the con hang nen khong the sua pre-order.");
+      return;
+    }
+
+    const openOrderCount = getOpenOrderCountForVariant(item?.variantId);
+    if (openOrderCount > 0) {
+      await popupAlert(`Bien the nay dang co ${openOrderCount} don hang chua hoan thanh hoac chua huy nen khong the sua pre-order.`);
       return;
     }
 
     const formValues = await popupForm({
-      title: "Cập nhật pre-order",
+      title: "Cap nhat pre-order",
       message: `SKU: ${item.sku || "-"} | Variant ID: ${item.variantId}`,
-      okText: "Cập nhật",
-      cancelText: "Hủy",
+      okText: "Cap nhat",
+      cancelText: "Huy",
       fields: [
         {
           name: "isPreOrderAllowed",
-          label: "Cho phép pre-order",
+          label: "Cho phep pre-order",
           type: "select",
           required: true,
           options: [
-            { value: "true", label: "Bật" },
-            { value: "false", label: "Tắt" },
+            { value: "true", label: "Bat" },
+            { value: "false", label: "Tat" },
           ],
         },
         {
           name: "expectedRestockDate",
-          label: "Ngày dự kiến có hàng",
+          label: "Ngay du kien co hang",
           type: "date",
         },
         {
           name: "preOrderNote",
-          label: "Ghi chú pre-order",
+          label: "Ghi chu pre-order",
           type: "textarea",
-          placeholder: "Thêm ghi chú cho khách hàng hoặc kho...",
+          placeholder: "Them ghi chu cho khach hang hoac kho...",
         },
       ],
       initialValues: {
@@ -185,7 +341,7 @@ export function useAdminInventoryPage() {
       ).unwrap();
       await dispatch(fetchAdminInventory()).unwrap();
     } catch (error) {
-      await popupAlert(error || "Không cập nhật được pre-order.");
+      await popupAlert(error || "Khong cap nhat duoc pre-order.");
     }
   }
 
@@ -260,11 +416,13 @@ export function useAdminInventoryPage() {
       error: admin.inventory.error ?? (!auth.accessToken && auth.isReady ? "Không có access token." : null),
       isLoading: admin.inventory.status === "loading",
       isLoadingReceiptDetail,
+      isLoadingOrderLocks,
     },
+    openOrderCountByVariantId,
     actions: {
       setReceiptField: (field, value) => setReceiptForm((current) => ({ ...current, [field]: value })),
       setReceiptSku,
-      retry: () => dispatch(fetchAdminInventory()),
+      retry: refreshInventoryData,
       editPreOrder,
       createReceipt,
       viewReceiptDetail,

@@ -98,11 +98,78 @@ export async function logoutUser({ accessToken, refreshToken }) {
 }
 
 export function getAuthErrorMessage(error, fallbackMessage) {
+  const rawMessage = getRawErrorMessage(error);
+  const mappedFromRawMessage = mapAuthMessageToVietnamese(rawMessage);
+  if (mappedFromRawMessage) {
+    return mappedFromRawMessage;
+  }
+
+  if (typeof rawMessage === "string" && rawMessage.trim().length > 0) {
+    return rawMessage;
+  }
+
+  const authErrorMessage = mapAuthErrorToVietnamese(error);
+  if (authErrorMessage) {
+    return authErrorMessage;
+  }
+
   if (error instanceof Error && error.message.trim().length > 0) {
     return error.message;
   }
 
   return fallbackMessage;
+}
+
+function mapAuthErrorToVietnamese(error) {
+  const errorCode = String(error?.errorCode ?? "")
+    .trim()
+    .toUpperCase();
+  const message = String(error?.message ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    errorCode === "INVALID_CREDENTIALS" ||
+    message.includes("invalid email or password") ||
+    message.includes("invalid credentials")
+  ) {
+    return "Email hoặc mật khẩu không đúng. Vui lòng kiểm tra và thử lại.";
+  }
+
+  return "";
+}
+
+function getRawErrorMessage(error) {
+  if (typeof error === "string") {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (error && typeof error === "object") {
+    const objectMessage = error.message ?? error.error ?? error.detail;
+    return typeof objectMessage === "string" ? objectMessage : "";
+  }
+
+  return "";
+}
+
+function mapAuthMessageToVietnamese(message) {
+  const normalizedMessage = String(message ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    normalizedMessage.includes("invalid email or password") ||
+    normalizedMessage.includes("invalid credentials") ||
+    normalizedMessage.includes("email hoặc mật khẩu không đúng")
+  ) {
+    return "Email hoặc mật khẩu không đúng. Vui lòng kiểm tra và thử lại.";
+  }
+
+  return "";
 }
 
 async function createSessionFromApiResponse(authResponse) {

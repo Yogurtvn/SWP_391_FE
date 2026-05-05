@@ -175,6 +175,32 @@ function statusClass(status) {
   return "border-slate-200 bg-slate-50 text-slate-700";
 }
 
+function getOrderStatusLabel(status) {
+  const normalized = normalizeValue(status);
+
+  switch (normalized) {
+    case "pending":
+      return "Chờ xử lý";
+    case "confirmed":
+      return "Đã xác nhận";
+    case "awaitingstock":
+      return "Chờ hàng";
+    case "processing":
+      return "Đang xử lý";
+    case "shipped":
+      return "Đang giao";
+    case "completed":
+    case "delivered":
+      return "Hoàn thành";
+    case "cancelled":
+      return "Đã hủy";
+    case "failed":
+      return "Thất bại";
+    default:
+      return status || "-";
+  }
+}
+
 export default function AdminPreOrderVariantsPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -355,7 +381,7 @@ export default function AdminPreOrderVariantsPage() {
       setRows(mergedRows);
     } catch (loadError) {
       setRows([]);
-      setError(loadError?.message || "Không tải được danh sách pre-order variants.");
+      setError(loadError?.message || "Không tải được danh sách biến thể pre-order.");
     } finally {
       setLoading(false);
     }
@@ -406,13 +432,13 @@ export default function AdminPreOrderVariantsPage() {
     }
 
     if (!Number.isFinite(row.variantId) || row.variantId <= 0) {
-      await popupAlert("Không xác định được variant ID để nhập hàng.");
+      await popupAlert("Không xác định được mã biến thể để nhập hàng.");
       return;
     }
 
     const formValues = await popupForm({
-      title: "Nhập hàng cho variant",
-      message: `SKU: ${row.sku}\nVariant ID: ${row.variantId}\nNhu cầu đề xuất: ${row.neededImportQuantity}`,
+      title: "Nhập hàng cho biến thể",
+      message: `SKU: ${row.sku}\nMã biến thể: ${row.variantId}\nNhu cầu đề xuất: ${row.neededImportQuantity}`,
       okText: "Nhập hàng",
       fields: [
         {
@@ -459,7 +485,7 @@ export default function AdminPreOrderVariantsPage() {
       await popupAlert("Nhập hàng thành công.");
       await loadData();
     } catch (actionError) {
-      await popupAlert(actionError?.message || "Không thể nhập hàng cho variant này.");
+      await popupAlert(actionError?.message || "Không thể nhập hàng cho biến thể này.");
     } finally {
       setImportingVariantId(null);
     }
@@ -489,7 +515,7 @@ export default function AdminPreOrderVariantsPage() {
             type="search"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Tìm theo tên sản phẩm, SKU, variant ID..."
+            placeholder="Tìm theo tên sản phẩm, SKU, mã biến thể..."
             className={`${adminStyles.input} pl-12`}
           />
         </label>
@@ -530,7 +556,7 @@ export default function AdminPreOrderVariantsPage() {
                 <td className={adminStyles.td}>
                   <p className="font-bold text-[#11284b]">{row.productName}</p>
                   <p className="text-sm text-slate-500">SKU: {row.sku}</p>
-                  <p className="text-sm text-slate-500">Variant ID: {row.variantId}</p>
+                  <p className="text-sm text-slate-500">Mã biến thể: {row.variantId}</p>
                   <p className="text-xs text-slate-500">{buildVariantLabel(row)}</p>
                 </td>
                 <td className={adminStyles.td}>
@@ -581,7 +607,7 @@ export default function AdminPreOrderVariantsPage() {
                       className="inline-flex items-center gap-1 rounded-[1rem] border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 transition hover:bg-sky-100"
                     >
                       <Eye className="h-4 w-4" />
-                      Chi tiết variant
+                      Chi tiết biến thể
                     </button>
                   </div>
                 </td>
@@ -603,9 +629,9 @@ export default function AdminPreOrderVariantsPage() {
           <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-[1.6rem] border border-orange-200 bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 bg-white px-6 py-4">
               <div>
-                <h3 className="text-2xl font-bold text-[#11284b]">Đơn pre-order của variant</h3>
+                <h3 className="text-2xl font-bold text-[#11284b]">Đơn pre-order của biến thể</h3>
                 <p className="mt-1 text-sm text-slate-500">
-                  SKU: {selectedOrdersRow.sku} | Variant ID: {selectedOrdersRow.variantId}
+                  SKU: {selectedOrdersRow.sku} | Mã biến thể: {selectedOrdersRow.variantId}
                 </p>
               </div>
               <button
@@ -621,7 +647,7 @@ export default function AdminPreOrderVariantsPage() {
             <div className="p-6">
               {(selectedOrdersRow.relatedOrders ?? []).length === 0 ? (
                 <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                  Chưa có đơn pre-order đang mở cho variant này.
+                  Chưa có đơn pre-order đang mở cho biến thể này.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -644,7 +670,7 @@ export default function AdminPreOrderVariantsPage() {
                           <td className={adminStyles.td}>{order.customerName || "-"}</td>
                           <td className={adminStyles.td}>
                             <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${statusClass(order.orderStatus)}`}>
-                              {order.orderStatus || "-"}
+                              {getOrderStatusLabel(order.orderStatus)}
                             </span>
                           </td>
                           <td className={adminStyles.td}>{order.quantity}</td>
@@ -678,7 +704,7 @@ export default function AdminPreOrderVariantsPage() {
           <div className="w-full max-w-3xl rounded-[1.6rem] border border-orange-200 bg-white p-6 shadow-2xl">
             <div className="mb-5 flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-2xl font-bold text-[#11284b]">Chi tiết product variant</h3>
+                <h3 className="text-2xl font-bold text-[#11284b]">Chi tiết biến thể sản phẩm</h3>
                 <p className="mt-1 text-sm text-slate-500">{selectedVariantRow.productName}</p>
               </div>
               <button
@@ -693,7 +719,7 @@ export default function AdminPreOrderVariantsPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-xl border border-orange-100 bg-[#fffaf4] p-4">
-                <p className="text-xs font-bold uppercase text-slate-500">Variant ID</p>
+                <p className="text-xs font-bold uppercase text-slate-500">Mã biến thể</p>
                 <p className="mt-2 text-sm font-semibold text-[#11284b]">{selectedVariantRow.variantId}</p>
               </div>
               <div className="rounded-xl border border-orange-100 bg-[#fffaf4] p-4">

@@ -25,7 +25,7 @@ export function useProductListingPage() {
   const [displayPriceOverrides, setDisplayPriceOverrides] = useState({});
 
   const routeConfig = useMemo(() => getCatalogRouteConfig(category), [category]);
-  const isPrescriptionFilterLocked = routeConfig.productType === "sunglasses";
+  const isPrescriptionFilterLocked = isPrescriptionFilterLockedForProductType(routeConfig.productType);
 
   const filters = useMemo(
     () => ({
@@ -250,7 +250,7 @@ function normalizeSort(value) {
 }
 
 function resolvePrescriptionFilter(rawValue, routeConfig) {
-  if (routeConfig.productType === "sunglasses") {
+  if (isPrescriptionFilterLockedForProductType(routeConfig.productType)) {
     return undefined;
   }
 
@@ -259,6 +259,11 @@ function resolvePrescriptionFilter(rawValue, routeConfig) {
   }
 
   return rawValue === "1" ? true : undefined;
+}
+
+function isPrescriptionFilterLockedForProductType(productType) {
+  const normalizedType = String(productType ?? "").trim().toLowerCase();
+  return normalizedType === "sunglasses" || normalizedType === "lens";
 }
 
 function mapSortToApi(sort) {

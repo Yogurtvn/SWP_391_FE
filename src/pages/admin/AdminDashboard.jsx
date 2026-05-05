@@ -63,6 +63,31 @@ function buildDateRange(rangeKey) {
   return { startDate: startDate.toISOString(), endDate };
 }
 
+function formatVietnamDateTime(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const rawValue = String(value ?? "").trim();
+  const noTimezoneIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+  const normalizedValue = noTimezoneIsoPattern.test(rawValue) ? `${rawValue}Z` : rawValue;
+  const date = value instanceof Date ? value : new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(date);
+}
+
 function SummaryCard({ title, value, changePercent, icon: Icon, iconClassName }) {
   const isPositive = Number(changePercent ?? 0) >= 0;
 
@@ -548,15 +573,7 @@ export default function AdminDashboard() {
                           <StatusBadge status={order.status ?? order.orderStatus} />
                         </td>
                         <td className={adminStyles.td}>
-                          {order.createdAt
-                            ? new Date(order.createdAt).toLocaleString("vi-VN", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "-"}
+                          {formatVietnamDateTime(order.createdAt)}
                         </td>
                       </tr>
                     ))

@@ -51,6 +51,11 @@ function normalizeValue(value) {
     .replace(/[\s_-]+/g, "");
 }
 
+function isPrescriptionUnsupportedType(productType) {
+  const normalizedType = normalizeValue(productType);
+  return normalizedType === "sunglasses" || normalizedType === "lens";
+}
+
 function getColorCode(colorName) {
   const matched = COLOR_OPTIONS.find((color) => normalizeValue(color.name) === normalizeValue(colorName));
   if (matched?.code) {
@@ -129,8 +134,8 @@ export default function AdminProductsPage() {
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [isCreateMởdalOpen, setIsCreateMởdalOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const isCreateSunglasses = normalizeValue(form.productType) === "sunglasses";
-  const isEditSunglasses = normalizeValue(editForm.productType) === "sunglasses";
+  const isCreatePrescriptionUnsupported = isPrescriptionUnsupportedType(form.productType);
+  const isEditPrescriptionUnsupported = isPrescriptionUnsupportedType(editForm.productType);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -598,7 +603,7 @@ export default function AdminProductsPage() {
                           <input
                             type="checkbox"
                             checked={editForm.prescriptionCompatible}
-                            disabled={isEditSunglasses}
+                            disabled={isEditPrescriptionUnsupported}
                             onChange={(event) => actions.setEditFormField("prescriptionCompatible", event.target.checked)}
                           />
                           Hỗ trợ kính thuốc
@@ -982,11 +987,14 @@ export default function AdminProductsPage() {
                     <input
                       type="checkbox"
                       checked={form.prescriptionCompatible}
-                      disabled={isCreateSunglasses}
+                      disabled={isCreatePrescriptionUnsupported}
                       onChange={(event) => actions.setFormField("prescriptionCompatible", event.target.checked)}
                     />
                     Hỗ trợ kính thuốc
                   </label>
+                  {isCreatePrescriptionUnsupported ? (
+                    <p className="mt-2 text-xs text-gray-500">Loại sản phẩm Kính râm và Tròng kính không hỗ trợ kính thuốc.</p>
+                  ) : null}
                 </div>
               </div>
 

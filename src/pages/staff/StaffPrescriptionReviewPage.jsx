@@ -3,6 +3,32 @@ import { Check, Eye, FileText, Image as ImageIcon, Search, X } from "lucide-reac
 import { useEffect, useState } from "react";
 import { useStaffPrescriptionReview } from "@/hooks/prescription/useStaffPrescriptionReview";
 
+function formatVietnamDateTime(value) {
+  if (!value) {
+    return "-";
+  }
+
+  const rawValue = String(value ?? "").trim();
+  const noTimezoneIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+  const normalizedValue = noTimezoneIsoPattern.test(rawValue) ? `${rawValue}Z` : rawValue;
+  const date = value instanceof Date ? value : new Date(normalizedValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Ho_Chi_Minh",
+  }).format(date);
+}
+
 const STATUS_PRESENTATIONS = {
   submitted: {
     label: "Chờ kiểm tra",
@@ -301,7 +327,7 @@ function DetailPanel({
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                Cập nhật lúc: {relatedOrder.updatedAt ? new Date(relatedOrder.updatedAt).toLocaleString("vi-VN") : "-"}
+                Cập nhật lúc: {formatVietnamDateTime(relatedOrder.updatedAt)}
               </p>
               <Link
                 to={`${orderBasePath}/${relatedOrder.orderId}`}

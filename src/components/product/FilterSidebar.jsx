@@ -233,7 +233,7 @@ function FilterSidebar({
             <span className="text-sm text-foreground">Chỉ hiển thị sản phẩm hỗ trợ đo kính</span>
           </label>
           {prescriptionFilterLocked ? (
-            <p className="mt-2 text-xs text-muted-foreground">Danh mục Kính râm không hỗ trợ đo kính.</p>
+            <p className="mt-2 text-xs text-muted-foreground">Danh mục Kính râm và Tròng kính không hỗ trợ đo kính.</p>
           ) : null}
         </section>
       </div>

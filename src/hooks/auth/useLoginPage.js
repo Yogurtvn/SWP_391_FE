@@ -91,7 +91,7 @@ export function useLoginPage() {
 
       redirectToLandingPage(navigate, loggedInUser.role);
     } catch (loginError) {
-      setError(getAuthErrorMessage(loginError, "Đã có lỗi xảy ra. Vui lòng thử lại."));
+      setError(getAuthErrorMessage(loginError, "Đăng nhập thất bại. Vui lòng thử lại."));
     } finally {
       setLoading(false);
     }

@@ -27,8 +27,16 @@ function isSunglassesProductType(value) {
   return String(value ?? "").trim().toLowerCase() === "sunglasses";
 }
 
+function isLensProductType(value) {
+  return String(value ?? "").trim().toLowerCase() === "lens";
+}
+
+function isPrescriptionUnsupportedProductType(value) {
+  return isSunglassesProductType(value) || isLensProductType(value);
+}
+
 function sanitizePrescriptionCompatible(productType, prescriptionCompatible) {
-  return !isSunglassesProductType(productType) && Boolean(prescriptionCompatible);
+  return !isPrescriptionUnsupportedProductType(productType) && Boolean(prescriptionCompatible);
 }
 
 const DEFAULT_PRODUCT_FORM = {
